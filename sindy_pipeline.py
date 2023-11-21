@@ -19,25 +19,27 @@ from sklearn.preprocessing import StandardScaler
 from scipy.integrate import solve_ivp
 
 
-def sindy_pipeline(time_series,
-                   window_length,
-                   ensem_thresh,
-                   ensem_alpha,
-                   ensem_max_iter,
-                   ensem_num_models=20,
-                   ensem_time_points=None,
-                   normalize=True,
-                   poly_degree=2,
-                   stabalzing_eps=1e-5):
+def run(time_series,
+        window_length,
+        ensem_thresh,
+        ensem_alpha,
+        ensem_max_iter,
+        ensem_num_models=20,
+        ensem_time_points=None,
+        normalize=True,
+        poly_degree=2,
+        stabalzing_eps=1e-5
+    ):
     
     """
-    Takes in a 3-dimensional timeseries and applies an Ensemble Sindy pipeline 
-    for model discovery and forward simulating.
+    Takes in a 3-dimensional timeseries and applies an Ensemble Sindy
+    pipeline for model discovery and forward simulating.
 
     Parameters:
     -----------
     times_series: np.ndarray 
-        Timeseries of coefficients (a,b,c) learned from concentric circle pipeline.
+        Timeseries of coefficients (a,b,c) learned from concentric circle
+        pipeline.
     
     window_length: int
         window length used in pySINDy.SmoothedFiniteDifference() method---used 
@@ -134,7 +136,11 @@ def sindy_pipeline(time_series,
     model.fit(time_series, t=t, ensemble=True, quiet=True)
 
     print(
-        "window_length: {}, thresh: {}, alpha: {}, max iter: {}, stabalzing eps: {}"
+        "window_length: {},\
+        thresh: {},\
+        alpha: {},\
+        max iter: {},\
+        stabalzing eps: {}"
         .format(
             window_length, 
             ensem_thresh, 
@@ -193,12 +199,14 @@ def sindy_pipeline(time_series,
     params = (a_dot,b_dot,c_dot,stabalizing_degree,stabalzing_eps)
 
     print(f"Solving with eps = {stabalzing_eps}...")
-    X_solved = solve_ivp(ode_sys,
-                        t_span=(t_solve[0],t_solve[-1]),
-                        y0=y0, 
-                        t_eval=t_solve,
-                        args=params,
-                        **integrator_keywords)
+    X_solved = solve_ivp(
+        ode_sys,
+        t_span=(t_solve[0],t_solve[-1]),
+        y0=y0, 
+        t_eval=t_solve,
+        args=params,
+        **integrator_keywords
+    )
     
     ################
     # Plot Results #
@@ -225,12 +233,14 @@ def sindy_pipeline(time_series,
                 "k", 
                 label="true normalized data"
             )
+
             axs[i].plot(
                 t_solve[:m], 
                 X_stable_sim.T[:m, i], 
                 "r--", 
                 label="model simulation"
             )
+
             axs[i].legend(loc="best")
         else:
             axs[i].plot(t_solve[:m], time_series[:m, i], "k")
@@ -313,21 +323,22 @@ def sindy_pipeline(time_series,
 
 def get_func_from_SINDy(model, precision=10):
     """
-    Takes in learned SINDy model and returns list of learned ode equations (str)
-    in correct format to be converted into lambda functions.
+    Takes in learned SINDy model and returns list of learned ode
+    equations (str) in correct format to be converted into lambda
+    functions.
 
     Parameters:
     -----------
     model: Trained pySINDy model
     precision: int, optional (default 10)
-            Number of decimcal points to include for each coefficient
-            in displayed ode equations
+            Number of decimcal points to include for each
+            coefficient in displayed ode equations
 
     Returns:
     --------
     funcs: list of strings
-        List of string itt of RHS of learned ODE system in format to
-        be formed into lambda functions
+        List of string itt of RHS of learned ODE system in format
+        to be formed into lambda functions.
 
 
     """
