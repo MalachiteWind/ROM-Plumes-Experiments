@@ -195,57 +195,66 @@ def run(time_series,
     params = (a_dot,b_dot,c_dot,stabalizing_degree,stabalzing_eps)
 
     print(f"Solving SINDy system with eps = {stabalzing_eps}...")
-    X_solved = solve_ivp(
-        ode_sys,
-        t_span=(t_solve[0],t_solve[-1]),
-        y0=y0, 
-        t_eval=t_solve,
-        args=params,
-        **integrator_keywords
-    )
+
+    error_occured = False
+    try:
+        X_solved = solve_ivp(
+            ode_sys,
+            t_span=(t_solve[0],t_solve[-1]),
+            y0=y0, 
+            t_eval=t_solve,
+            args=params,
+            **integrator_keywords
+        )
+    except Exception as e:
+        print(f"Numerical Solver unstable. Error: {e}")
+        error_occured = True
+    
+    # if error_occured is True:
+
     
     ################
     # Plot Results #
     ################
-    
-    X_stable_sim = X_solved.y
+    if error_occured is False:
+        X_stable_sim = X_solved.y
 
-    m = min(time_series.shape[0],X_stable_sim[0].shape[0])
+        m = min(time_series.shape[0],X_stable_sim[0].shape[0])
 
-    fig, axs = plt.subplots(
-        1,
-        time_series.shape[1], 
-        sharex=True, 
-        figsize=(15, 4)
-    )
-    # fig.suptitle("Learned Normalized Coefficients")  
-    # Add this line to set the title
+        fig, axs = plt.subplots(
+            1,
+            time_series.shape[1], 
+            sharex=True, 
+            figsize=(15, 4)
+        )
+        # fig.suptitle("Learned Normalized Coefficients")  
+        # Add this line to set the title
 
-    for i in range(time_series.shape[1]):
-        if i == time_series.shape[1]-1:
-            axs[i].plot(
-                t_solve[:m], 
-                time_series[:m, i], 
-                "k", 
-                label="true normalized data"
-            )
+        for i in range(time_series.shape[1]):
+            if i == time_series.shape[1]-1:
+                axs[i].plot(
+                    t_solve[:m], 
+                    time_series[:m, i], 
+                    "k", 
+                    label="true normalized data"
+                )
 
-            axs[i].plot(
-                t_solve[:m], 
-                X_stable_sim.T[:m, i], 
-                "r--", 
-                label="model simulation"
-            )
+                axs[i].plot(
+                    t_solve[:m], 
+                    X_stable_sim.T[:m, i], 
+                    "r--", 
+                    label="model simulation"
+                )
 
-            axs[i].legend(loc="best")
-        else:
-            axs[i].plot(t_solve[:m], time_series[:m, i], "k")
-            axs[i].plot(t_solve[:m], X_stable_sim.T[:m, i], "r--")
-        axs[i].set(xlabel="t")
-        axs[i].set_title("Coeff {}".format(model.feature_names[i]))
-    fig.suptitle(
-        f"Stabalized: eps={stabalzing_eps}, degree={stabalizing_degree}"
-    )
+                axs[i].legend(loc="best")
+            else:
+                axs[i].plot(t_solve[:m], time_series[:m, i], "k")
+                axs[i].plot(t_solve[:m], X_stable_sim.T[:m, i], "r--")
+            axs[i].set(xlabel="t")
+            axs[i].set_title("Coeff {}".format(model.feature_names[i]))
+        fig.suptitle(
+            f"Stabalized: eps={stabalzing_eps}, degree={stabalizing_degree}"
+        )
     # plt.show()
         
             
@@ -258,63 +267,70 @@ def run(time_series,
     x0 = X_train[0]
 
     print("Solving SINDy system...")
-    X_train_sim = model.simulate(x0,t_train)
+    error_occured = False
+    try:
+        X_train_sim = model.simulate(x0,t_train)
 
-    ################
-    # Plot Results #
-    ################
-    m = min(X_train.shape[0],X_train_sim.shape[0])
+        ################
+        # Plot Results #
+        ################
+        m = min(X_train.shape[0],X_train_sim.shape[0])
 
-    fig, axs = plt.subplots(
-        1,
-        X_train.shape[1], 
-        sharex=True, 
-        figsize=(15, 4)
-    )
-    # fig.suptitle("Learned Normalized Coefficients") 
-    # Add this line to set the title
+        fig, axs = plt.subplots(
+            1,
+            X_train.shape[1], 
+            sharex=True, 
+            figsize=(15, 4)
+        )
+        # fig.suptitle("Learned Normalized Coefficients") 
+        # Add this line to set the title
 
-    for i in range(X_train.shape[1]):
-        if i == X_train.shape[1]-1:
-            axs[i].plot(
-                t_train[:m], 
-                X_train[:m, i], 
-                "k", 
-                label="true normalized data"
-            )
-            axs[i].plot(
-                t_train[:m], 
-                X_train_sim[:m, i], 
-                "r--", 
-                label="model simulation"
-            )
-            axs[i].legend(loc="best")
-        else:
-            axs[i].plot(
-                t_train[:m], 
-                X_train[:m, i], 
-                "k"
-            )
-            axs[i].plot(
-                t_train[:m], 
-                X_train_sim[:m, i], 
-                "r--"
-            )
-        axs[i].set(xlabel="t")
-        axs[i].set_title("Coeff {}".format(feature_names[i]))
-    fig.suptitle("SINDy simulate")
-    plt.show(block=True)
+        for i in range(X_train.shape[1]):
+            if i == X_train.shape[1]-1:
+                axs[i].plot(
+                    t_train[:m], 
+                    X_train[:m, i], 
+                    "k", 
+                    label="true normalized data"
+                )
+                axs[i].plot(
+                    t_train[:m], 
+                    X_train_sim[:m, i], 
+                    "r--", 
+                    label="model simulation"
+                )
+                axs[i].legend(loc="best")
+            else:
+                axs[i].plot(
+                    t_train[:m], 
+                    X_train[:m, i], 
+                    "k"
+                )
+                axs[i].plot(
+                    t_train[:m], 
+                    X_train_sim[:m, i], 
+                    "r--"
+                )
+            axs[i].set(xlabel="t")
+            axs[i].set_title("Coeff {}".format(feature_names[i]))
+        fig.suptitle("SINDy simulate")
+        plt.show(block=True)
+    
+    except Exception as e:
+        print(f"Numerical solver unstable. Error {e}")
+        error_occured = True
 
     ######################
     # Compute accuracies #
     ######################
-    def L2_error(x_true, x_approx):
-            return np.linalg.norm(x_true-x_approx)/np.linalg.norm(x_true)
-    
-    err = L2_error(X_train[:m].reshape(-1), X_train_sim[:m].reshape(-1))
-    print("accuracy: ",1-err)
-    print("error: ", err,"\n")
-    return err, model, X_train, X_train_sim, scalar
+    if error_occured is False:
+        def L2_error(x_true, x_approx):
+                return np.linalg.norm(x_true-x_approx)/np.linalg.norm(x_true)
+        
+        err = L2_error(X_train[:m].reshape(-1), X_train_sim[:m].reshape(-1))
+        print("accuracy: ",1-err)
+        print("error: ", err,"\n")
+        return err, model, X_train, X_train_sim, scalar
 
 
 def get_func_from_SINDy(model, precision=10):

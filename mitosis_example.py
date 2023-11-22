@@ -3,6 +3,6 @@ import simple_example
 from pathlib import Path
 
 folder = Path(".").resolve()
-params = [mitosis.Parameter("my_variant", "ammplitude", 4)]
+params = [mitosis.Parameter("my_variant", "amplitude", 4)]
 
 mitosis.run(simple_example, params=params, trials_folder=folder)
