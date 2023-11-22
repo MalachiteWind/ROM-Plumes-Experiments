@@ -9,6 +9,3 @@ def run(seed, amplitude):
     err = np.abs(max(y) - amplitude)
     results = {"main": err}
     return results
-
-def name():
-    return "test"
