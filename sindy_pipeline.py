@@ -99,7 +99,7 @@ def run(time_series,
     t = np.array([i for i in range(len(time_series))])
     scalar = StandardScaler()
     if normalize==True:
-        print("normalize:", normalize)
+        # print("normalize:", normalize)
         time_series = scalar.fit_transform(time_series)
 
     ########################
@@ -136,11 +136,7 @@ def run(time_series,
     model.fit(time_series, t=t, ensemble=True, quiet=True)
 
     print(
-        "window_length: {},\
-        thresh: {},\
-        alpha: {},\
-        max iter: {},\
-        stabalzing eps: {}"
+        "window_length: {}, thresh: {}, alpha: {},  max iter: {}, stabalzing eps: {}"
         .format(
             window_length, 
             ensem_thresh, 
@@ -250,7 +246,7 @@ def run(time_series,
     fig.suptitle(
         f"Stabalized: eps={stabalzing_eps}, degree={stabalizing_degree}"
     )
-    fig.show()
+    # plt.show()
         
             
 
@@ -306,8 +302,8 @@ def run(time_series,
             )
         axs[i].set(xlabel="t")
         axs[i].set_title("Coeff {}".format(feature_names[i]))
-    fig.suptitle(f"SINDy simulate (eps = {stabalzing_eps})")
-    fig.show()
+    fig.suptitle("SINDy simulate")
+    plt.show(block=True)
 
     ######################
     # Compute accuracies #
