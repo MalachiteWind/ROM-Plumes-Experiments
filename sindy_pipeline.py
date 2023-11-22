@@ -194,7 +194,7 @@ def run(time_series,
 
     params = (a_dot,b_dot,c_dot,stabalizing_degree,stabalzing_eps)
 
-    print(f"Solving with eps = {stabalzing_eps}...")
+    print(f"Solving SINDy system with eps = {stabalzing_eps}...")
     X_solved = solve_ivp(
         ode_sys,
         t_span=(t_solve[0],t_solve[-1]),
