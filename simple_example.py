@@ -10,5 +10,5 @@ def run(seed, amplitude):
     results = {"main": err}
     return results
 
-def name():
-    return "test_name"
+# def name():
+#     return "test_name"
