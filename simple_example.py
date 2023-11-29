@@ -1,5 +1,7 @@
 import numpy as np
 
+name = "sine-exp"
+
 def run(seed, amplitude):
     """
     Deterimne if the maximum value of the sine function equals ``amplitude``
