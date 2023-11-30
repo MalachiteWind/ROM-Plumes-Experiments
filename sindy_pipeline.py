@@ -18,6 +18,7 @@ import pysindy as ps
 from sklearn.preprocessing import StandardScaler
 from scipy.integrate import solve_ivp
 
+name = "sindy-pipeline"
 
 def run(time_series,
         window_length,
@@ -28,7 +29,8 @@ def run(time_series,
         ensem_time_points=None,
         normalize=True,
         poly_degree=2,
-        stabalzing_eps=1e-5
+        stabalzing_eps=1e-5,
+        seed = 5
     ):
     
     """
@@ -91,6 +93,8 @@ def run(time_series,
     scalar: StandardScalar object
         StandardScalar object (potentially) used to normalized time_series data.
     """
+
+    np.random.seed(seed=seed)
     
     ############################
     # Apply normalized scaling #
