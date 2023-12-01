@@ -334,7 +334,14 @@ def run(time_series,
         err = L2_error(X_train[:m].reshape(-1), X_train_sim[:m].reshape(-1))
         print("accuracy: ",1-err)
         print("error: ", err,"\n")
-        return err, model, X_train, X_train_sim, scalar
+        results = {
+            "error": err,
+            "model": model, 
+            "X_train": X_train, 
+            "X_train_sim": X_train_sim,
+            "scalar_transform": scalar
+        }
+        return results
 
 
 def get_func_from_SINDy(model, precision=10):
