@@ -2,7 +2,7 @@ import numpy as np
 
 name = "sine-exp"
 
-def run(seed, amplitude):
+def run(seed, amplitude, freq):
     """
     Deterimne if the maximum value of the sine function equals ``amplitude``
     """
@@ -11,6 +11,3 @@ def run(seed, amplitude):
     err = np.abs(max(y) - amplitude)
     results = {"main": err}
     return results
-
-# def name():
-#     return "test_name"
