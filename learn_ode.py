@@ -22,8 +22,6 @@ ensem_time_points = None
 
 seed =123
 
-np.random.seed(seed)
-
 # Run experiment
 sindy_pipeline.run(
     time_series=time_series,
@@ -33,7 +31,8 @@ sindy_pipeline.run(
     ensem_max_iter=ensem_max_iter,
     ensem_num_models=ensem_num_models,
     ensem_time_points=ensem_time_points,
-    poly_degree=poly_degree
+    poly_degree=poly_degree,
+    seed=seed
 )
 
 # Good seeds
@@ -46,3 +45,4 @@ sindy_pipeline.run(
 
 # Seeds that Crash
 # - 1234
+# - 123
