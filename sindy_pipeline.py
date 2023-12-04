@@ -184,9 +184,9 @@ def run(time_series,
                 stabalizing_deg=stabalizing_degree,
                 eps = 1e-5):
         a,b,c = y
-        da = a_dot(a,b,c) - eps*a**stabalizing_deg
-        db = b_dot(a,b,c) - eps*b**stabalizing_deg
-        dc = c_dot(a,b,c) - eps*c**stabalizing_deg
+        da = a_dot(a,b,c) - eps*(a**stabalizing_deg+b**stabalizing_deg+c**stabalizing_degree)
+        db = b_dot(a,b,c) - eps*(a**stabalizing_deg+b**stabalizing_deg+c**stabalizing_degree)
+        dc = c_dot(a,b,c) - eps*(a**stabalizing_deg+b**stabalizing_deg+c**stabalizing_degree)
         rhs = [da,db,dc]
         return rhs
 
