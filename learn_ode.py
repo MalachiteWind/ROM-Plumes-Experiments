@@ -46,3 +46,5 @@ sindy_pipeline.run(
 # Seeds that Crash
 # - 1234
 # - 123
+# - 12
+#   - crashes when ensem_time_pints = None
