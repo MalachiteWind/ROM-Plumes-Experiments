@@ -200,6 +200,7 @@ def run(time_series,
     t_solve = t
 
     y0 = time_series[0]
+    print("y0:", y0)
 
     params = (a_dot,b_dot,c_dot,stabalizing_degree,stabalzing_eps)
 
@@ -346,7 +347,7 @@ def run(time_series,
             "X_train_sim": X_train_sim,
             "scalar_transform": scalar
         }
-        # return results
+        return results
 
 
 def get_func_from_SINDy(model, precision=10):
