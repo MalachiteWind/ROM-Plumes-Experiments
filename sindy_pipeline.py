@@ -346,7 +346,7 @@ def run(time_series,
             "X_train_sim": X_train_sim,
             "scalar_transform": scalar
         }
-        # return results
+        return results
 
 
 def get_func_from_SINDy(model, precision=10):
