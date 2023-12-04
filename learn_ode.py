@@ -36,13 +36,24 @@ params = [
     mitosis.Parameter("ensem_time_points", "ensem_time_poitns", ensem_time_points)
 ]
 
-# Run experiment
+# print(type(time_series))
+# print(list(time_series))
+# print(np.array(list(time_series)))
+# print(time_series)cl
+# if isinstance(list(time_series), list):
+#     print("gotcha!")
+
+# print(time_series.tolist())
+# print(np.array(time_series.tolist()))
+
+# # Run experiment
 mitosis.run(
     sindy_pipeline,
     params=params,
     debug=True,
     trials_folder=folder
 )
+
 # sindy_pipeline.run(
 #     time_series=time_series,
 #     window_length=window_length,

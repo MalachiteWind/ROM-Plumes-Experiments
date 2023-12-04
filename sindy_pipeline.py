@@ -95,6 +95,11 @@ def run(time_series,
     """
 
     np.random.seed(seed=seed)
+
+    # Check if time_series is numpy array
+    if isinstance(time_series, list):
+        print("time_series is list!")
+        time_series = np.array(time_series)
     
     ############################
     # Apply normalized scaling #
@@ -341,7 +346,7 @@ def run(time_series,
             "X_train_sim": X_train_sim,
             "scalar_transform": scalar
         }
-        return results
+        # return results
 
 
 def get_func_from_SINDy(model, precision=10):
