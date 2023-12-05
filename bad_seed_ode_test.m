@@ -41,8 +41,8 @@ function bad_seed_ode_test()
     tspan = [0 494];
 
     % Define the initial conditions
-%      y0 = [0.70361549 -0.77091281 0.87890854];
-     y0 = [0.1 0.1 0.1];
+     y0 = [0.70361549 -0.77091281 0.87890854];
+%      y0 = [0.1 0.1 0.1];
 
     % Solve the system of ODEs using ode45
     [t, y] = ode45(@odefun, tspan, y0);
@@ -53,6 +53,25 @@ function bad_seed_ode_test()
     xlabel('Time');
     ylabel('Variables');
     legend('a', 'b', 'c');
-    title('Solution of the System of ODEs');
+    title('Solution of the System of ODEs: eps');
     grid on;
+
+    % Looking at eigenvectors of linear system
+    A = [-1.379 -2.139 -0.793;
+          1.334  2.058  0.763;
+         -1.193 -1.827 -0.676];
+    [V,D] = eig(A);
+    disp(V);
+    v1  = transpose(real(V(:,1)));
+    v2 = transpose(real(V(:,2)));
+    v3  = transpose(real(V(:,3)));
+    origin = [0, 0, 0];
+
+    figure;hold on;
+    plot3([origin(1) v1(1)],[origin(2) v1(2)],[origin(3) v1(3)],'r-^', 'LineWidth',3);
+    plot3([origin(1) v2(1)],[origin(2) v2(2)],[origin(3) v2(3)],'g-^', 'LineWidth',3);
+    plot3([origin(1) v3(1)],[origin(2) v3(2)],[origin(3) v3(3)],'b-^', 'LineWidth',3);
+    grid on;
+    xlabel('X axis'), ylabel('Y axis'), zlabel('Z axis')
+    set(gca,'CameraPosition',[1 2 3]);
 end
