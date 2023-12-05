@@ -1,0 +1,6 @@
+Metadata-Version: 2.1
+Name: pysindy-plume-experiments
+Version: 0.1.dev40+g4dc5f2a.d20231204
+Requires-Dist: mitosis@ git+https://github.com/Jacob-Stevens-Haas/mitosis@main
+Requires-Dist: pysindy[cvxpy]@ git+https://github.com/dynamicslab/pysindy@master
+Requires-Dist: matplotlib

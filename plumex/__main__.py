@@ -1,14 +1,14 @@
-import sindy_pipeline 
 import pickle
 import numpy as np
 import mitosis
 from pathlib import Path
+from plumex import sindy_pipeline 
 
+folder = Path(__file__).parent.resolve()/"exp_1"
 
-folder = Path(".").resolve()
 
 # Load data 
-pickle_path = "plume_videos/July_20/video_low_1/gauss_blur_coeff.pkl"
+pickle_path = Path(__file__).parent.resolve() / "../plume_videos/July_20/video_low_1/gauss_blur_coeff.pkl"
 
 with open(pickle_path, 'rb') as f:
     loaded_arrays = pickle.load(f)
@@ -26,14 +26,14 @@ seed =1234
 
 params = [
     mitosis.Parameter("bad_seed", "seed", seed),
-    mitosis.Parameter("july_20_low_1", "time_series", time_series),
+    mitosis.Parameter("july_20_low_1", "time_series", time_series, [np]),
     mitosis.Parameter("window_length","window_length",window_length),
     mitosis.Parameter("ensem_thresh","ensem_thresh", ensem_thresh), 
     mitosis.Parameter("ensem_alpha", "ensem_alpha", ensem_alpha),
     mitosis.Parameter("ensem_max_iter", "ensem_max_iter", ensem_max_iter),
     mitosis.Parameter("poly_degree", "poly_degree", 3),
-    mitosis.Parameter("ensem_num_models", "ensem_num_model", 40),
-    mitosis.Parameter("ensem_time_points", "ensem_time_poitns", ensem_time_points)
+    mitosis.Parameter("ensem_num_models", "ensem_num_models", 40),
+    mitosis.Parameter("ensem_time_points", "ensem_time_points", ensem_time_points)
 ]
 
 # print(type(time_series))

@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=62", "setuptools_scm[toml]>=6.2"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pysindy-plume-experiments"
+dynamic = ["version"]
+dependencies = [
+  "mitosis @ git+https://github.com/Jacob-Stevens-Haas/mitosis@main",
+  "pysindy[cvxpy] @ git+https://github.com/dynamicslab/pysindy@master",
+  "matplotlib"
+]
+
+[tool.setuptools]
+packages=["plumex"]
+
+[tool.setuptools_scm]
+

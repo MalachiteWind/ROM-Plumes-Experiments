@@ -1,0 +1,3 @@
+mitosis@ git+https://github.com/Jacob-Stevens-Haas/mitosis@main
+pysindy[cvxpy]@ git+https://github.com/dynamicslab/pysindy@master
+matplotlib
