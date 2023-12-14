@@ -194,9 +194,10 @@ def run(
     # Initialize integrator keywords for solve_ivp to
     # replicate the odeint defaults
     integrator_keywords = {}
-    integrator_keywords["rtol"] = 1e-12
+    integrator_keywords["rtol"] = 1e-12 # 1e-6
     integrator_keywords["method"] = "LSODA"
-    integrator_keywords["atol"] = 1e-12
+    integrator_keywords["method"] = "RK45" # Try as opposed to LSODA
+    integrator_keywords["atol"] = 1e-12 # 1e-6
 
     t_solve = t
 
@@ -214,7 +215,7 @@ def run(
             y0=y0, 
             t_eval=t_solve,
             args=params,
-            **integrator_keywords
+            # **integrator_keywords
         )
     except Exception as e:
         print(f"Numerical Solver unstable. Error: {e}")
@@ -371,6 +372,7 @@ def get_func_from_SINDy(model, precision=10):
 
 
     """
+    # model.feature_library.transform()
     eqns = model.equations(precision=precision)
     funcs = []
     for eqn in eqns:

@@ -4,7 +4,7 @@ import mitosis
 from pathlib import Path
 from plumex import sindy_pipeline 
 
-folder = Path(__file__).parent.resolve()/"exp_1"
+folder = Path(__file__).parent.resolve()/"good_seed_exp"
 
 
 # Load data 
@@ -21,8 +21,8 @@ ensem_alpha=1e-3
 ensem_max_iter=100
 poly_degree=3
 ensem_num_models=40
-ensem_time_points = None # ensem_time_points = 100
-seed =1234
+ensem_time_points = 100 # ensem_time_points = 100
+seed =12
 
 params = [
     mitosis.Parameter("bad_seed", "seed", seed),
