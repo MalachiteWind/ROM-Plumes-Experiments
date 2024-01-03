@@ -8,3 +8,7 @@
 *.DS_Store
 *.pyc
 *.asv
+*.egg-info
+env/
+.env/
+commit-msg
