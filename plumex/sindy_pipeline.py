@@ -13,12 +13,33 @@
 import re
 import matplotlib.pyplot as plt
 import numpy as np
+import pickle
 import pysindy as ps
-
+from pathlib import Path
 from sklearn.preprocessing import StandardScaler
 from scipy.integrate import solve_ivp
 
 name = "sindy-pipeline"
+
+
+pickle_path = Path(__file__).parent.resolve() / "../plume_videos/July_20/video_low_1/gauss_blur_coeff.pkl"
+
+with open(pickle_path, 'rb') as f:
+    loaded_arrays = pickle.load(f)
+
+lookup_dict = {
+    "seed": {"bad_seed": 12},
+    "time_series": {"july_20_low_1": loaded_arrays["mean"]},
+    "window_length": {"window_length": 4},
+    "ensem_thresh": {"ensem_thresh": 0.12},
+    "ensem_alpha": {"ensem_alpha": 1e-3},
+    "ensem_max_iter": {"ensem_max_iter": 100},
+    "poly_degree": {"poly_degree": 3},
+    "ensem_num_models": {"ensem_num_models": 40} ,
+    "ensem_time_points": {"ensem_time_points": 100}
+}
+
+
 
 def run(
         seed,
@@ -342,6 +363,7 @@ def run(
         print("accuracy: ",1-err)
         print("error: ", err,"\n")
         results = {
+            "main": err,
             "error": err,
             "model": model, 
             "X_train": X_train, 
