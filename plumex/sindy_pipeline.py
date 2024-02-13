@@ -22,14 +22,14 @@ from scipy.integrate import solve_ivp
 name = "sindy-pipeline"
 
 
-pickle_path = Path(__file__).parent.resolve() / "../plume_videos/July_20/video_low_1/gauss_blur_coeff.pkl"
+pickle_path = Path(__file__).parent.resolve() / "../plume_videos/July_20/video_low_1/"
 
-with open(pickle_path, 'rb') as f:
-    loaded_arrays = pickle.load(f)
+def _load_pickle(filename):
+    with open(pickle_path / filename, 'rb') as f:
+        return pickle.load(f)["mean"]
 
 lookup_dict = {
     "seed": {"bad_seed": 12},
-    "time_series": {"july_20_low_1": loaded_arrays["mean"]},
     "window_length": {"window_length": 4},
     "ensem_thresh": {"ensem_thresh": 0.12},
     "ensem_alpha": {"ensem_alpha": 1e-3},
@@ -43,7 +43,7 @@ lookup_dict = {
 
 def run(
         seed,
-        time_series,
+        time_series: str,
         window_length,
         ensem_thresh,
         ensem_alpha,
@@ -61,10 +61,10 @@ def run(
 
     Parameters:
     -----------
-    times_series: np.ndarray 
-        Timeseries of coefficients (a,b,c) learned from concentric circle
-        pipeline.
-    
+    times_series:
+        filename in the pickle folder for data to use.  Must hold an array
+        of n_time x 3, the coefficients of the fit polynomial.
+
     window_length: int
         window length used in pySINDy.SmoothedFiniteDifference() method---used 
         to smooth and predict derivatives of time_series data.
@@ -117,7 +117,7 @@ def run(
     """
 
     np.random.seed(seed=seed)
-
+    time_series = _load_pickle(time_series)
     # Check if time_series is numpy array
     if isinstance(time_series, list):
         print("time_series is list!")
@@ -148,7 +148,7 @@ def run(
         max_iter=ensem_max_iter
     )
 
-        
+
     ensemble_optimizer=ps.optimizers.base.EnsembleOptimizer(
         base_optimizer,
         bagging=True,
