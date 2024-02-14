@@ -11,9 +11,12 @@
 # Try simple example on Jake repo
 
 import re
-import matplotlib.pyplot as plt
-import numpy as np
 import pickle
+from typing import Any, cast, Literal, Optional
+
+import numpy as np
+from numpy.typing import NBitBase
+import matplotlib.pyplot as plt
 import pysindy as ps
 from pathlib import Path
 from sklearn.preprocessing import StandardScaler
@@ -21,38 +24,44 @@ from scipy.integrate import solve_ivp
 
 name = "sindy-pipeline"
 
+Kwargs = dict[str, Any]
+TrapMode = tuple[Literal["trap"], Optional[Kwargs]]
+"""Use trapping mode.  Kwargs to TrappingSR3 optimizer"""
+PolyMode = tuple[Literal["poly"], Optional[tuple[Kwargs, Kwargs, float]]]
+"""Use stabilizing polynomial terms.  Kwargs to PolynomialLibrary and STLSQ
+optimizer, last val is stabilizing epsilon.
+"""
 
-pickle_path = Path(__file__).parent.resolve() / "../plume_videos/July_20/video_low_1/gauss_blur_coeff.pkl"
+pickle_path = Path(__file__).parent.resolve() / "../plume_videos/July_20/video_low_1/"
 
-with open(pickle_path, 'rb') as f:
-    loaded_arrays = pickle.load(f)
+def _load_pickle(filename):
+    with open(pickle_path / filename, 'rb') as f:
+        return pickle.load(f)["mean"]
 
 lookup_dict = {
     "seed": {"bad_seed": 12},
-    "time_series": {"july_20_low_1": loaded_arrays["mean"]},
-    "window_length": {"window_length": 4},
-    "ensem_thresh": {"ensem_thresh": 0.12},
-    "ensem_alpha": {"ensem_alpha": 1e-3},
-    "ensem_max_iter": {"ensem_max_iter": 100},
-    "poly_degree": {"poly_degree": 3},
-    "ensem_num_models": {"ensem_num_models": 40} ,
-    "ensem_time_points": {"ensem_time_points": 100}
+    "datafile": {"old-default": "gauss_blur_coeff.pkl"},
+    "reg_mode": {
+        "trap-test": ("trap", {"eta": 1e-1}),
+        "old-default": ("poly", (
+            {"degree": 3},
+            {"threshold": .12, "alpha": 1e-3, "max_iter": 100},
+            1e-5
+        ))
+    },
+    "ens_kwargs": {"old-default": {"n_models": 20, "n_subset": None}},
 }
 
 
 
 def run(
-        seed,
-        time_series,
-        window_length,
-        ensem_thresh,
-        ensem_alpha,
-        ensem_max_iter,
-        ensem_num_models=20,
-        ensem_time_points=None,
+        seed: int,
+        datafile: str,
+        window_length: int = 4,
+        ens_kwargs: Optional[Kwargs] = None,
         normalize=True,
-        poly_degree=2,
-        stabalzing_eps=1e-5,
+        stabilizing_eps=1e-5,
+        reg_mode: TrapMode | PolyMode = ("poly", None)
     ):
     
     """
@@ -61,42 +70,27 @@ def run(
 
     Parameters:
     -----------
-    times_series: np.ndarray 
-        Timeseries of coefficients (a,b,c) learned from concentric circle
-        pipeline.
-    
-    window_length: int
+    datafile:
+        filename in the pickle folder for data to use.  Must hold an array
+        of n_time x 3, the coefficients of the fit polynomial.
+
+    window_length:
         window length used in pySINDy.SmoothedFiniteDifference() method---used 
         to smooth and predict derivatives of time_series data.
     
-    ensem_thresh: float
-        Thresholding applied to model discovery in ensembling method for pySINDy.
-    
-    ensem_alpha: float
-    
-    ensem_max_iter: int
-        number of interation to use before stoping base_optimizer (STLSQs).
-    
-    ensem_n_models : int, optional (default 20)
-        Number of models to generate via ensemble_optimizer. 
-
-    ensem_n_subset : int, optional (default None is 0.6*len(time base), if bagging=True)
-        Number of time points to use for ensemble_optimizer.    
-        NOTE: If bagging=False in ensemble_optimizer, then default is len(time base).
+    ens_kwargs:
+        kwargs to EnsembleOptimizer
 
     normalize: bool, optional (default True)
         Normalize time_series data by applying StandardScalar() transform from
         sklearn.preprocessing.
     
-    poly_degree: int, optional (default 2)
-        Maximum polynomial order ot serach over in class of functions for 
-        PolynomailLibrary in pySINDy.
-    
-    stabalizing_eps: float, optional (default 1e-5)
-        Coefficent of higher order (odd) term added into discovered ODE system 
-        from pySINDy. Adds stability to numerical integrator of system
-        (default scipy.integrate.solve_ivp)
-    
+    reg_mode:
+        Regularization mode, either 'trap' or 'poly' and kwargs.  Controls
+        whether stability of discovered equation is enforced by Trapping, or by
+        adding odd polynomial terms of highest order with negative coefficients.
+        A tuple of the name and kwargs, either for trapping optimizer or as
+        a tuple of kwargs for polynomial library and STLSQ optimizer.
     
     Returns:
     --------
@@ -115,9 +109,27 @@ def run(
     scalar: StandardScalar object
         StandardScalar object (potentially) used to normalized time_series data.
     """
+    if reg_mode[0] == "trap":
+        if reg_mode[1] is None:
+            trap_opts = {}
+        else:
+            trap_opts = cast(Kwargs, reg_mode[1])
+    elif reg_mode[0] == "poly":
+        if reg_mode[1] is None:
+            poly_opts = {}
+            stlsq_opts = {}
+            stabilizing_eps = 1e-5
+        else:
+            poly_opts = cast(Kwargs, reg_mode[1][0])
+            stlsq_opts = cast(Kwargs, reg_mode[1][1])
+            stabilizing_eps = reg_mode[1][2]
+    else:
+        raise ValueError("Regularization mode must be either 'poly' or 'trap'")
+    if ens_kwargs is None:
+        ens_kwargs = {}
 
     np.random.seed(seed=seed)
-
+    time_series = _load_pickle(datafile)
     # Check if time_series is numpy array
     if isinstance(time_series, list):
         print("time_series is list!")
@@ -127,10 +139,9 @@ def run(
     # Apply normalized scaling #
     ############################
 
-    t = np.array([i for i in range(len(time_series))])
+    t = np.array(range(len(time_series)))
     scalar = StandardScaler()
     if normalize==True:
-        # print("normalize:", normalize)
         time_series = scalar.fit_transform(time_series)
 
     ########################
@@ -142,21 +153,19 @@ def run(
         smoother_kws={'window_length': window_length}
     )
 
-    base_optimizer = ps.STLSQ(
-        threshold=ensem_thresh,
-        alpha=ensem_alpha,
-        max_iter=ensem_max_iter
-    )
+    if reg_mode[0] == "poly":
+        poly_lib = ps.PolynomialLibrary(**poly_opts)
+        base_optimizer = ps.STLSQ(**stlsq_opts)
+    else:
+        poly_lib = ps.PolynomialLibrary(degree=2, include_bias=False)
+        base_optimizer = ps.TrappingSR3(**trap_opts)
 
-        
-    ensemble_optimizer=ps.optimizers.base.EnsembleOptimizer(
+    ensemble_optimizer=ps.EnsembleOptimizer(
         base_optimizer,
         bagging=True,
-        n_models=ensem_num_models,
-        n_subset=ensem_time_points   
+        **ens_kwargs   
     )
 
-    poly_lib = ps.PolynomialLibrary(degree=poly_degree)
     model = ps.SINDy(
         feature_names=feature_names,
         optimizer=ensemble_optimizer,
@@ -166,127 +175,57 @@ def run(
 
     model.fit(time_series, t=t)
 
-    print(
-        "window_length: {}, thresh: {}, alpha: {},  max iter: {}, stabalzing eps: {}"
-        .format(
-            window_length, 
-            ensem_thresh, 
-            ensem_alpha, 
-            ensem_max_iter, 
-            stabalzing_eps
-        )
-    )
 
-    model.print()
+    if reg_mode[0] == "poly":
+        _stabilize_model(model, time_series, stabilizing_eps)
 
-    #######################################
-    # Solve ODE system w/ Stabalzing Term #
-    #######################################
-    # Get function in correct format to be evaluated 
-    funcs = get_func_from_SINDy(model=model)
+    model.print(precision=5)
+    print("", flush=True)
+    integrator_kws = {}
+    integrator_kws["method"] = "LSODA"
 
-    # Define Right-hand side of ODE system 
-    a_dot = lambda a,b,c: eval(funcs[0])
-    b_dot = lambda a,b,c: eval(funcs[1])
-    c_dot = lambda a,b,c: eval(funcs[2])
-
-    # Get degree of feature library
-    poly_degree = model.feature_library.get_params()['degree']
-    stabalizing_degree = poly_degree+1
-
-    # Ensure stabalizing degree is odd
-    if stabalizing_degree % 2 == 0:
-        stabalizing_degree += 1 
-
-    # Define new ODE system 
-    def ode_sys(t, y,
-                a_dot=a_dot,
-                b_dot=b_dot,
-                c_dot=c_dot, 
-                stabalizing_deg=stabalizing_degree,
-                eps = 1e-5):
-        a,b,c = y
-        da = a_dot(a,b,c) - eps*a**stabalizing_deg
-        db = b_dot(a,b,c) - eps*b**stabalizing_deg
-        dc = c_dot(a,b,c) - eps*c**stabalizing_deg
-        rhs = [da,db,dc]
-        return rhs
-
-    # Initialize integrator keywords for solve_ivp to
-    # replicate the odeint defaults
-    integrator_keywords = {}
-    integrator_keywords["rtol"] = 1e-12 # 1e-6
-    integrator_keywords["method"] = "LSODA"
-    integrator_keywords["method"] = "RK45" # Try as opposed to LSODA
-    integrator_keywords["atol"] = 1e-12 # 1e-6
-
-    t_solve = t
-
-    y0 = time_series[0]
-
-    params = (a_dot,b_dot,c_dot,stabalizing_degree,stabalzing_eps)
-
-    print(f"Solving SINDy system with eps = {stabalzing_eps}...")
-
-    error_occured = False
-    try:
-        X_solved = solve_ivp(
-            ode_sys,
-            t_span=(t_solve[0],t_solve[-1]),
-            y0=y0, 
-            t_eval=t_solve,
-            args=params,
-            # **integrator_keywords
-        )
-    except Exception as e:
-        print(f"Numerical Solver unstable. Error: {e}")
-        error_occured = True
-    
-    # if error_occured is True:
-
-    
+    X_stable_sim = model.simulate(time_series[0], t, integrator_kws=integrator_kws)
     ################
     # Plot Results #
     ################
-    if error_occured is False:
-        X_stable_sim = X_solved.y
 
-        m = min(time_series.shape[0],X_stable_sim[0].shape[0])
+    m = min(time_series.shape[0],X_stable_sim[0].shape[0])
 
-        fig, axs = plt.subplots(
-            1,
-            time_series.shape[1], 
-            sharex=True, 
-            figsize=(15, 4)
-        )
-        # fig.suptitle("Learned Normalized Coefficients")  
-        # Add this line to set the title
+    fig, axs = plt.subplots(
+        1,
+        time_series.shape[1], 
+        sharex=True, 
+        figsize=(15, 4)
+    )
+    # fig.suptitle("Learned Normalized Coefficients")  
+    # Add this line to set the title
 
-        for i in range(time_series.shape[1]):
-            if i == time_series.shape[1]-1:
-                axs[i].plot(
-                    t_solve[:m], 
-                    time_series[:m, i], 
-                    "k", 
-                    label="true normalized data"
-                )
+    for i in range(time_series.shape[1]):
+        if i == time_series.shape[1]-1:
+            axs[i].plot(
+                t[:m], 
+                time_series[:m, i], 
+                "k", 
+                label="true normalized data"
+            )
 
-                axs[i].plot(
-                    t_solve[:m], 
-                    X_stable_sim.T[:m, i], 
-                    "r--", 
-                    label="model simulation"
-                )
+            axs[i].plot(
+                t[:m], 
+                X_stable_sim.T[:m, i], 
+                "r--", 
+                label="model simulation"
+            )
 
-                axs[i].legend(loc="best")
-            else:
-                axs[i].plot(t_solve[:m], time_series[:m, i], "k")
-                axs[i].plot(t_solve[:m], X_stable_sim.T[:m, i], "r--")
-            axs[i].set(xlabel="t")
-            axs[i].set_title("Coeff {}".format(model.feature_names[i]))
-        fig.suptitle(
-            f"Stabalized: eps={stabalzing_eps}, degree={stabalizing_degree}"
-        )
+            axs[i].legend(loc="best")
+        else:
+            axs[i].plot(t[:m], time_series[:m, i], "k")
+            axs[i].plot(t[:m], X_stable_sim.T[:m, i], "r--")
+        axs[i].set(xlabel="t")
+        axs[i].set_title("Coeff {}".format(model.feature_names[i]))
+    fig.suptitle(
+        f"Stabalized: "
+        f"eps={stabilizing_eps}, degree={stab_order}" if reg_mode == "poly" else "trap"
+    )
     # plt.show()
         
             
@@ -413,3 +352,59 @@ def get_func_from_SINDy(model, precision=10):
         # Return string in correct formatting
         funcs.append(eqn)
     return funcs
+
+
+def _stabilize_model(
+    model: ps.SINDy,
+    time_series: np.ndarray[tuple[int, int], np.dtype[np.floating[NBitBase]]],
+    stabilizing_eps: float
+) -> None:
+    """Mutate fitted polynomial SINDy model to apply stabilization
+
+    A model represents an equation of the form (e.g. 1-d)
+
+    .. math::
+        \dot x = ax + b x^2 + \dots + z x^n
+
+    This function mutates it to:
+
+    .. math::
+        \dot x = ax + b x^2 + \dots + z x^n - \eps x^p
+
+    where :math:`p` is the next even integer greater than :math:`n`.  This
+    helps guarantee that initial value problems of the model will not blow up.
+    It works best when :math:`eps` is chosen so that the final term is less than
+    :math:`1` over the range of observed data, e.g. :math:`\eps=(\max x)^{-p}`.
+
+    Warning:
+        Other properties of the model may be inconsistent, e.g.
+        ``model.optimizer.history_``.  But it should predict and simulate
+        correctly.
+
+    Args:
+        model:
+            The SINDy model to modify.  Must have a polynomial library and be
+            fitted
+        time_series: the data used to fit the model
+        stabilizing_eps: Coefficient for stabilizing polynomial terms.
+    """
+    n_coord = time_series.shape[-1]
+    poly_lib = model.feature_library
+    poly_degree = poly_lib.degree
+    if poly_degree == 0:
+        stab_order = poly_degree + 1
+    else:
+        stab_order = poly_degree + 2
+
+    stabilizing_lib = ps.CustomLibrary(
+        [lambda x: x**stab_order],
+        [lambda x: f"{x}^{stab_order}"],)
+    total_lib = ps.GeneralizedLibrary([poly_lib, stabilizing_lib])
+    total_lib.fit(time_series)
+    dummy_coef = -stabilizing_eps * np.eye(n_coord)
+    model.optimizer.coef_ = np.concatenate(
+        (model.optimizer.coef_, dummy_coef), axis=1
+    )
+    model.feature_library = total_lib
+    # SINDy.model is a sklearn Pipeline, whose first step is the feature lib
+    model.model.steps[0] = ("features", total_lib)
