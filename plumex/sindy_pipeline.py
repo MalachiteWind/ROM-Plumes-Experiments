@@ -26,7 +26,9 @@ Kwargs = dict[str, Any]
 TrapMode = tuple[Literal["trap"], Optional[Kwargs]]
 """Use trapping mode.  Kwargs to TrappingSR3 optimizer"""
 PolyMode = tuple[Literal["poly"], Optional[tuple[Kwargs, Kwargs, float]]]
-"""Use trapping mode.  Kwargs to PolynomialLibrary and STLSQ optimizer, last val is stabilizing epsilon"""
+"""Use stabilizing polynomial terms.  Kwargs to PolynomialLibrary and STLSQ
+optimizer, last val is stabilizing epsilon.
+"""
 
 pickle_path = Path(__file__).parent.resolve() / "../plume_videos/July_20/video_low_1/"
 
@@ -80,11 +82,6 @@ def run(
     normalize: bool, optional (default True)
         Normalize time_series data by applying StandardScalar() transform from
         sklearn.preprocessing.
-    
-    stabalizing_eps: float, optional (default 1e-5)
-        Coefficent of higher order (odd) term added into discovered ODE system 
-        from pySINDy. Adds stability to numerical integrator of system
-        (default scipy.integrate.solve_ivp)
     
     reg_mode:
         Regularization mode, either 'trap' or 'poly' and kwargs.  Controls
