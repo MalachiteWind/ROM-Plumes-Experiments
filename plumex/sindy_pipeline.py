@@ -11,10 +11,12 @@
 # Try simple example on Jake repo
 
 import re
-import matplotlib.pyplot as plt
-import numpy as np
 import pickle
 from typing import Any, cast, Literal, Optional
+
+import numpy as np
+from numpy.typing import NBitBase
+import matplotlib.pyplot as plt
 import pysindy as ps
 from pathlib import Path
 from sklearn.preprocessing import StandardScaler
@@ -175,34 +177,12 @@ def run(
 
 
     if reg_mode[0] == "poly":
-        n_coord = time_series.shape[-1]
-        if poly_lib.degree % 2 == 0:
-            stab_order = poly_lib.degree + 1 
-        else:
-            stab_order = poly_lib.degree + 2
-
-        stabilizing_lib = ps.CustomLibrary(
-            [lambda x: x**stab_order],
-            [lambda x: f"{x}^{stab_order}"],)
-        total_lib = ps.GeneralizedLibrary([poly_lib, stabilizing_lib])
-        total_lib.fit(time_series)
-        dummy_coef = -stabilizing_eps * np.eye(n_coord)
-        model.optimizer.coef_ = np.concatenate(
-            (ensemble_optimizer.coef_, dummy_coef), axis=1
-        )
-        model.feature_library = total_lib
-        # SINDy.model is a sklearn Pipeline, whose first step is the feature lib
-        model.model.steps[0] = ("features", total_lib)
+        _stabilize_model(model, time_series, stabilizing_eps)
 
     model.print(precision=5)
     print("", flush=True)
-    # Initialize integrator keywords for solve_ivp to
-    # replicate the odeint defaults
     integrator_kws = {}
-    # integrator_kws["rtol"] = 1e-6 # 1e-6
     integrator_kws["method"] = "LSODA"
-    # integrator_kws["method"] = "RK45" # Try as opposed to LSODA
-    # integrator_kws["atol"] = 1e-6 # 1e-6
 
     X_stable_sim = model.simulate(time_series[0], t, integrator_kws=integrator_kws)
     ################
@@ -372,3 +352,59 @@ def get_func_from_SINDy(model, precision=10):
         # Return string in correct formatting
         funcs.append(eqn)
     return funcs
+
+
+def _stabilize_model(
+    model: ps.SINDy,
+    time_series: np.ndarray[tuple[int, int], np.dtype[np.floating[NBitBase]]],
+    stabilizing_eps: float
+) -> None:
+    """Mutate fitted polynomial SINDy model to apply stabilization
+
+    A model represents an equation of the form (e.g. 1-d)
+
+    .. math::
+        \dot x = ax + b x^2 + \dots + z x^n
+
+    This function mutates it to:
+
+    .. math::
+        \dot x = ax + b x^2 + \dots + z x^n - \eps x^p
+
+    where :math:`p` is the next even integer greater than :math:`n`.  This
+    helps guarantee that initial value problems of the model will not blow up.
+    It works best when :math:`eps` is chosen so that the final term is less than
+    :math:`1` over the range of observed data, e.g. :math:`\eps=(\max x)^{-p}`.
+
+    Warning:
+        Other properties of the model may be inconsistent, e.g.
+        ``model.optimizer.history_``.  But it should predict and simulate
+        correctly.
+
+    Args:
+        model:
+            The SINDy model to modify.  Must have a polynomial library and be
+            fitted
+        time_series: the data used to fit the model
+        stabilizing_eps: Coefficient for stabilizing polynomial terms.
+    """
+    n_coord = time_series.shape[-1]
+    poly_lib = model.feature_library
+    poly_degree = poly_lib.degree
+    if poly_degree == 0:
+        stab_order = poly_degree + 1
+    else:
+        stab_order = poly_degree + 2
+
+    stabilizing_lib = ps.CustomLibrary(
+        [lambda x: x**stab_order],
+        [lambda x: f"{x}^{stab_order}"],)
+    total_lib = ps.GeneralizedLibrary([poly_lib, stabilizing_lib])
+    total_lib.fit(time_series)
+    dummy_coef = -stabilizing_eps * np.eye(n_coord)
+    model.optimizer.coef_ = np.concatenate(
+        (model.optimizer.coef_, dummy_coef), axis=1
+    )
+    model.feature_library = total_lib
+    # SINDy.model is a sklearn Pipeline, whose first step is the feature lib
+    model.model.steps[0] = ("features", total_lib)
