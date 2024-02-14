@@ -8,7 +8,6 @@ dynamic = ["version"]
 dependencies = [
   "mitosis>=0.3.0",
   "pysindy[cvxpy] @ git+https://github.com/dynamicslab/pysindy@trapping-plumes",
-  "pysindy-experiments @ git+https://github.com/Jacob-Stevens-Haas/pysindy-experiments"
   "matplotlib"
 ]
 
