@@ -13,3 +13,4 @@ env/
 .env/
 commit-msg
 todo
+.vscode/
