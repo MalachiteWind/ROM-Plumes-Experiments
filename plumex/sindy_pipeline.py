@@ -25,7 +25,7 @@ from sklearn.preprocessing import StandardScaler
 from scipy.integrate import solve_ivp
 
 from .types import PolyData, Float1D
-from .plotting import plot_smoothing_step, print_diagnostics
+from .plotting import plot_smoothing_step, print_diagnostics, plot_predictions
 
 name = "sindy-pipeline"
 
@@ -153,9 +153,9 @@ def run(
     ############################
 
     t = np.array(range(len(time_series)))
-    scalar = StandardScaler()
+    scaler = StandardScaler()
     if normalize==True:
-        time_series: PolyData = scalar.fit_transform(time_series)
+        time_series: PolyData = scaler.fit_transform(time_series)
 
     ########################
     # Apply Ensemble SINDy #
@@ -164,14 +164,17 @@ def run(
 
     model = gen_experiments.utils._make_model(feature_names, float(t[1]-t[0]), diff_params, feat_params, opt_params)
     model.fit(time_series, t=t)
-
-    plot_smoothing_step(t, time_series, model, feature_names)
+    x_smooth = model.differentiation_method.smoothed_x_
+    plot_smoothing_step(t, time_series, x_smooth, feature_names)
     plt.show()  # flush output
 
     if reg_mode[0] == "poly":
         stab_order = _stabilize_model(model, time_series, stabilizing_eps)
 
     print_diagnostics(t, model, precision=8)
+    x_dot_est = model.differentiation_method(time_series, t)
+    x_dot_pred = model.predict(x_smooth)
+    plot_predictions(t, np.asarray(x_dot_est), np.asarray(x_dot_pred), feature_names)
 
     integrator_kws = {}
     integrator_kws["method"] = "LSODA"
@@ -291,6 +294,7 @@ def run(
                 return np.linalg.norm(x_true-x_approx)/np.linalg.norm(x_true)
         
         err = L2_error(X_train[:m].reshape(-1), X_train_sim[:m].reshape(-1))
+        err = model.score(x_smooth, t, x_dot_est)
         print("accuracy: ",1-err)
         print("error: ", err,"\n")
         results = {
@@ -299,7 +303,7 @@ def run(
             "model": model, 
             "X_train": X_train, 
             "X_train_sim": X_train_sim,
-            "scalar_transform": scalar
+            "scalar_transform": scaler
         }
         return results
 
