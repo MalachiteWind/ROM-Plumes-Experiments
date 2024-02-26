@@ -49,7 +49,9 @@ lookup_dict = {
     "diff_params": {
         "test": {"diffcls": "SmoothedFiniteDifference", "smoother_kws": {"window_length": 4}},
         "smoother": {"diffcls": "SmoothedFiniteDifference", "smoother_kws": {"window_length": 15}},
+        "x-smooth": {"diffcls": "SmoothedFiniteDifference", "smoother_kws": {"window_length": 45}},
         "kalman-autoks": {"diffcls": "sindy", "kind": "kalman", "alpha": "gcv"},
+        "kalman": {"diffcls": "sindy", "kind": "kalman", "alpha": 1e-4},
     },
     "reg_mode": {
         "trap-test": ("trap", {"eta": 1e-1}),
@@ -61,6 +63,16 @@ lookup_dict = {
         "choosy-poly": ("poly", (
             {"degree": 3},
             ps.STLSQ(threshold=.12, alpha=1e-3, max_iter=100),
+            None
+        )),
+        "choosy-sparser": ("poly", (
+            {"degree": 3},
+            ps.STLSQ(threshold=.12, alpha=1e-1, max_iter=100),
+            None
+        )),
+        "c-sparserer": ("poly", (
+            {"degree": 3},
+            ps.STLSQ(threshold=.12, alpha=1e0, max_iter=100),
             None
         )),
     },
