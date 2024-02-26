@@ -3,10 +3,10 @@ from matplotlib.figure import Figure
 
 import pysindy as ps
 
-from .types import TimeData, PolyData
+from .types import Float1D, PolyData
 
 def plot_smoothing_step(
-    t: TimeData, data: PolyData, model: ps.SINDy, feature_names: list[str]
+    t: Float1D, data: PolyData, model: ps.SINDy, feature_names: list[str]
 ) -> Figure:
     fig = plt.figure(figsize=(12, 4))
     for i, feat in enumerate(feature_names):
@@ -24,8 +24,8 @@ def plot_smoothing_step(
     return fig
 
 
-def print_diagnostics(t: TimeData, data: PolyData, model: ps.SINDy) -> None:
+def print_diagnostics(t: Float1D, model: ps.SINDy, precision: int) -> None:
     print(rf"Time runs from {t.min()} to {t.max()}, $\delta t$={t[1]-t[0]}", flush=True)
     print("Identified model:")
-    model.print(precision=5)
+    model.print(precision=precision)
     print(flush=True)

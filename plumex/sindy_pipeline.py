@@ -24,7 +24,7 @@ from pathlib import Path
 from sklearn.preprocessing import StandardScaler
 from scipy.integrate import solve_ivp
 
-from .types import PolyData, TimeData
+from .types import PolyData, Float1D
 from .plotting import plot_smoothing_step, print_diagnostics
 
 name = "sindy-pipeline"
@@ -57,7 +57,12 @@ lookup_dict = {
             {"degree": 3},
             ps.STLSQ(threshold=.12, alpha=1e-3, max_iter=100),
             1e-5
-        ))
+        )),
+        "choosy-poly": ("poly", (
+            {"degree": 3},
+            ps.STLSQ(threshold=.12, alpha=1e-3, max_iter=100),
+            None
+        )),
     },
     "ens_kwargs": {"old-default": {"n_models": 20, "n_subset": None}},
 }
@@ -166,7 +171,7 @@ def run(
     if reg_mode[0] == "poly":
         stab_order = _stabilize_model(model, time_series, stabilizing_eps)
 
-    print_diagnostics(t, time_series, model)
+    print_diagnostics(t, model, precision=8)
 
     integrator_kws = {}
     integrator_kws["method"] = "LSODA"
@@ -344,9 +349,9 @@ def get_func_from_SINDy(model, precision=10):
 def _stabilize_model(
     model: ps.SINDy,
     time_series: PolyData,
-    stabilizing_eps: float
+    stabilizing_eps: Optional[float]
 ) -> int:
-    """Mutate fitted polynomial SINDy model to apply stabilization
+    r"""Mutate fitted polynomial SINDy model to apply stabilization
 
     A model represents an equation of the form (e.g. 1-d)
 
@@ -373,14 +378,17 @@ def _stabilize_model(
             The SINDy model to modify.  Must have a polynomial library and be
             fitted
         time_series: the data used to fit the model
-        stabilizing_eps: Coefficient for stabilizing polynomial terms.
+        stabilizing_eps: Coefficient for stabilizing polynomial terms.  If None,
+            calcuate it as 1 / (2*max), where max is calculated along each axis.
+            This means that the stabilizing term won't activate except when
+            substantially beyond the data range.
 
     Returns:
         stabilizing polynomial order
     """
     n_coord = time_series.shape[-1]
     poly_lib = model.feature_library
-    poly_degree = poly_lib.degree
+    poly_degree = cast(int, poly_lib.degree)
     if poly_degree == 0:
         stab_order = poly_degree + 1
     else:
@@ -391,7 +399,11 @@ def _stabilize_model(
         [lambda x: f"{x}^{stab_order}"],)
     total_lib = ps.GeneralizedLibrary([poly_lib, stabilizing_lib])
     total_lib.fit(time_series)
-    dummy_coef = -stabilizing_eps * np.eye(n_coord)
+    if stabilizing_eps is None:
+        coef: Float1D = 1 / (2 * np.max(time_series, axis=0))
+    else:
+        coef: Float1D = stabilizing_eps * np.ones(time_series.shape[1])
+    dummy_coef = -coef * np.eye(n_coord)
     model.optimizer.coef_ = np.concatenate(
         (model.optimizer.coef_, dummy_coef), axis=1
     )
