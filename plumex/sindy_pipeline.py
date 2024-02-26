@@ -160,13 +160,15 @@ def run(
     model = gen_experiments.utils._make_model(feature_names, float(t[1]-t[0]), diff_params, feat_params, opt_params)
     model.fit(time_series, t=t)
 
-    plt.plot(model.differentiation_method.smoothed_x_)
+    plot_smoothing_step(t, time_series, model, feature_names)
+    plt.show()  # flush output
 
     if reg_mode[0] == "poly":
         stab_order = _stabilize_model(model, time_series, stabilizing_eps)
 
     model.print(precision=5)
     print("", flush=True)
+
     integrator_kws = {}
     integrator_kws["method"] = "LSODA"
 
