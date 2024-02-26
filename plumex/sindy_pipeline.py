@@ -14,6 +14,7 @@ import re
 import pickle
 from typing import Any, cast, Literal, Optional
 
+import gen_experiments
 import numpy as np
 from numpy.typing import NBitBase
 import matplotlib.pyplot as plt
@@ -27,9 +28,9 @@ name = "sindy-pipeline"
 Kwargs = dict[str, Any]
 TrapMode = tuple[Literal["trap"], Optional[Kwargs]]
 """Use trapping mode.  Kwargs to TrappingSR3 optimizer"""
-PolyMode = tuple[Literal["poly"], Optional[tuple[Kwargs, Kwargs, float]]]
-"""Use stabilizing polynomial terms.  Kwargs to PolynomialLibrary and STLSQ
-optimizer, last val is stabilizing epsilon.
+PolyMode = tuple[Literal["poly"], Optional[tuple[Kwargs, ps.BaseOptimizer, float]]]
+"""Use stabilizing polynomial terms.  Kwargs to PolynomialLibrary, optimizer,
+and stabilizing epsilon.
 """
 
 pickle_path = Path(__file__).parent.resolve() / "../plume_videos/July_20/video_low_1/"
@@ -41,11 +42,16 @@ def _load_pickle(filename):
 lookup_dict = {
     "seed": {"bad_seed": 12},
     "datafile": {"old-default": "gauss_blur_coeff.pkl"},
+    "diff_params": {
+        "test": {"diffcls": "SmoothedFiniteDifference", "smoother_kws": {"window_length": 4}},
+        "smoother": {"diffcls": "SmoothedFiniteDifference", "smoother_kws": {"window_length": 15}},
+        "kalman-autoks": {"diffcls": "sindy", "kind": "kalman", "alpha": "gcv"},
+    },
     "reg_mode": {
         "trap-test": ("trap", {"eta": 1e-1}),
         "old-default": ("poly", (
             {"degree": 3},
-            {"threshold": .12, "alpha": 1e-3, "max_iter": 100},
+            ps.STLSQ(threshold=.12, alpha=1e-3, max_iter=100),
             1e-5
         ))
     },
@@ -57,8 +63,8 @@ lookup_dict = {
 def run(
         seed: int,
         datafile: str,
-        window_length: int = 4,
         ens_kwargs: Optional[Kwargs] = None,
+        diff_params: Optional[Kwargs] = None,
         normalize=True,
         stabilizing_eps=1e-5,
         reg_mode: TrapMode | PolyMode = ("poly", None)
@@ -74,12 +80,12 @@ def run(
         filename in the pickle folder for data to use.  Must hold an array
         of n_time x 3, the coefficients of the fit polynomial.
 
-    window_length:
-        window length used in pySINDy.SmoothedFiniteDifference() method---used 
-        to smooth and predict derivatives of time_series data.
-    
     ens_kwargs:
         kwargs to EnsembleOptimizer
+
+    diff_params:
+        Arguments to construct differentiation method.  Chooses class from
+        "diffcls" key, all other keys are sent as kwargs to constructor
 
     normalize: bool, optional (default True)
         Normalize time_series data by applying StandardScalar() transform from
@@ -109,24 +115,26 @@ def run(
     scalar: StandardScalar object
         StandardScalar object (potentially) used to normalized time_series data.
     """
+    if diff_params is None:
+        diff_params = {"diffcls": "finitedifference"}
+    feat_params = {"featcls": "Polynomial"}
+    if ens_kwargs is None:
+        ens_kwargs = {}
+    opt_params = {"optcls": "ensemble", "bagging": True} | ens_kwargs
     if reg_mode[0] == "trap":
-        if reg_mode[1] is None:
-            trap_opts = {}
-        else:
-            trap_opts = cast(Kwargs, reg_mode[1])
+        feat_params |= {"degree": 2, "include_bias": False}
+        opt_init = {} if reg_mode[1] is None else reg_mode[1]
+        opt_params |= {"opt": ps.TrappingSR3(**opt_init)}
     elif reg_mode[0] == "poly":
         if reg_mode[1] is None:
-            poly_opts = {}
-            stlsq_opts = {}
             stabilizing_eps = 1e-5
+            opt_params |= {"opt": ps.STLSQ()}
         else:
-            poly_opts = cast(Kwargs, reg_mode[1][0])
-            stlsq_opts = cast(Kwargs, reg_mode[1][1])
+            feat_params |= cast(Kwargs, reg_mode[1][0])
+            opt_params |= {"opt": reg_mode[1][1]}
             stabilizing_eps = reg_mode[1][2]
     else:
         raise ValueError("Regularization mode must be either 'poly' or 'trap'")
-    if ens_kwargs is None:
-        ens_kwargs = {}
 
     np.random.seed(seed=seed)
     time_series = _load_pickle(datafile)
@@ -148,36 +156,14 @@ def run(
     # Apply Ensemble SINDy #
     ########################
     feature_names = ['a', 'b', 'c']
-    
-    smoothed_fd = ps.SmoothedFiniteDifference(
-        smoother_kws={'window_length': window_length}
-    )
 
-    if reg_mode[0] == "poly":
-        poly_lib = ps.PolynomialLibrary(**poly_opts)
-        base_optimizer = ps.STLSQ(**stlsq_opts)
-    else:
-        poly_lib = ps.PolynomialLibrary(degree=2, include_bias=False)
-        base_optimizer = ps.TrappingSR3(**trap_opts)
-
-    ensemble_optimizer=ps.EnsembleOptimizer(
-        base_optimizer,
-        bagging=True,
-        **ens_kwargs   
-    )
-
-    model = ps.SINDy(
-        feature_names=feature_names,
-        optimizer=ensemble_optimizer,
-        differentiation_method=smoothed_fd,
-        feature_library=poly_lib
-    )
-
+    model = gen_experiments.utils._make_model(feature_names, float(t[1]-t[0]), diff_params, feat_params, opt_params)
     model.fit(time_series, t=t)
 
+    plt.plot(model.differentiation_method.smoothed_x_)
 
     if reg_mode[0] == "poly":
-        _stabilize_model(model, time_series, stabilizing_eps)
+        stab_order = _stabilize_model(model, time_series, stabilizing_eps)
 
     model.print(precision=5)
     print("", flush=True)
@@ -358,7 +344,7 @@ def _stabilize_model(
     model: ps.SINDy,
     time_series: np.ndarray[tuple[int, int], np.dtype[np.floating[NBitBase]]],
     stabilizing_eps: float
-) -> None:
+) -> int:
     """Mutate fitted polynomial SINDy model to apply stabilization
 
     A model represents an equation of the form (e.g. 1-d)
@@ -387,6 +373,9 @@ def _stabilize_model(
             fitted
         time_series: the data used to fit the model
         stabilizing_eps: Coefficient for stabilizing polynomial terms.
+
+    Returns:
+        stabilizing polynomial order
     """
     n_coord = time_series.shape[-1]
     poly_lib = model.feature_library
@@ -408,3 +397,4 @@ def _stabilize_model(
     model.feature_library = total_lib
     # SINDy.model is a sklearn Pipeline, whose first step is the feature lib
     model.model.steps[0] = ("features", total_lib)
+    return stab_order
