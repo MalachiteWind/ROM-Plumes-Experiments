@@ -19,9 +19,13 @@ import numpy as np
 from numpy.typing import NBitBase
 import matplotlib.pyplot as plt
 import pysindy as ps
+from matplotlib.figure import Figure
 from pathlib import Path
 from sklearn.preprocessing import StandardScaler
 from scipy.integrate import solve_ivp
+
+from .types import PolyData, TimeData
+from .plotting import plot_smoothing_step, print_diagnostics
 
 name = "sindy-pipeline"
 
@@ -35,7 +39,7 @@ and stabilizing epsilon.
 
 pickle_path = Path(__file__).parent.resolve() / "../plume_videos/July_20/video_low_1/"
 
-def _load_pickle(filename):
+def _load_pickle(filename: str) -> PolyData:
     with open(pickle_path / filename, 'rb') as f:
         return pickle.load(f)["mean"]
 
@@ -138,10 +142,6 @@ def run(
 
     np.random.seed(seed=seed)
     time_series = _load_pickle(datafile)
-    # Check if time_series is numpy array
-    if isinstance(time_series, list):
-        print("time_series is list!")
-        time_series = np.array(time_series)
     
     ############################
     # Apply normalized scaling #
@@ -150,7 +150,7 @@ def run(
     t = np.array(range(len(time_series)))
     scalar = StandardScaler()
     if normalize==True:
-        time_series = scalar.fit_transform(time_series)
+        time_series: PolyData = scalar.fit_transform(time_series)
 
     ########################
     # Apply Ensemble SINDy #
@@ -160,13 +160,14 @@ def run(
     model = gen_experiments.utils._make_model(feature_names, float(t[1]-t[0]), diff_params, feat_params, opt_params)
     model.fit(time_series, t=t)
 
-    plt.plot(model.differentiation_method.smoothed_x_)
+    plot_smoothing_step(t, time_series, model, feature_names)
+    plt.show()  # flush output
 
     if reg_mode[0] == "poly":
         stab_order = _stabilize_model(model, time_series, stabilizing_eps)
 
-    model.print(precision=5)
-    print("", flush=True)
+    print_diagnostics(t, time_series, model)
+
     integrator_kws = {}
     integrator_kws["method"] = "LSODA"
 
@@ -342,7 +343,7 @@ def get_func_from_SINDy(model, precision=10):
 
 def _stabilize_model(
     model: ps.SINDy,
-    time_series: np.ndarray[tuple[int, int], np.dtype[np.floating[NBitBase]]],
+    time_series: PolyData,
     stabilizing_eps: float
 ) -> int:
     """Mutate fitted polynomial SINDy model to apply stabilization
