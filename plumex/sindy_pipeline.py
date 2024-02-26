@@ -25,7 +25,7 @@ from sklearn.preprocessing import StandardScaler
 from scipy.integrate import solve_ivp
 
 from .types import PolyData, TimeData
-from .plotting import plot_smoothing_step
+from .plotting import plot_smoothing_step, print_diagnostics
 
 name = "sindy-pipeline"
 
@@ -166,8 +166,7 @@ def run(
     if reg_mode[0] == "poly":
         stab_order = _stabilize_model(model, time_series, stabilizing_eps)
 
-    model.print(precision=5)
-    print("", flush=True)
+    print_diagnostics(t, time_series, model)
 
     integrator_kws = {}
     integrator_kws["method"] = "LSODA"
