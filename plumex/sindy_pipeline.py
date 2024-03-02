@@ -37,15 +37,25 @@ PolyMode = tuple[Literal["poly"], Optional[tuple[Kwargs, ps.BaseOptimizer, float
 and stabilizing epsilon.
 """
 
-pickle_path = Path(__file__).parent.resolve() / "../plume_videos/July_20/video_low_1/"
+pickle_path = Path(__file__).parent.resolve() / "../plume_videos/"
 
 def _load_pickle(filename: str) -> PolyData:
     with open(pickle_path / filename, 'rb') as f:
-        return pickle.load(f)["mean"]
+        data_file = pickle.load(f)
+        if isinstance(data_file,np.ndarray) is True:
+            return data_file
+        elif isinstance(data_file,dict) is True:   
+            return data_file["mean"]
 
 lookup_dict = {
     "seed": {"bad_seed": 12},
-    "datafile": {"old-default": "gauss_blur_coeff.pkl"},
+    "datafile": {"old-default": "July_20_2023/video_low_1/gauss_blur_coeff.pkl",
+                 "jan-10-v1":"Jan_10_2024/high/mean_poly_coeff_plume_jan_10_2024"\
+                             "_high_fixed_range_200_img_range_280_2235_orig_center"\
+                             "_1573_1073_gauss_time_window_21_gauss_time_sigma_6_seed_1234.pkl",
+                 "jan-10-v2":"Jan_10_2024/high/mean_poly_coeff_plume_jan_10_2024"\
+                             "_high_fixed_range_200_img_range_415_2235_orig_center"\
+                             "_1573_1073_gauss_time_window_21_gauss_time_sigma_6_seed_1234.pkl"},
     "diff_params": {
         "test": {"diffcls": "SmoothedFiniteDifference", "smoother_kws": {"window_length": 4}},
         "smoother": {"diffcls": "SmoothedFiniteDifference", "smoother_kws": {"window_length": 15}},
