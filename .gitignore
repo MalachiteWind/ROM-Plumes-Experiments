@@ -9,6 +9,7 @@
 *.pyc
 *.asv
 *.egg-info
+*.db
 env/
 .env/
 commit-msg
