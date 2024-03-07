@@ -1,6 +1,8 @@
 *.png
 *.jpg
 *.mp4
+*.MP4
+*.pkl
 *.gif
 *.csv
 *.mov
