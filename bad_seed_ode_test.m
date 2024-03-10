@@ -20,14 +20,14 @@ function bad_seed_ode_test()
 %     ensem_time_points = int(len(time_series)*0.6) # ensem_time_points = 100
 %     seed =1
 %     
-    stab_eps = 0.01;
-    perturb_eps = 0.00;
+    stab_eps = 0.05;
+    perturb_eps = 0.008;
     function dydt = odefun(t, y)
         a = y(1);
         b = y(2);
         c = y(3);
          dydt = [
-             -1.379*a - 2.139*b - (0.793)*c + 0.609*a^2 + 0.616*a*b - 0.543*b^2 - 0.814*b*c - 0.246*c^2-stab_eps*a^3;
+             -1.379*a - 2.139*b - (0.793+perturb_eps)*c + 0.609*a^2 + 0.616*a*b - 0.543*b^2 - 0.814*b*c - 0.246*c^2-stab_eps*a^3;
               1.334*a + 2.058*b + 0.763*c - 0.559*a^2 - 0.544*a*b + 0.533*b^2 + 0.765*b*c + 0.231*c^2-stab_eps*b^3;
              -1.193*a - 1.827*b - 0.676*c + 0.023*a^2 - 0.473*a*b - 0.773*b^2 - 0.290*b*c-stab_eps*c^3;
          ];
@@ -50,12 +50,17 @@ function bad_seed_ode_test()
 
     % Plot the solutions
     figure;
-    plot(t, y(:, 1), 'r', t, y(:, 2), 'g', t, y(:, 3), 'b');
+    linewidth = 3;
+    plot(t, y(:, 1), 'r', 'LineWidth', linewidth);
+    hold on;
+    plot(t, y(:, 2), 'g', 'LineWidth', linewidth);
+    plot(t, y(:, 3), 'b', 'LineWidth', linewidth);
+    hold off;
     xlabel('Time');
     ylabel('Variables');
-    legend('a', 'b', 'c');
+    legend('a', 'b', 'c','Fontsize',24);
     title("Solution of the System of ODEs: eps="+stab_eps+", Peturb eps="+perturb_eps+"");
-    grid on;
+%     grid on;
 
     str = "test " + stab_eps + "";
     disp(str)
@@ -71,9 +76,9 @@ function bad_seed_ode_test()
     origin = [0, 0, 0];
 
     figure;hold on;
-    plot3([origin(1) v1(1)],[origin(2) v1(2)],[origin(3) v1(3)],'r-^', 'LineWidth',3);
-    plot3([origin(1) v2(1)],[origin(2) v2(2)],[origin(3) v2(3)],'g-^', 'LineWidth',3);
-    plot3([origin(1) v3(1)],[origin(2) v3(2)],[origin(3) v3(3)],'b-^', 'LineWidth',3);
+    plot3([origin(1) v1(1)],[origin(2) v1(2)],[origin(3) v1(3)],'r-^', 'LineWidth',linewidth);
+    plot3([origin(1) v2(1)],[origin(2) v2(2)],[origin(3) v2(3)],'g-^', 'LineWidth',linewidth);
+    plot3([origin(1) v3(1)],[origin(2) v3(2)],[origin(3) v3(3)],'b-^', 'LineWidth',linewidth);
     title("Eigenvectors of Linear ODE sys: eps="+stab_eps+", "+"perturb eps="+perturb_eps+"");
     grid on;
     xlabel('X axis'), ylabel('Y axis'), zlabel('Z axis')
