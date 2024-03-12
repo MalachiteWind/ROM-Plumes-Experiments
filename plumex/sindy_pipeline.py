@@ -184,7 +184,7 @@ def run(
     ########################
     feature_names = ['a', 'b', 'c']
 
-    model = gen_experiments.utils._make_model(feature_names, float(t[1]-t[0]), diff_params, feat_params, opt_params)
+    model = gen_experiments.utils.make_model(feature_names, float(t[1]-t[0]), diff_params, feat_params, opt_params)
     model.fit(time_series, t=t)
     x_smooth = model.differentiation_method.smoothed_x_
     plot_smoothing_step(t, time_series, x_smooth, feature_names)
@@ -201,7 +201,8 @@ def run(
     integrator_kws = {}
     integrator_kws["method"] = "LSODA"
 
-    X_stable_sim = model.simulate(time_series[0], t, integrator_kws=integrator_kws)
+    print("first simulate")
+    X_stable_sim = model.simulate(time_series[0], t, integrator_kws=integrator_kws, integrator='odeint')
     ################
     # Plot Results #
     ################
@@ -257,7 +258,9 @@ def run(
     print("Solving SINDy system...")
     error_occured = False
     try:
-        X_train_sim = model.simulate(x0,t_train)
+        
+        print("second simulate")
+        X_train_sim = model.simulate(x0,t_train, integrator='odeint')
 
         ################
         # Plot Results #
