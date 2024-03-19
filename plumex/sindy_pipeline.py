@@ -55,7 +55,19 @@ lookup_dict = {
                              "_1573_1073_gauss_time_window_21_gauss_time_sigma_6_seed_1234.pkl",
                  "jan-10-v2":"Jan_10_2024/high/mean_poly_coeff_plume_jan_10_2024"\
                              "_high_fixed_range_200_img_range_415_2235_orig_center"\
-                             "_1573_1073_gauss_time_window_21_gauss_time_sigma_6_seed_1234.pkl"},
+                             "_1573_1073_gauss_time_window_21_gauss_time_sigma_6_seed_1234.pkl",
+                  "jan-8-v1":"Jan_8_2024/med/mean_poly_coeff_plume_jan_8_2024_"\
+                             "med_img_0871_fixed_range_90_img_range_200_2200_"\
+                             "orig_center_1572_1078_seed_1234.pkl",
+                  "jan-8-v2":"Jan_8_2024/med/mean_poly_coeff_plume_jan_8_2024_"\
+                             "med_img_0871_fixed_range_90_img_range_200_2200_"\
+                             "orig_center_1572_1078_num_of_contours_2_seed_1234.pkl",
+                  "jan-8-v3":"Jan_8_2024/med/mean_poly_coeff_plume_jan_8_2024_"\
+                             "med_img_0871_fixed_range_90_img_range_200_2200_"\
+                             "orig_center_1572_1078_num_of_contours_3_seed_1234.pkl",
+          "jan-8-v3-trimmed":"Jan_8_2024/med/mean_poly_coeff_600_1000_plume_jan_8_2024_"\
+                             "med_img_0871_fixed_range_90_img_range_200_2200_orig_center_"\
+                             "1572_1078_num_of_contours_3_seed_1234.pkl"},
     "diff_params": {
         "test": {"diffcls": "SmoothedFiniteDifference", "smoother_kws": {"window_length": 4}},
         "smoother": {"diffcls": "SmoothedFiniteDifference", "smoother_kws": {"window_length": 15}},
@@ -418,7 +430,7 @@ def _stabilize_model(
     n_coord = time_series.shape[-1]
     poly_lib = model.feature_library
     poly_degree = cast(int, poly_lib.degree)
-    if poly_degree == 0:
+    if poly_degree % 2 == 0:
         stab_order = poly_degree + 1
     else:
         stab_order = poly_degree + 2
