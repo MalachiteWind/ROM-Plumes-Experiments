@@ -75,3 +75,25 @@ def print_diagnostics(t: Float1D, model: ps.SINDy, precision: int) -> None:
     print("Identified model:")
     model.print(precision=precision)
     print(flush=True)
+
+
+def plot_simulation(
+    t: Float1D, x_true: PolyData, x_sim: PolyData, *, feat_names: list[str], title: str
+) -> None:
+    """Plot the true vs simulated data"""
+    m = min(x_true.shape[0], x_sim.shape[0])
+    fig, axs = plt.subplots(
+        1,
+        x_true.shape[1],
+        sharex=True,
+        figsize=(15, 4)
+    )
+    for i, ax in enumerate(axs):
+        ax.plot(t[:m], x_true[:m, i], "k", label="true normalized data")
+        ax.plot(t[:m], x_sim[:m, i], "r--", label="model simulation")
+        ax.set(xlabel="t")
+        ax.set_title("Coeff {}".format(feat_names[i]))
+
+    last_ax = fig.axes[-1]
+    last_ax.legend()
+    fig.suptitle(title)
