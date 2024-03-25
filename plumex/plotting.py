@@ -3,6 +3,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 from matplotlib.gridspec import GridSpec
+from matplotlib import colors as mcolors
 
 import pysindy as ps
 
@@ -10,7 +11,10 @@ from .types import Float1D, PolyData
 
 CMAP = mpl.color_sequences["tab10"]
 CMEAS = CMAP[0]
-CEST = CMAP[1]
+CSMOOTH = CMAP[1]
+CEST = CMAP[2]
+
+BGROUND = mcolors.CSS4_COLORS["lightgrey"]
 
 def plot_smoothing_step(
     t: Float1D, data: PolyData, smooth_data: PolyData, feature_names: list[str]
@@ -22,11 +26,12 @@ def plot_smoothing_step(
     fft_fig = bigfig.add_subfigure(gs[2, :])
     for i, feat in enumerate(feature_names):
         ax = compare_fig.add_subplot(1, 3, 1+i)
-        ax.plot(t, data[:, i], label=f"Data: {feat}", color=CMEAS)
-        ax.plot(t, smooth_data[:, i], label=f"Smoothed: {feat}", color=CEST)
+        ax.plot(t, data[:, i], label=f"Data", color=CMEAS)
+        ax.plot(t, smooth_data[:, i], label=f"Smoothed", color=CSMOOTH)
         ax.set_xticks([])
+        ax.set_title(f"Coeff {feat}")
         ax_zoom = zoom_fig.add_subplot(1, 3, 1+i)
-        ax_zoom.plot(t, smooth_data[:, i], color=CEST)
+        ax_zoom.plot(t, smooth_data[:, i], color=CSMOOTH)
         ax_zoom.set_xlabel("Time")
         ax_fft = fft_fig.add_subplot(1, 3, 1+i)
         freqs = np.fft.rfftfreq(2000)
@@ -35,39 +40,42 @@ def plot_smoothing_step(
         data_pwr = data_psd.sum()
         smooth_pwr = smooth_psd.sum()
         ax_fft.plot(freqs[1:], data_psd[1:], color=CMEAS)
-        ax_fft.plot(freqs[1:], smooth_psd[1:], color=CEST)
+        ax_fft.plot(freqs[1:], smooth_psd[1:], color=CSMOOTH)
         ax_fft.set_yscale("log")
         ax_fft.set_xlabel("Frequency (Hz)")
-    bigfig.suptitle("Step 1: How effective is Smoothing/Denoising?", size="large")
+    bigfig.suptitle("Step 1: How effective is Smoothing/Denoising?", size="x-large")
     compare_fig.suptitle("Compare (normalized) measurements and smoothed trajectories")
     zoom_fig.suptitle("Does the smoothed trajectory look smooth?")
     fft_fig.suptitle("Compare PSD of (normalized) and smoothed measurements")
     bigfig.axes[0].legend()
+    bigfig.patch.set_facecolor(BGROUND)
     return bigfig
 
 
 def plot_predictions(
     t: Float1D, x_dot_est: PolyData, x_dot_pred: PolyData, feature_names: list[str]
-) -> tuple[Figure, Figure]:
-    fig1 = plt.figure(figsize=(12, 4))
+) -> Figure:
+    bigfig = plt.figure(figsize=(12, 8), layout="constrained")
+    gs = GridSpec(2, 3, figure=bigfig)
+    plot_fig = bigfig.add_subfigure(gs[0, :])
+    scat_fig = bigfig.add_subfigure(gs[1, :])
     for i, feat in enumerate(feature_names):
-        ax = fig1.add_subplot(1, 3, 1+i)
-        ax.plot(t, x_dot_est[:, i], label=fr"$Smoothed: \dot {feat}$")
-        ax.plot(t, x_dot_pred[:, i], label=fr"$SINDy: \dot {feat}$")
+        ax = plot_fig.add_subplot(1, 3, 1+i)
+        ax.plot(t, x_dot_est[:, i], label=fr"Smoothed", color=CSMOOTH)
+        ax.plot(t, x_dot_pred[:, i], label=fr"SINDy predicted", color=CEST)
+        ax.set_title(f"Coeff {feat}")
         ax.set_xlabel("Time")
-        ax.legend()
-    fig1.suptitle("Predictions")
-    fig1.tight_layout()
-    fig2 = plt.figure(figsize=(12, 4))
+    bigfig.axes[0].legend()
+    plot_fig.suptitle("Time Series Accuracy")
     for i, feat in enumerate(feature_names):
-        ax = fig2.add_subplot(1, 3, 1+i)
+        ax = scat_fig.add_subplot(1, 3, 1+i)
         ax.scatter(x=x_dot_est[:, i], y=x_dot_pred[:, i])
         ax.set_xlabel("estimated-smoothing")
         ax.set_ylabel("estimated-SINDy")
-        ax.set_title(f"{feat}")
-    fig2.suptitle("Predictions")
-    fig2.tight_layout()
-    return fig1, fig2
+    scat_fig.suptitle("Are certain regions more error-prone?")
+    bigfig.suptitle("Step 2: How well did SINDy fit the (smoothed) data?", size="x-large")
+    bigfig.patch.set_facecolor(BGROUND)
+    return bigfig
 
 
 def print_diagnostics(t: Float1D, model: ps.SINDy, precision: int) -> None:
@@ -82,18 +90,17 @@ def plot_simulation(
 ) -> None:
     """Plot the true vs simulated data"""
     m = min(x_true.shape[0], x_sim.shape[0])
-    fig, axs = plt.subplots(
-        1,
-        x_true.shape[1],
-        sharex=True,
-        figsize=(15, 4)
-    )
-    for i, ax in enumerate(axs):
-        ax.plot(t[:m], x_true[:m, i], "k", label="true normalized data")
-        ax.plot(t[:m], x_sim[:m, i], "r--", label="model simulation")
+    fig = plt.figure(figsize=(12, 4), layout="constrained")
+    for i in range(x_true.shape[1]):
+        ax = fig.add_subplot(1, x_true.shape[1], 1+i)
+        ax.plot(t[:m], x_true[:m, i], "k", label="smoothed data", color=CSMOOTH)
+        ax.plot(t[:m], x_sim[:m, i], "r--", label="model simulation", color=CEST)
         ax.set(xlabel="t")
         ax.set_title("Coeff {}".format(feat_names[i]))
 
-    last_ax = fig.axes[-1]
-    last_ax.legend()
-    fig.suptitle(title)
+    first_ax = fig.axes[0]
+    first_ax.legend()
+    fig.suptitle(
+        f"Step 3: How well does SINDy simulate the system? ({title})", size="x-large"
+    )
+    fig.patch.set_facecolor(BGROUND)

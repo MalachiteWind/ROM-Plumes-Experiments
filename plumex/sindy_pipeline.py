@@ -75,6 +75,7 @@ lookup_dict = {
         "test": {"diffcls": "SmoothedFiniteDifference", "smoother_kws": {"window_length": 4}},
         "smoother": {"diffcls": "SmoothedFiniteDifference", "smoother_kws": {"window_length": 15}},
         "x-smooth": {"diffcls": "SmoothedFiniteDifference", "smoother_kws": {"window_length": 45}},
+        "xx-smooth": {"diffcls": "SmoothedFiniteDifference", "smoother_kws": {"window_length": 100, "polyorder": 2}},
         "kalman-autoks": {"diffcls": "sindy", "kind": "kalman", "alpha": "gcv"},
         "kalman": {"diffcls": "sindy", "kind": "kalman", "alpha": 1e-4},
     },
@@ -93,6 +94,16 @@ lookup_dict = {
         "choosy-sparser": ("poly", (
             {"degree": 3},
             ps.STLSQ(threshold=.12, alpha=1e-1, max_iter=100),
+            None
+        )),
+        "poly-semisparse": ("poly", (
+            {"degree": 3},
+            ps.STLSQ(threshold=.12, alpha=1e-2, max_iter=100),
+            None
+        )),
+        "quad-default": ("poly", (
+            {"degree": 2},
+            ps.STLSQ(threshold=.05, alpha=1e-3, max_iter=100),
             None
         )),
         "c-sparserer": ("poly", (
@@ -218,7 +229,7 @@ def run(
     print(r"∞-norms of estimated ẋ: ", smooth_inf_norm, flush=True)
     print(r"2-norms of estimated ẋ: ", smooth_2_norm, flush=True)
     smooth_collinearity = np.linalg.cond(x_smooth)
-    print("Collinearity (condition number) of smoothed data: ", data_collinearity)
+    print("Collinearity (condition number) of smoothed data: ", smooth_collinearity)
     metrics["smooth-collinearity"] = smooth_collinearity
     metrics |= {"smooth-inf-norm": smooth_inf_norm, "smooth-2-norm": smooth_2_norm}
 
@@ -228,6 +239,7 @@ def run(
     plt.show()
     metrics["pred-accuracy"] = model.score(x_smooth, t, x_dot_est)
     print("Prediction Accuracy: ", metrics["pred-accuracy"])
+    print("Prediction Relative Error: ", 1-metrics["pred-accuracy"])
 
     results = {
         "main": metrics["pred-accuracy"],
@@ -248,28 +260,31 @@ def run(
     integrator_kws["method"] = "LSODA"
     try:
         X_stable_sim = model.simulate(
-            time_series[0], t, integrator_kws=integrator_kws, integrator='odeint'
+            x_smooth[0], t, integrator_kws=integrator_kws, integrator='odeint'
         )
-        X_stable_sim = cast(PolyData, X_stable_sim)
-        ind_sim = min(time_series.shape[0], X_stable_sim.shape[0])
+        integration_success = True
+    except Exception as exc:
+        warn(f"Simulation error: {exc.args[0]}", RuntimeWarning)
+        integration_success = False
+    if integration_success:
+        X_stable_sim = cast(PolyData, X_stable_sim)  # type: ignore
+        ind_sim = min(x_smooth.shape[0], X_stable_sim.shape[0])
         if reg_mode[0] == "poly":
             title = f"Stabilized: Poly, eps={stabilizing_eps}, degree={stab_order}"  # type: ignore
         else:
             title = "Stabilized: Trapping"
         plot_simulation(
-            t, time_series, X_stable_sim, feat_names=model.feature_names, title=title  # type: ignore
+            t, x_smooth, X_stable_sim, feat_names=model.feature_names, title=title  # type: ignore
         )
         plt.show()
         def L2_error(x_true, x_approx):
                 return np.linalg.norm(x_true-x_approx)/np.linalg.norm(x_true)
-        sim_err = L2_error(time_series[:ind_sim], X_stable_sim[:ind_sim])
+        sim_err = L2_error(x_smooth[:ind_sim], X_stable_sim[:ind_sim])
         metrics["sim-err"] = sim_err
         results["X_train_sim"] = X_stable_sim
         print(f"Simulation Accuracy: {1-sim_err}")
         print(f"Simulation Relative Error: {sim_err}")
 
-    except Exception as exc:
-        warn(f"Simulation error: {exc.args[0]}", RuntimeWarning)
 
     return results
 
