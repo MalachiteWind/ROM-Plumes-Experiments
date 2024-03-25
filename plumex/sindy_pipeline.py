@@ -13,6 +13,7 @@
 import re
 import pickle
 from typing import Any, cast, Literal, Optional
+from warnings import warn
 
 import gen_experiments
 import numpy as np
@@ -25,7 +26,7 @@ from sklearn.preprocessing import StandardScaler
 from scipy.integrate import solve_ivp
 
 from .types import PolyData, Float1D
-from .plotting import plot_smoothing_step, print_diagnostics, plot_predictions
+from .plotting import plot_smoothing_step, print_diagnostics, plot_predictions, plot_simulation
 
 name = "sindy-pipeline"
 
@@ -46,6 +47,8 @@ def _load_pickle(filename: str) -> PolyData:
             return data_file
         elif isinstance(data_file,dict) is True:   
             return data_file["mean"]
+        else:
+            raise(ValueError("Datafile must be an array or dict with key 'mean'."))
 
 lookup_dict = {
     "seed": {"bad_seed": 12},
@@ -72,6 +75,9 @@ lookup_dict = {
         "test": {"diffcls": "SmoothedFiniteDifference", "smoother_kws": {"window_length": 4}},
         "smoother": {"diffcls": "SmoothedFiniteDifference", "smoother_kws": {"window_length": 15}},
         "x-smooth": {"diffcls": "SmoothedFiniteDifference", "smoother_kws": {"window_length": 45}},
+        "xx-smooth": {"diffcls": "SmoothedFiniteDifference", "smoother_kws": {"window_length": 100, "polyorder": 2}},
+        "xxx-smooth": {"diffcls": "SmoothedFiniteDifference", "smoother_kws": {"window_length": 500, "polyorder": 2}},
+        "tv": {"diffcls": "sindy", "kind": "trend_filtered", "alpha": 1, "order": 0},
         "kalman-autoks": {"diffcls": "sindy", "kind": "kalman", "alpha": "gcv"},
         "kalman": {"diffcls": "sindy", "kind": "kalman", "alpha": 1e-4},
     },
@@ -90,6 +96,16 @@ lookup_dict = {
         "choosy-sparser": ("poly", (
             {"degree": 3},
             ps.STLSQ(threshold=.12, alpha=1e-1, max_iter=100),
+            None
+        )),
+        "poly-semisparse": ("poly", (
+            {"degree": 3},
+            ps.STLSQ(threshold=.12, alpha=1e-2, max_iter=100),
+            None
+        )),
+        "quad-default": ("poly", (
+            {"degree": 2},
+            ps.STLSQ(threshold=.05, alpha=1e-2, max_iter=100),
             None
         )),
         "c-sparserer": ("poly", (
@@ -191,158 +207,88 @@ def run(
     if normalize==True:
         time_series: PolyData = scaler.fit_transform(time_series)
 
+    metrics = {}
+    data_collinearity = np.linalg.cond(time_series)
+    print("Collinearity (condition number) of data: ", data_collinearity)
+    metrics["raw-collinearity"] = data_collinearity
+
     ########################
     # Apply Ensemble SINDy #
     ########################
     feature_names = ['a', 'b', 'c']
 
-    model = gen_experiments.utils.make_model(feature_names, float(t[1]-t[0]), diff_params, feat_params, opt_params)
+    model = gen_experiments.utils.make_model(
+        feature_names, float(t[1]-t[0]), diff_params, feat_params, opt_params
+    )
     model.fit(time_series, t=t)
     x_smooth = model.differentiation_method.smoothed_x_
     plot_smoothing_step(t, time_series, x_smooth, feature_names)
     plt.show()  # flush output
 
-    if reg_mode[0] == "poly":
-        stab_order = _stabilize_model(model, time_series, stabilizing_eps)
+    x_dot_est = model.differentiation_method(time_series, t)
+    smooth_inf_norm = np.linalg.norm(x_dot_est, float("inf"), axis=0)
+    smooth_2_norm = np.linalg.norm(x_dot_est, 2, axis=0)
+    print(r"∞-norms of estimated ẋ: ", smooth_inf_norm, flush=True)
+    print(r"2-norms of estimated ẋ: ", smooth_2_norm, flush=True)
+    smooth_collinearity = np.linalg.cond(x_smooth)
+    print("Collinearity (condition number) of smoothed data: ", smooth_collinearity)
+    metrics["smooth-collinearity"] = smooth_collinearity
+    metrics |= {"smooth-inf-norm": smooth_inf_norm, "smooth-2-norm": smooth_2_norm}
 
     print_diagnostics(t, model, precision=8)
-    x_dot_est = model.differentiation_method(time_series, t)
     x_dot_pred = model.predict(x_smooth)
     plot_predictions(t, np.asarray(x_dot_est), np.asarray(x_dot_pred), feature_names)
+    plt.show()
+    metrics["pred-accuracy"] = model.score(x_smooth, t, x_dot_est)
+    print("Prediction Accuracy: ", metrics["pred-accuracy"])
+    print("Prediction Relative Error: ", 1-metrics["pred-accuracy"])
 
+    results = {
+        "main": metrics["pred-accuracy"],
+        "metrics": metrics,
+        "model": model,
+        "X_train": time_series,
+        "scalar_transform": scaler
+    }
+
+    ################
+    # Integration  #
+    ################
+    if reg_mode[0] == "poly":
+        stab_order = _stabilize_model(model, time_series, stabilizing_eps)
+        print("Stabilized model:")
+        model.print(precision=8)
     integrator_kws = {}
     integrator_kws["method"] = "LSODA"
-
-    print("first simulate")
-    X_stable_sim = model.simulate(time_series[0], t, integrator_kws=integrator_kws, integrator='odeint')
-    ################
-    # Plot Results #
-    ################
-
-    m = min(time_series.shape[0],X_stable_sim[0].shape[0])
-
-    fig, axs = plt.subplots(
-        1,
-        time_series.shape[1], 
-        sharex=True, 
-        figsize=(15, 4)
-    )
-    # fig.suptitle("Learned Normalized Coefficients")  
-    # Add this line to set the title
-
-    for i in range(time_series.shape[1]):
-        if i == time_series.shape[1]-1:
-            axs[i].plot(
-                t[:m], 
-                time_series[:m, i], 
-                "k", 
-                label="true normalized data"
-            )
-
-            axs[i].plot(
-                t[:m], 
-                X_stable_sim.T[:m, i], 
-                "r--", 
-                label="model simulation"
-            )
-
-            axs[i].legend(loc="best")
-        else:
-            axs[i].plot(t[:m], time_series[:m, i], "k")
-            axs[i].plot(t[:m], X_stable_sim.T[:m, i], "r--")
-        axs[i].set(xlabel="t")
-        axs[i].set_title("Coeff {}".format(model.feature_names[i]))
-    fig.suptitle(
-        f"Stabalized: "
-        f"eps={stabilizing_eps}, degree={stab_order}" if reg_mode == "poly" else "trap"
-    )
-    # plt.show()
-        
-            
-
-    ########################################
-    # Solve ODE system w/ pySINDy simulate #
-    ########################################
-    X_train = time_series
-    t_train = t
-    x0 = X_train[0]
-
-    print("Solving SINDy system...")
-    error_occured = False
     try:
-        
-        print("second simulate")
-        X_train_sim = model.simulate(x0,t_train, integrator='odeint')
-
-        ################
-        # Plot Results #
-        ################
-        m = min(X_train.shape[0],X_train_sim.shape[0])
-
-        fig, axs = plt.subplots(
-            1,
-            X_train.shape[1], 
-            sharex=True, 
-            figsize=(15, 4)
+        X_stable_sim = model.simulate(
+            x_smooth[0], t, integrator_kws=integrator_kws, integrator='odeint'
         )
-        # fig.suptitle("Learned Normalized Coefficients") 
-        # Add this line to set the title
-
-        for i in range(X_train.shape[1]):
-            if i == X_train.shape[1]-1:
-                axs[i].plot(
-                    t_train[:m], 
-                    X_train[:m, i], 
-                    "k", 
-                    label="true normalized data"
-                )
-                axs[i].plot(
-                    t_train[:m], 
-                    X_train_sim[:m, i], 
-                    "r--", 
-                    label="model simulation"
-                )
-                axs[i].legend(loc="best")
-            else:
-                axs[i].plot(
-                    t_train[:m], 
-                    X_train[:m, i], 
-                    "k"
-                )
-                axs[i].plot(
-                    t_train[:m], 
-                    X_train_sim[:m, i], 
-                    "r--"
-                )
-            axs[i].set(xlabel="t")
-            axs[i].set_title("Coeff {}".format(feature_names[i]))
-        fig.suptitle("SINDy simulate")
-        plt.show(block=True)
-    
-    except Exception as e:
-        print(f"Numerical solver unstable. Error {e}")
-        error_occured = True
-
-    ######################
-    # Compute accuracies #
-    ######################
-    if error_occured is False:
+        integration_success = True
+    except Exception as exc:
+        warn(f"Simulation error: {exc.args[0]}", RuntimeWarning)
+        integration_success = False
+    if integration_success:
+        X_stable_sim = cast(PolyData, X_stable_sim)  # type: ignore
+        ind_sim = min(x_smooth.shape[0], X_stable_sim.shape[0])
+        if reg_mode[0] == "poly":
+            title = f"Stabilized: Poly, eps={stabilizing_eps}, degree={stab_order}"  # type: ignore
+        else:
+            title = "Stabilized: Trapping"
+        plot_simulation(
+            t, x_smooth, X_stable_sim, feat_names=model.feature_names, title=title  # type: ignore
+        )
+        plt.show()
         def L2_error(x_true, x_approx):
                 return np.linalg.norm(x_true-x_approx)/np.linalg.norm(x_true)
-        
-        err = L2_error(X_train[:m].reshape(-1), X_train_sim[:m].reshape(-1))
-        err = model.score(x_smooth, t, x_dot_est)
-        print("accuracy: ",1-err)
-        print("error: ", err,"\n")
-        results = {
-            "main": err,
-            "error": err,
-            "model": model, 
-            "X_train": X_train, 
-            "X_train_sim": X_train_sim,
-            "scalar_transform": scaler
-        }
-        return results
+        sim_err = L2_error(x_smooth[:ind_sim], X_stable_sim[:ind_sim])
+        metrics["sim-err"] = sim_err
+        results["X_train_sim"] = X_stable_sim
+        print(f"Simulation Accuracy: {1-sim_err}")
+        print(f"Simulation Relative Error: {sim_err}")
+
+
+    return results
 
 
 def get_func_from_SINDy(model, precision=10):
