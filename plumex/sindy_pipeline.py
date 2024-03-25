@@ -76,6 +76,8 @@ lookup_dict = {
         "smoother": {"diffcls": "SmoothedFiniteDifference", "smoother_kws": {"window_length": 15}},
         "x-smooth": {"diffcls": "SmoothedFiniteDifference", "smoother_kws": {"window_length": 45}},
         "xx-smooth": {"diffcls": "SmoothedFiniteDifference", "smoother_kws": {"window_length": 100, "polyorder": 2}},
+        "xxx-smooth": {"diffcls": "SmoothedFiniteDifference", "smoother_kws": {"window_length": 500, "polyorder": 2}},
+        "tv": {"diffcls": "sindy", "kind": "trend_filtered", "alpha": 1, "order": 0},
         "kalman-autoks": {"diffcls": "sindy", "kind": "kalman", "alpha": "gcv"},
         "kalman": {"diffcls": "sindy", "kind": "kalman", "alpha": 1e-4},
     },
@@ -103,7 +105,7 @@ lookup_dict = {
         )),
         "quad-default": ("poly", (
             {"degree": 2},
-            ps.STLSQ(threshold=.05, alpha=1e-3, max_iter=100),
+            ps.STLSQ(threshold=.05, alpha=1e-2, max_iter=100),
             None
         )),
         "c-sparserer": ("poly", (

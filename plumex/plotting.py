@@ -70,8 +70,8 @@ def plot_predictions(
     for i, feat in enumerate(feature_names):
         ax = scat_fig.add_subplot(1, 3, 1+i)
         ax.scatter(x=x_dot_est[:, i], y=x_dot_pred[:, i])
-        ax.set_xlabel("estimated-smoothing")
-        ax.set_ylabel("estimated-SINDy")
+        ax.set_xlabel("Smoothed")
+        ax.set_ylabel("SINDy predicted")
     scat_fig.suptitle("Are certain regions more error-prone?")
     bigfig.suptitle("Step 2: How well did SINDy fit the (smoothed) data?", size="x-large")
     bigfig.patch.set_facecolor(BGROUND)
