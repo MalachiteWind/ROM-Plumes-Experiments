@@ -194,6 +194,11 @@ def run(
     if normalize==True:
         time_series: PolyData = scaler.fit_transform(time_series)
 
+    metrics = {}
+    data_collinearity = np.linalg.cond(time_series)
+    print("Collinearity (condition number) of data: ", data_collinearity)
+    metrics["raw-collinearity"] = data_collinearity
+
     ########################
     # Apply Ensemble SINDy #
     ########################
@@ -207,33 +212,38 @@ def run(
     plot_smoothing_step(t, time_series, x_smooth, feature_names)
     plt.show()  # flush output
 
-    if reg_mode[0] == "poly":
-        stab_order = _stabilize_model(model, time_series, stabilizing_eps)
-
     x_dot_est = model.differentiation_method(time_series, t)
     smooth_inf_norm = np.linalg.norm(x_dot_est, float("inf"), axis=0)
     smooth_2_norm = np.linalg.norm(x_dot_est, 2, axis=0)
     print(r"∞-norms of estimated ẋ: ", smooth_inf_norm, flush=True)
     print(r"2-norms of estimated ẋ: ", smooth_2_norm, flush=True)
-    metrics = {"smooth-inf-norm": smooth_inf_norm, "smooth-2-norm": smooth_2_norm}
+    smooth_collinearity = np.linalg.cond(x_smooth)
+    print("Collinearity (condition number) of smoothed data: ", data_collinearity)
+    metrics["smooth-collinearity"] = smooth_collinearity
+    metrics |= {"smooth-inf-norm": smooth_inf_norm, "smooth-2-norm": smooth_2_norm}
 
     print_diagnostics(t, model, precision=8)
     x_dot_pred = model.predict(x_smooth)
     plot_predictions(t, np.asarray(x_dot_est), np.asarray(x_dot_pred), feature_names)
-    metrics["pred-err"] = model.score(x_smooth, t, x_dot_est)
+    plt.show()
+    metrics["pred-accuracy"] = model.score(x_smooth, t, x_dot_est)
+    print("Prediction Accuracy: ", metrics["pred-accuracy"])
 
     results = {
-        "main": metrics["pred-err"],
+        "main": metrics["pred-accuracy"],
         "metrics": metrics,
         "model": model,
         "X_train": time_series,
         "scalar_transform": scaler
     }
 
-
     ################
     # Integration  #
     ################
+    if reg_mode[0] == "poly":
+        stab_order = _stabilize_model(model, time_series, stabilizing_eps)
+        print("Stabilized model:")
+        model.print(precision=8)
     integrator_kws = {}
     integrator_kws["method"] = "LSODA"
     try:
@@ -249,6 +259,7 @@ def run(
         plot_simulation(
             t, time_series, X_stable_sim, feat_names=model.feature_names, title=title  # type: ignore
         )
+        plt.show()
         def L2_error(x_true, x_approx):
                 return np.linalg.norm(x_true-x_approx)/np.linalg.norm(x_true)
         sim_err = L2_error(time_series[:ind_sim], X_stable_sim[:ind_sim])
@@ -261,6 +272,7 @@ def run(
         warn(f"Simulation error: {exc.args[0]}", RuntimeWarning)
 
     return results
+
 
 def get_func_from_SINDy(model, precision=10):
     """
