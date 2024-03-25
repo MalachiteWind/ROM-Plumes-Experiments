@@ -46,6 +46,8 @@ def _load_pickle(filename: str) -> PolyData:
             return data_file
         elif isinstance(data_file,dict) is True:   
             return data_file["mean"]
+        else:
+            raise(ValueError("Datafile must be an array or dict with key 'mean'."))
 
 lookup_dict = {
     "seed": {"bad_seed": 12},
@@ -196,7 +198,9 @@ def run(
     ########################
     feature_names = ['a', 'b', 'c']
 
-    model = gen_experiments.utils.make_model(feature_names, float(t[1]-t[0]), diff_params, feat_params, opt_params)
+    model = gen_experiments.utils.make_model(
+        feature_names, float(t[1]-t[0]), diff_params, feat_params, opt_params
+    )
     model.fit(time_series, t=t)
     x_smooth = model.differentiation_method.smoothed_x_
     plot_smoothing_step(t, time_series, x_smooth, feature_names)
@@ -207,6 +211,11 @@ def run(
 
     print_diagnostics(t, model, precision=8)
     x_dot_est = model.differentiation_method(time_series, t)
+    smooth_inf_norm = np.linalg.norm(x_dot_est, float("inf"), axis=0)
+    smooth_2_norm = np.linalg.norm(x_dot_est, 2, axis=0)
+    print(r"∞-norms of estimated ẋ: ", smooth_inf_norm, flush=True)
+    print(r"2-norms of estimated ẋ: ", smooth_2_norm, flush=True)
+
     x_dot_pred = model.predict(x_smooth)
     plot_predictions(t, np.asarray(x_dot_est), np.asarray(x_dot_pred), feature_names)
 
@@ -336,6 +345,7 @@ def run(
         print("error: ", err,"\n")
         results = {
             "main": err,
+            "metrics": {"smooth-inf": smooth_inf_norm, "smooth-2": smooth_2_norm},
             "error": err,
             "model": model, 
             "X_train": X_train, 
