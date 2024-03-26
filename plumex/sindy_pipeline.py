@@ -140,6 +140,9 @@ def run(
         filename in the pickle folder for data to use.  Must hold an array
         of n_time x 3, the coefficients of the fit polynomial.
 
+    whitening:
+        bool which transforms timeseries into statistically uncorrelated data 
+        
     ens_kwargs:
         kwargs to EnsembleOptimizer
 
