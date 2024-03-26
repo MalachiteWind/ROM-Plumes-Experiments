@@ -122,6 +122,7 @@ lookup_dict = {
 def run(
         seed: int,
         datafile: str,
+        whitening: bool,
         ens_kwargs: Optional[Kwargs] = None,
         diff_params: Optional[Kwargs] = None,
         normalize=True,
@@ -204,8 +205,14 @@ def run(
 
     t = np.array(range(len(time_series)))
     scaler = StandardScaler()
-    if normalize==True:
+    if normalize:
         time_series: PolyData = scaler.fit_transform(time_series)
+    
+    if whitening:
+        eigvals, eigvecs = np.linalg.eigh(np.cov(time_series.T))
+        time_series: PolyData = (time_series@eigvecs)/np.sqrt(eigvals)
+    
+
 
     metrics = {}
     data_collinearity = np.linalg.cond(time_series)
