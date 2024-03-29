@@ -142,7 +142,7 @@ def run(
 
     whitening:
         bool which transforms timeseries into statistically uncorrelated data 
-        
+
     ens_kwargs:
         kwargs to EnsembleOptimizer
 
