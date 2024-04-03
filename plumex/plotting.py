@@ -34,7 +34,7 @@ def plot_smoothing_step(
         ax_zoom.plot(t, smooth_data[:, i], color=CSMOOTH)
         ax_zoom.set_xlabel("Time")
         ax_fft = fft_fig.add_subplot(1, 3, 1+i)
-        freqs = np.fft.rfftfreq(2000)
+        freqs = np.fft.rfftfreq(len(t))
         data_psd = np.abs(np.fft.rfft(data[:, i]))**2
         smooth_psd = np.abs(np.fft.rfft(smooth_data[:, i]))**2
         data_pwr = data_psd.sum()
