@@ -1,0 +1,55 @@
+nohup mitosis -m plumex.sindy_pipeline \
+    -F results \
+    -e seed=1 \
+    -p datafile="jan-8-v1"\
+    -p diff_params=tv \
+    -p reg_mode=trap-test \
+    -p ens_kwargs=old-default \
+    &>  1contour.log &
+
+nohup mitosis -m plumex.sindy_pipeline \
+    -F results \
+    -e seed=1 \
+    -p datafile="jan-8-v2"\
+    -p diff_params=tv \
+    -p reg_mode=trap-test \
+    -p ens_kwargs=old-default \
+    &>  2contour.log &
+
+nohup mitosis -m plumex.sindy_pipeline \
+    -F results \
+    -e seed=1 \
+    -p datafile="jan-8-v3"\
+    -p diff_params=tv \
+    -p reg_mode=trap-test \
+    -p ens_kwargs=old-default \
+    &>  3contour.log &
+
+
+nohup mitosis -m plumex.sindy_pipeline \
+    -F results \
+    -e seed=1 \
+    -p datafile="jan-8-v3-trimmed"\
+    -p diff_params=tv \
+    -p reg_mode=trap-test \
+    -p ens_kwargs=old-default \
+    &>  trimmed.log &
+
+nohup mitosis -m plumex.sindy_pipeline \
+    -F results \
+    -e seed=1 \
+    -p datafile="jan-10-v1"\
+    -p diff_params=tv \
+    -p reg_mode=trap-test \
+    -p ens_kwargs=old-default \
+    &>  gauss_time.log &
+
+
+nohup mitosis -m plumex.sindy_pipeline \
+    -F results \
+    -e seed=1 \
+    -p datafile="jan-10-v2"\
+    -p diff_params=tv \
+    -p reg_mode=trap-test \
+    -p ens_kwargs=old-default \
+    &>  gauss_short.log &
