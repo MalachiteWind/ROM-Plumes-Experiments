@@ -115,6 +115,12 @@ lookup_dict = {
         )),
     },
     "ens_kwargs": {"old-default": {"n_models": 20, "n_subset": None}},
+    "feat_params":{
+        "poly": {"featcls": "Polynomial"},
+        "fourier": {"featcls": "Fourier"},
+        "weak-pde": {"featcls": "Weak"},
+        "pde": {"featcls": "PDE"}
+    }
 }
 
 
@@ -124,6 +130,7 @@ def run(
         datafile: str,
         ens_kwargs: Optional[Kwargs] = None,
         diff_params: Optional[Kwargs] = None,
+        feat_params: Optional[Kwargs] = None,
         normalize=True,
         stabilizing_eps=1e-5,
         reg_mode: TrapMode | PolyMode = ("poly", None)
@@ -176,7 +183,8 @@ def run(
     """
     if diff_params is None:
         diff_params = {"diffcls": "finitedifference"}
-    feat_params = {"featcls": "Polynomial"}
+    if feat_params is None:
+        feat_params = {"featcls": "Polynomial"}
     if ens_kwargs is None:
         ens_kwargs = {}
     opt_params = {"optcls": "ensemble", "bagging": True} | ens_kwargs
