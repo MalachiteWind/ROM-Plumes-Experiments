@@ -63,10 +63,10 @@ def plot_predictions(
         ax = plot_fig.add_subplot(1, 3, 1+i)
         ax.plot(t, x_dot_est[:, i], label=fr"Smoothed", color=CSMOOTH)
         ax.plot(t, x_dot_pred[:, i], label=fr"SINDy predicted", color=CEST)
-        ax.set_title(f"Coeff {feat}")
+        ax.set_title(f"Coeff {feat} dot")
         ax.set_xlabel("Time")
     bigfig.axes[0].legend()
-    plot_fig.suptitle("Time Series Accuracy")
+    plot_fig.suptitle("Time Series Derivative Accuracy")
     for i, feat in enumerate(feature_names):
         ax = scat_fig.add_subplot(1, 3, 1+i)
         ax.axhline(0, color="black")
