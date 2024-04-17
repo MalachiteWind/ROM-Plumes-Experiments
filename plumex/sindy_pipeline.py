@@ -83,6 +83,8 @@ lookup_dict = {
     },
     "reg_mode": {
         "trap-test": ("trap", {"eta": 1e-1}),
+        "trap-merge": ("trap", {"eta": 1e-1, "_n_tgts": 3}),
+        "trap-merge-dindy": ("trap", {"eta": 1e-1, "_n_tgts": 3, "threshold":0}),
         "old-default": ("poly", (
             {"degree": 3},
             ps.STLSQ(threshold=.12, alpha=1e-3, max_iter=100),
