@@ -83,6 +83,8 @@ lookup_dict = {
     },
     "reg_mode": {
         "trap-test": ("trap", {"eta": 1e-1}),
+        "trap-merge": ("trap", {"eta": 1e-1, "_n_tgts": 3}),
+        "trap-merge-dindy": ("trap", {"eta": 1e-1, "_n_tgts": 3, "threshold":0}),
         "old-default": ("poly", (
             {"degree": 3},
             ps.STLSQ(threshold=.12, alpha=1e-3, max_iter=100),
@@ -128,6 +130,7 @@ lookup_dict = {
 def run(
         seed: int,
         datafile: str,
+        whitening: bool,
         ens_kwargs: Optional[Kwargs] = None,
         diff_params: Optional[Kwargs] = None,
         feat_params: Optional[Kwargs] = None,
@@ -145,6 +148,9 @@ def run(
     datafile:
         filename in the pickle folder for data to use.  Must hold an array
         of n_time x 3, the coefficients of the fit polynomial.
+
+    whitening:
+        bool which transforms timeseries into statistically uncorrelated data 
 
     ens_kwargs:
         kwargs to EnsembleOptimizer
@@ -212,8 +218,14 @@ def run(
 
     t = np.array(range(len(time_series)))
     scaler = StandardScaler()
-    if normalize==True:
+    if normalize:
         time_series: PolyData = scaler.fit_transform(time_series)
+    
+    if whitening:
+        eigvals, eigvecs = np.linalg.eigh(np.cov(time_series.T))
+        time_series: PolyData = (time_series@eigvecs)/np.sqrt(eigvals)
+    
+
 
     metrics = {}
     data_collinearity = np.linalg.cond(time_series)
