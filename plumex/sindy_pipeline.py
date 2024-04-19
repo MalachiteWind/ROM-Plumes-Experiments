@@ -118,7 +118,7 @@ lookup_dict = {
             None
         )),
         # Fourier Feature Family
-        "fouirer-fam": ("fourier",(
+        "fourier-fam": ("fourier",(
             {"n_frequencies": 5},
             ps.STLSQ(threshold=.12, alpha=1e0, max_iter=100),
         ))
