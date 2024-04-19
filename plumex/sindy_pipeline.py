@@ -131,7 +131,7 @@ lookup_dict = {
 def run(
         seed: int,
         datafile: str,
-        whitening: bool,
+        whitening: bool=False,
         ens_kwargs: Optional[Kwargs] = None,
         diff_params: Optional[Kwargs] = None,
         normalize=True,
