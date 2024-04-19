@@ -82,9 +82,11 @@ lookup_dict = {
         "kalman": {"diffcls": "sindy", "kind": "kalman", "alpha": 1e-4},
     },
     "reg_mode": {
+        # Trapping Methods (using poly feature family)
         "trap-test": ("trap", {"eta": 1e-1}),
         "trap-merge": ("trap", {"eta": 1e-1, "_n_tgts": 3}),
         "trap-merge-dindy": ("trap", {"eta": 1e-1, "_n_tgts": 3, "threshold":0}),
+        # Poly methods
         "old-default": ("poly", (
             {"degree": 3},
             ps.STLSQ(threshold=.12, alpha=1e-3, max_iter=100),
@@ -115,14 +117,13 @@ lookup_dict = {
             ps.STLSQ(threshold=.12, alpha=1e0, max_iter=100),
             None
         )),
+        # Fourier Feature Family
+        "fouirer-fam": ("fourier",(
+            {"n_frequencies": 5},
+            ps.STLSQ(threshold=.12, alpha=1e0, max_iter=100),
+        ))
     },
     "ens_kwargs": {"old-default": {"n_models": 20, "n_subset": None}},
-    "feat_params":{
-        "poly": {"featcls": "Polynomial"},
-        "fourier": {"featcls": "Fourier"},
-        "weak-pde": {"featcls": "Weak"},
-        "pde": {"featcls": "PDE"}
-    }
 }
 
 
@@ -133,7 +134,6 @@ def run(
         whitening: bool,
         ens_kwargs: Optional[Kwargs] = None,
         diff_params: Optional[Kwargs] = None,
-        feat_params: Optional[Kwargs] = None,
         normalize=True,
         stabilizing_eps=1e-5,
         reg_mode: TrapMode | PolyMode = ("poly", None)
@@ -189,16 +189,18 @@ def run(
     """
     if diff_params is None:
         diff_params = {"diffcls": "finitedifference"}
-    if feat_params is None:
-        feat_params = {"featcls": "Polynomial"}
+    # if feat_params is None:
+    #     feat_params = {"featcls": "Polynomial"}
     if ens_kwargs is None:
         ens_kwargs = {}
     opt_params = {"optcls": "ensemble", "bagging": True} | ens_kwargs
     if reg_mode[0] == "trap":
+        feat_params = {"featcls": "Polynomial"}
         feat_params |= {"degree": 2, "include_bias": False}
         opt_init = {} if reg_mode[1] is None else reg_mode[1]
         opt_params |= {"opt": ps.TrappingSR3(**opt_init)}
     elif reg_mode[0] == "poly":
+        feat_params = {"featcls": "Polynomial"}
         if reg_mode[1] is None:
             stabilizing_eps = 1e-5
             opt_params |= {"opt": ps.STLSQ()}
@@ -206,6 +208,13 @@ def run(
             feat_params |= cast(Kwargs, reg_mode[1][0])
             opt_params |= {"opt": reg_mode[1][1]}
             stabilizing_eps = reg_mode[1][2]
+    elif reg_mode[0] == "fourier":
+        print("NOTE: does not apply regulation")
+        feat_params = {"featcls": "Fourier"}
+        feat_params |= cast(Kwargs,reg_mode[1][0])
+        opt_params |= {"opt": reg_mode[1][1]}
+        
+
     else:
         raise ValueError("Regularization mode must be either 'poly' or 'trap'")
 
@@ -220,6 +229,10 @@ def run(
     scaler = StandardScaler()
     if normalize:
         time_series: PolyData = scaler.fit_transform(time_series)
+
+    ########################
+    # Apply data Whitening #
+    ########################
     
     if whitening:
         eigvals, eigvecs = np.linalg.eigh(np.cov(time_series.T))
