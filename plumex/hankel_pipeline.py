@@ -5,6 +5,8 @@
 # - Fix mitosis bug [DONE]
 # - Add plotting of orginal function [Done]
 # - Load dill files and smoothing
+# - Add data smoothing option
+# - Add check that svd worked well
 import numpy as  np
 import pickle
 import matplotlib.pyplot as plt
@@ -56,6 +58,10 @@ def run(
     # Load Data
     time_series = _load_pickle(datafile)
 
+    #################
+    # Preprocessing #
+    #################
+
     scalar = StandardScaler()
     if normalize:
         time_series = scalar.fit_transform(time_series)
@@ -63,6 +69,7 @@ def run(
     if whitening:
         eigvals, eigvecs = np.linalg.eigh(np.cov(time_series.T))
         time_series: PolyData = (time_series@eigvecs)/np.sqrt(eigvals) 
+
 
     # Construct Hankel Matrix
     H = _construct_hankel(time_series, **hankel_kwargs)
