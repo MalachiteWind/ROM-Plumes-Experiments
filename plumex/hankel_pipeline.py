@@ -6,56 +6,20 @@
 # - Add plotting of orginal function [Done]
 # - Load dill files and smoothing
 import numpy as  np
-import pickle
 import matplotlib.pyplot as plt
-from pathlib import Path
 from sklearn.preprocessing import StandardScaler
 
-from .types import PolyData, Float1D
+from .types import PolyData, Float2D
 from .plotting import plot_hankel_variance, plot_dominate_hankel_modes, plot_time_series
 
-name = "hankel-pipeline"
-
-pickle_path = Path(__file__).parent.resolve() / "../plume_videos/"
-
-def _load_pickle(filename: str) -> PolyData:
-    with open(pickle_path / filename, 'rb') as f:
-        data_file = pickle.load(f)
-        if isinstance(data_file,np.ndarray) is True:
-            return data_file
-        elif isinstance(data_file,dict) is True:   
-            return data_file["mean"]
-        else:
-            raise(ValueError("Datafile must be an array or dict with key 'mean'."))
-
-lookup_dict = {
-    "datafile": {
-         "jan-8-v3-trimmed":"Jan_8_2024/med/mean_poly_coeff_600_1000_plume_jan_8_2024_"\
-                             "med_img_0871_fixed_range_90_img_range_200_2200_orig_center_"\
-                             "1572_1078_num_of_contours_3_seed_1234.pkl"
-    },
-
-    "hankel_kwargs": {
-        "default": {"k":10,"window":0.8},
-        "large_time": {"k":50}
-    },
-
-    "variance": {
-        "default": [0.9,0.95,0.99]
-    }
-
-}
 
 def run(
-        datafile: str,
+        time_series: Float2D,
         hankel_kwargs: dict,
         variance: list,
         normalize: bool=True,
         whitening: bool=False
 ):
-    # Load Data
-    time_series = _load_pickle(datafile)
-
     scalar = StandardScaler()
     if normalize:
         time_series = scalar.fit_transform(time_series)
