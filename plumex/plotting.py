@@ -125,14 +125,14 @@ def plot_hankel_variance(S_norm, locs, vars):
             ymin=0,
             ymax=np.max(S_norm),
             color = color_pallet[i%len(color_pallet)],
-            label=f"{int(var_i*100)} Var"
+            label=fr"{int(var_i*100)} Var ({loc_i} $\sigma$)"
         )
     plt.legend()
     return fig
 
 def plot_dominate_hankel_modes(V,num_of_modes, variance):
     fig = plt.figure(figsize=(7,5))
-    plt.title(f"Dominant Modes V ({variance})")
+    plt.title(f"Dominant Modes of V ({int(variance*100)}% var)")
     for i in range(num_of_modes):
         plt.plot(V[:,i], label=f"Mode {i}")
     plt.legend(loc='upper right')
@@ -145,5 +145,6 @@ def plot_time_series(
     for i, feat in enumerate(feature_names):
         ax[i].plot(t, data[:,i])
         ax[i].set_title(f"Coeff {feat}")
+    fig.suptitle("Timeseries",size='x-large')
     plt.tight_layout()
     return fig

@@ -3,7 +3,7 @@
 # TO DO:
 # - Fix plotting to include variance capture for first columnbs of V
 # - Fix mitosis bug [DONE]
-# - Add plotting of orginal function
+# - Add plotting of orginal function [Done]
 # - Load dill files and smoothing
 import numpy as  np
 import pickle
