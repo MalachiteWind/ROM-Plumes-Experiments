@@ -108,3 +108,32 @@ def plot_simulation(
         f"Step 3: How well does SINDy simulate the system? ({title})", size="x-large"
     )
     fig.patch.set_facecolor(BGROUND)
+
+# Plotting for Hankel Analysis
+
+def plot_hankel_variance(S_norm, locs, vars):
+    fig = plt.figure(figsize=(7,5))
+    color_pallet = ['r','g','b','c','m','k','w']
+    plt.title("Singular Values of Hankel Matrix")
+    plt.scatter(range(len(S_norm)),S_norm)
+    for i in range(len(vars)):
+        loc_i = locs[i]
+        var_i = vars[i]
+        plt.vlines(
+            loc_i,
+            linestyles='--',
+            ymin=0,
+            ymax=np.max(S_norm),
+            color = color_pallet[i%len(color_pallet)],
+            label=f"{int(var_i*100)} Var"
+        )
+    plt.legend()
+    return fig
+
+def plot_dominate_hankel_modes(V,num_of_modes):
+    fig = plt.figure(figsize=(7,5))
+    plt.title("Dominate Modes V")
+    for i in range(num_of_modes):
+        plt.plot(V[:,i], label=f"Mode {i}")
+    plt.legend(loc='upper right')
+    return fig
