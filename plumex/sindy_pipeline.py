@@ -124,6 +124,7 @@ lookup_dict = {
         ))
     },
     "ens_kwargs": {"old-default": {"n_models": 20, "n_subset": None}},
+    # "feat_params": {"custom": {"kind": "custom", "library_functions": [foo, bar]}}
 }
 
 
