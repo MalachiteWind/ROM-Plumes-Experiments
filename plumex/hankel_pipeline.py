@@ -1,4 +1,8 @@
 # Run Analysis on time-series 
+
+# TO DO:
+# - Fix plotting to include variance capture for first columnbs of V
+# - Fix mitosis bug
 import numpy as  np
 import pickle
 import matplotlib.pyplot as plt
