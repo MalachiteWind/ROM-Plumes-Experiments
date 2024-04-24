@@ -2,7 +2,9 @@
 
 # TO DO:
 # - Fix plotting to include variance capture for first columnbs of V
-# - Fix mitosis bug
+# - Fix mitosis bug [DONE]
+# - Add plotting of orginal function
+# - Load dill files and smoothing
 import numpy as  np
 import pickle
 import matplotlib.pyplot as plt
@@ -10,7 +12,7 @@ from pathlib import Path
 from sklearn.preprocessing import StandardScaler
 
 from .types import PolyData, Float1D
-from .plotting import plot_hankel_variance, plot_dominate_hankel_modes
+from .plotting import plot_hankel_variance, plot_dominate_hankel_modes, plot_time_series
 
 name = "hankel-pipeline"
 
@@ -67,6 +69,15 @@ def run(
     num_of_modes, vars_captured = _get_variances_modes(
         S, vars=variance
     )
+
+    ############
+    # Plotting #
+    ############
+    # plot time_series
+    t = np.arange(len(time_series))
+    feature_names = ['a','b','c']
+    plot_time_series(t, data=time_series, feature_names=feature_names)
+    plt.show()
 
     # Plot singular values of H
     S_norm = S/np.sum(S)

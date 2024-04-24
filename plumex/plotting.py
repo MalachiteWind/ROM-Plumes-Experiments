@@ -137,3 +137,13 @@ def plot_dominate_hankel_modes(V,num_of_modes, variance):
         plt.plot(V[:,i], label=f"Mode {i}")
     plt.legend(loc='upper right')
     return fig
+
+def plot_time_series(
+        t: Float1D, data: PolyData, feature_names: list[str]
+)-> Figure:
+    fig, ax = plt.subplots(1,3,figsize=(15,5), layout="constrained")
+    for i, feat in enumerate(feature_names):
+        ax[i].plot(t, data[:,i])
+        ax[i].set_title(f"Coeff {feat}")
+    plt.tight_layout()
+    return fig
