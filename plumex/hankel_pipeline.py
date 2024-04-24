@@ -1,7 +1,7 @@
 # Run Analysis on time-series 
 
 # TO DO:
-# - Fix plotting to include variance capture for first columnbs of V
+# - Fix plotting to include variance capture for first columnbs of V [Done]
 # - Fix mitosis bug [DONE]
 # - Add plotting of orginal function [Done]
 # - Load dill files and smoothing
@@ -50,7 +50,8 @@ def run(
         datafile: str,
         hankel_kwargs: dict,
         variance: list,
-        normalize: bool=True
+        normalize: bool=True,
+        whitening: bool=False
 ):
     # Load Data
     time_series = _load_pickle(datafile)
@@ -58,6 +59,10 @@ def run(
     scalar = StandardScaler()
     if normalize:
         time_series = scalar.fit_transform(time_series)
+    
+    if whitening:
+        eigvals, eigvecs = np.linalg.eigh(np.cov(time_series.T))
+        time_series: PolyData = (time_series@eigvecs)/np.sqrt(eigvals) 
 
     # Construct Hankel Matrix
     H = _construct_hankel(time_series, **hankel_kwargs)
