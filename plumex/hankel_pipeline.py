@@ -74,10 +74,12 @@ def run(
     plt.show()
 
     # Plot dominate modes
-    plot_dominate_hankel_modes(Vh.T, num_of_modes=num_of_modes[0])
+    plot_dominate_hankel_modes(Vh.T, num_of_modes=num_of_modes[0], variance=vars_captured[0])
     plt.show()
 
-    return
+    results = {"main": 1}
+
+    return results
 
 
 # Helper Functions

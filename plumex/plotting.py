@@ -130,9 +130,9 @@ def plot_hankel_variance(S_norm, locs, vars):
     plt.legend()
     return fig
 
-def plot_dominate_hankel_modes(V,num_of_modes):
+def plot_dominate_hankel_modes(V,num_of_modes, variance):
     fig = plt.figure(figsize=(7,5))
-    plt.title("Dominate Modes V")
+    plt.title(f"Dominant Modes V ({variance})")
     for i in range(num_of_modes):
         plt.plot(V[:,i], label=f"Mode {i}")
     plt.legend(loc='upper right')
