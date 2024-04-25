@@ -23,7 +23,6 @@ from sklearn.preprocessing import StandardScaler
 from .types import PolyData, Float1D, Float2D
 from .plotting import plot_smoothing_step, print_diagnostics, plot_predictions, plot_simulation
 
-name = "sindy-pipeline"
 
 Kwargs = dict[str, Any]
 TrapMode = tuple[Literal["trap"], Optional[Kwargs]]
