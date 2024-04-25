@@ -23,7 +23,6 @@ from sklearn.preprocessing import StandardScaler
 from .types import PolyData, Float1D, Float2D
 from .plotting import plot_smoothing_step, print_diagnostics, plot_predictions, plot_simulation
 
-
 Kwargs = dict[str, Any]
 TrapMode = tuple[Literal["trap"], Optional[Kwargs]]
 """Use trapping mode.  Kwargs to TrappingSR3 optimizer"""
