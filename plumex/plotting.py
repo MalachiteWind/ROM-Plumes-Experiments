@@ -139,12 +139,16 @@ def plot_dominate_hankel_modes(V,num_of_modes, variance):
     return fig
 
 def plot_time_series(
-        t: Float1D, data: PolyData, feature_names: list[str]
+        t: Float1D, data: PolyData, smooth_data: PolyData, feature_names: list[str]
 )-> Figure:
     fig, ax = plt.subplots(1,3,figsize=(15,5), layout="constrained")
     for i, feat in enumerate(feature_names):
-        ax[i].plot(t, data[:,i])
+        ax[i].plot(t, data[:,i], label="Data", color=CMEAS)
+        ax[i].plot(t,smooth_data[:,i], label="Smoothed", color=CSMOOTH)
         ax[i].set_title(f"Coeff {feat}")
+        if i==0:
+            ax[i].legend()
     fig.suptitle("Timeseries",size='x-large')
+    # fig.legend()
     plt.tight_layout()
     return fig
