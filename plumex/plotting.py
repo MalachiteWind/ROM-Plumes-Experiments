@@ -111,6 +111,23 @@ def plot_simulation(
     fig.patch.set_facecolor(BGROUND)
 
 # Plotting for Hankel Analysis
+def plot_time_series(
+        t: Float1D, data: PolyData, feature_names: list[str], smooth_data: Optional[PolyData] = None
+)-> Figure:
+    fig, ax = plt.subplots(1,3,figsize=(15,5), layout="constrained")
+    for i, feat in enumerate(feature_names):
+        ax[i].plot(t, data[:,i], label="Data", color=CMEAS)
+
+        if isinstance(smooth_data,np.ndarray):
+            ax[i].plot(t,smooth_data[:,i], label="Smoothed", color=CSMOOTH)
+
+        ax[i].set_title(f"Coeff {feat}")
+        if i==0:
+            ax[i].legend()
+    fig.suptitle("Timeseries",size='x-large')
+    # fig.legend()
+    plt.tight_layout()
+    return fig
 
 def plot_hankel_variance(
         S_norm: Float1D, 
@@ -210,7 +227,7 @@ def plot_dominate_hankel_modes(
             ax[1].plot(V_smooth[:,i], label=f"Mode {i}")
         ax[1].legend(loc="upper right")
 
-        fig.suptitle("Dominate modes of V and V_smooth")
+        fig.suptitle("Dominate modes of V and V_smooth", size='x-large')
 
     else:
         fig = plt.figure(figsize=(7,5))
@@ -218,22 +235,4 @@ def plot_dominate_hankel_modes(
         for i in range(num_of_modes):
             plt.plot(V[:,i], label=f"Mode {i}")
         plt.legend(loc='upper right')
-    return fig
-
-def plot_time_series(
-        t: Float1D, data: PolyData, feature_names: list[str], smooth_data: Optional[PolyData] = None
-)-> Figure:
-    fig, ax = plt.subplots(1,3,figsize=(15,5), layout="constrained")
-    for i, feat in enumerate(feature_names):
-        ax[i].plot(t, data[:,i], label="Data", color=CMEAS)
-
-        if isinstance(smooth_data,np.ndarray):
-            ax[i].plot(t,smooth_data[:,i], label="Smoothed", color=CSMOOTH)
-
-        ax[i].set_title(f"Coeff {feat}")
-        if i==0:
-            ax[i].legend()
-    fig.suptitle("Timeseries",size='x-large')
-    # fig.legend()
-    plt.tight_layout()
     return fig
