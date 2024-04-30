@@ -22,7 +22,7 @@ def run(
         data: Float2D,
         hankel_kwargs: dict,
         variance: list,
-        diff_params: Optional[Kwargs],
+        diff_params: Optional[Kwargs]=None,
         normalize: bool=True,
         whitening: bool=False
 ):
@@ -54,16 +54,36 @@ def run(
     )
 
     # Get Smooth data
-    data_smooth = _smooth_data(
-        data,
-        diff_params
-    )
+    time_series_kws = {}
+    hankel_variance_kws={}
+    dominate_modes_kws={}
+    if diff_params:
+        data_smooth = _smooth_data(
+            data,
+            diff_params
+        )
 
-    H_smooth = _construct_hankel(data_smooth,**hankel_kwargs)
-    _,S_smooth,Vh_smooth = np.linalg.svd(H_smooth)
-    num_of_modes_smooth, vars_captured_smooth = _get_variances_modes(
-        S_smooth, vars=variance
-    )
+        H_smooth = _construct_hankel(data_smooth,**hankel_kwargs)
+        _,S_smooth,Vh_smooth = np.linalg.svd(H_smooth)
+        num_of_modes_smooth, vars_captured_smooth = _get_variances_modes(
+            S_smooth, vars=variance
+        )
+
+        time_series_kws["smooth_data"] = data_smooth
+
+        hankel_variance_kws["S_norm_smooth"] = S_smooth/np.sum(S_smooth)
+        hankel_variance_kws["locs_smooth"] = num_of_modes_smooth
+        hankel_variance_kws["vars_smooth"] = vars_captured_smooth
+
+        dominate_modes_kws["V_smooth"] = Vh_smooth.T
+        dominate_modes_kws["num_of_modes_smooth"] = num_of_modes_smooth[0]
+        dominate_modes_kws["variance_smooth"] = vars_captured_smooth[0]
+
+    # print(time_series_kws)
+    # print(hankel_variance_kws)
+    for key, value in dominate_modes_kws.items():
+        print(f"{key}: {type(value)}")
+
 
 
     ############
@@ -72,24 +92,31 @@ def run(
     # plot time_series
     t = np.arange(len(data))
     feature_names = ['a','b','c']
-    plot_time_series(t, data=data, smooth_data=data_smooth, feature_names=feature_names)
+    plot_time_series(
+        t, 
+        data=data, 
+        feature_names=feature_names,
+        **time_series_kws
+    )
     plt.show()
 
     # Plot singular values of H
     S_norm = S/np.sum(S)
-    plot_hankel_variance(S_norm, locs=num_of_modes, vars=vars_captured)
-    plt.show()
-
-    S_smooth_norm = S_smooth/np.sum(S_smooth)
-    plot_hankel_variance(S_smooth_norm,locs=num_of_modes_smooth,
-                         vars=vars_captured_smooth)
+    plot_hankel_variance(
+        S_norm, 
+        locs=num_of_modes, 
+        vars=vars_captured,
+        **hankel_variance_kws
+    )
     plt.show()
 
     # Plot dominate modes
-    plot_dominate_hankel_modes(Vh.T, num_of_modes=num_of_modes[0], variance=vars_captured[0])
-    plt.show()
-
-    fig4=plot_dominate_hankel_modes(Vh_smooth.T, num_of_modes=num_of_modes_smooth[0], variance=vars_captured_smooth[0])
+    plot_dominate_hankel_modes(
+        Vh.T, 
+        num_of_modes=num_of_modes[0], 
+        variance=vars_captured[0],
+        **dominate_modes_kws
+    )
     plt.show()
 
     results = {

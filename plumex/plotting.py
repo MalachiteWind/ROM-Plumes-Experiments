@@ -111,40 +111,123 @@ def plot_simulation(
 
 # Plotting for Hankel Analysis
 
-def plot_hankel_variance(S_norm, locs, vars):
-    fig = plt.figure(figsize=(7,5))
+def plot_hankel_variance(
+        S_norm, 
+        locs, 
+        vars, 
+        S_norm_smooth=None,
+        locs_smooth=None,
+        vars_smooth=None
+    ):
     color_pallet = ['r','g','b','c','m','k','w']
-    plt.title("Singular Values of Hankel Matrix")
-    plt.scatter(range(len(S_norm)),S_norm)
-    for i in range(len(vars)):
-        loc_i = locs[i]
-        var_i = vars[i]
-        plt.vlines(
-            loc_i,
-            linestyles='--',
-            ymin=0,
-            ymax=np.max(S_norm),
-            color = color_pallet[i%len(color_pallet)],
-            label=fr"{int(var_i*100)} Var ({loc_i} $\sigma$)"
-        )
-    plt.legend()
+
+    # If ALL smooth params are non-empty, then plot both
+    # smooth and non-smoothed data. 
+    if (
+        isinstance(S_norm_smooth,np.ndarray) and
+        isinstance(locs_smooth,list) and
+        isinstance(vars_smooth,list)
+    ):
+        fig, ax = plt.subplots(1,2,figsize=(15,5),layout="constrained")
+
+        # Plot unsmoothed results
+        ax[0].set_title("Data")
+        ax[0].scatter(range(len(S_norm)),S_norm)
+        for i in range(len(vars)):
+            loc_i = locs[i]
+            var_i = vars[i]
+            ax[0].vlines(
+                loc_i,
+                linestyles='--',
+                ymin=0,
+                ymax=np.max(S_norm),
+                color=color_pallet[i%len(color_pallet)],
+                label=fr"{int(var_i*100)} Var ({loc_i + 1}) $\sigma$"
+            )
+            ax[0].legend(loc='upper right')
+
+        # Plot smoothed results
+        ax[1].set_title("Smoothed Data")
+        ax[1].scatter(range(len(S_norm_smooth)),S_norm_smooth)
+        for i in range(len(vars_smooth)):
+            loc_i = locs_smooth[i]
+            var_i = vars_smooth[i]
+            ax[1].vlines(
+                loc_i,
+                linestyles='--',
+                ymin=0,
+                ymax=np.max(S_norm_smooth),
+                color=color_pallet[i%len(color_pallet)],
+                label=fr"{int(var_i*100)} Var ({loc_i + 1}) $\sigma$"
+            )
+            ax[1].legend(loc='upper right')
+        fig.suptitle("Singular Values of Hankel Matrix",size='x-large')
+
+    # Otherwise print just unsmoothed data
+    else:
+        fig = plt.figure(figsize=(7,5))
+        plt.title("Singular Values of Hankel Matrix")
+        plt.scatter(range(len(S_norm)),S_norm)
+        for i in range(len(vars)):
+            loc_i = locs[i]
+            var_i = vars[i]
+            plt.vlines(
+                loc_i,
+                linestyles='--',
+                ymin=0,
+                ymax=np.max(S_norm),
+                color = color_pallet[i%len(color_pallet)],
+                label=fr"{int(var_i*100)} Var ({loc_i+1} $\sigma$)"
+            )
+        plt.legend()
+
     return fig
 
-def plot_dominate_hankel_modes(V,num_of_modes, variance):
-    fig = plt.figure(figsize=(7,5))
-    plt.title(f"Dominant Modes of V ({int(variance*100)}% var)")
-    for i in range(num_of_modes):
-        plt.plot(V[:,i], label=f"Mode {i}")
-    plt.legend(loc='upper right')
+def plot_dominate_hankel_modes(
+        V,
+        num_of_modes, 
+        variance,
+        V_smooth=None,
+        num_of_modes_smooth=None,
+        variance_smooth=None):
+    if (
+        isinstance(V_smooth,np.ndarray) and
+        isinstance(num_of_modes_smooth,np.int64) and
+        isinstance(variance_smooth,np.float64)
+    ):
+        fig, ax = plt.subplots(1,2,figsize=(15,5), layout='constrained')
+        # plot unsmothed modes
+        ax[0].set_title(f"Data ({int(variance*100)}% var) ")
+        for i in range(num_of_modes):
+            ax[0].plot(V[:,i], label=f"Mode {i}")
+        ax[0].legend(loc="upper right")
+
+        # Plot smoothed modes
+        ax[1].set_title(f"Smoothed Data ({int(variance_smooth*100)}% var)")
+        for i in range(num_of_modes_smooth):
+            ax[1].plot(V_smooth[:,i], label=f"Mode {i}")
+        ax[1].legend(loc="upper right")
+
+        fig.suptitle("Dominate modes of V and V_smooth")
+
+    else:
+        fig = plt.figure(figsize=(7,5))
+        plt.title(f"Dominant Modes of V ({int(variance*100)}% var)")
+        for i in range(num_of_modes):
+            plt.plot(V[:,i], label=f"Mode {i}")
+        plt.legend(loc='upper right')
     return fig
 
 def plot_time_series(
-        t: Float1D, data: PolyData, smooth_data: PolyData, feature_names: list[str]
+        t: Float1D, data: PolyData, feature_names: list[str], smooth_data: PolyData=None
 )-> Figure:
     fig, ax = plt.subplots(1,3,figsize=(15,5), layout="constrained")
     for i, feat in enumerate(feature_names):
         ax[i].plot(t, data[:,i], label="Data", color=CMEAS)
-        ax[i].plot(t,smooth_data[:,i], label="Smoothed", color=CSMOOTH)
+
+        if isinstance(smooth_data,np.ndarray):
+            ax[i].plot(t,smooth_data[:,i], label="Smoothed", color=CSMOOTH)
+
         ax[i].set_title(f"Coeff {feat}")
         if i==0:
             ax[i].legend()
