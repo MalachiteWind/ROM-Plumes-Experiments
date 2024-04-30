@@ -13,7 +13,7 @@ from sklearn.preprocessing import StandardScaler
 from typing import Any, Optional
 import gen_experiments
 
-from .types import PolyData, Float2D
+from .types import PolyData, Float1D, Float2D
 from .plotting import plot_hankel_variance, plot_dominate_hankel_modes, plot_time_series
 
 Kwargs = dict[str, Any]
@@ -79,13 +79,6 @@ def run(
         dominate_modes_kws["num_of_modes_smooth"] = num_of_modes_smooth[0]
         dominate_modes_kws["variance_smooth"] = vars_captured_smooth[0]
 
-    # print(time_series_kws)
-    # print(hankel_variance_kws)
-    for key, value in dominate_modes_kws.items():
-        print(f"{key}: {type(value)}")
-
-
-
     ############
     # Plotting #
     ############
@@ -129,12 +122,11 @@ def run(
 
 # Helper Functions
 def _construct_hankel(
-        A: np.ndarray,
+        A: PolyData,
         k: int=10,
         window: float=0.8,
-        dt: int=1
-        
-):
+        dt: int=1  
+) -> Float2D:
     """
     Construct a Hankel Matrix from a given array A (nxd)
 
@@ -172,7 +164,10 @@ def _construct_hankel(
     
     return H
 
-def _get_variances_modes(S, vars = [.9,.95,.99]):
+def _get_variances_modes(
+        S: Float1D, 
+        vars: list[float] = [.9,.95,.99]
+) -> tuple[list[int],list[float]]:
     """
     Return number of modes (descending) that captures desired variance 
     of data.
@@ -197,9 +192,9 @@ def _get_variances_modes(S, vars = [.9,.95,.99]):
     return num_of_modes, vars_captured
 
 def _smooth_data(
-        A: np.ndarray,
+        A: PolyData,
         diff_params: dict[Kwargs]
-):
+) -> PolyData:
     """
     Return smoothed data when using selected diff_params from lookup_dict.
     """

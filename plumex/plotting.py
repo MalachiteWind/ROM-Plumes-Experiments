@@ -7,6 +7,7 @@ from matplotlib import colors as mcolors
 
 import pysindy as ps
 
+from typing import Optional
 from .types import Float1D, PolyData
 
 CMAP = mpl.color_sequences["tab10"]
@@ -112,13 +113,13 @@ def plot_simulation(
 # Plotting for Hankel Analysis
 
 def plot_hankel_variance(
-        S_norm, 
-        locs, 
-        vars, 
-        S_norm_smooth=None,
-        locs_smooth=None,
-        vars_smooth=None
-    ):
+        S_norm: Float1D, 
+        locs:list[int], 
+        vars: list[float], 
+        S_norm_smooth:Optional[Float1D]=None,
+        locs_smooth:Optional[list[int]]=None,
+        vars_smooth:Optional[list[float]]=None
+) -> Figure:
     color_pallet = ['r','g','b','c','m','k','w']
 
     # If ALL smooth params are non-empty, then plot both
@@ -142,7 +143,7 @@ def plot_hankel_variance(
                 ymin=0,
                 ymax=np.max(S_norm),
                 color=color_pallet[i%len(color_pallet)],
-                label=fr"{int(var_i*100)} Var ({loc_i + 1}) $\sigma$"
+                label=fr"{int(var_i*100)} Var ({loc_i + 1} $\sigma$)"
             )
             ax[0].legend(loc='upper right')
 
@@ -158,7 +159,7 @@ def plot_hankel_variance(
                 ymin=0,
                 ymax=np.max(S_norm_smooth),
                 color=color_pallet[i%len(color_pallet)],
-                label=fr"{int(var_i*100)} Var ({loc_i + 1}) $\sigma$"
+                label=fr"{int(var_i*100)} Var ({loc_i + 1} $\sigma$)"
             )
             ax[1].legend(loc='upper right')
         fig.suptitle("Singular Values of Hankel Matrix",size='x-large')
@@ -184,12 +185,13 @@ def plot_hankel_variance(
     return fig
 
 def plot_dominate_hankel_modes(
-        V,
-        num_of_modes, 
-        variance,
-        V_smooth=None,
-        num_of_modes_smooth=None,
-        variance_smooth=None):
+        V: np.ndarray,
+        num_of_modes:np.int64, 
+        variance:np.float64,
+        V_smooth:Optional[np.ndarray]=None,
+        num_of_modes_smooth:Optional[np.int64]=None,
+        variance_smooth:Optional[np.float64]=None
+) -> Figure:
     if (
         isinstance(V_smooth,np.ndarray) and
         isinstance(num_of_modes_smooth,np.int64) and
@@ -219,7 +221,7 @@ def plot_dominate_hankel_modes(
     return fig
 
 def plot_time_series(
-        t: Float1D, data: PolyData, feature_names: list[str], smooth_data: PolyData=None
+        t: Float1D, data: PolyData, feature_names: list[str], smooth_data: Optional[PolyData] = None
 )-> Figure:
     fig, ax = plt.subplots(1,3,figsize=(15,5), layout="constrained")
     for i, feat in enumerate(feature_names):
