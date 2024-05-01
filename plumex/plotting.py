@@ -150,7 +150,12 @@ def plot_hankel_variance(
 
         # Plot unsmoothed results
         ax[0].set_title("Data")
-        ax[0].scatter(range(len(S_norm)),S_norm,c='k')
+        t=range(len(S_norm))
+        index = locs[-1]+1
+        c1 = color_pallet[(len(locs)-1)%len(color_pallet)]
+        c2 = 'dimgray'
+        ax[0].scatter(t[:index],S_norm[:index],c=c1)
+        ax[0].scatter(t[index:],S_norm[index:],c=c2)
         for i in range(len(vars)):
             loc_i = locs[i]
             var_i = vars[i]
@@ -166,7 +171,12 @@ def plot_hankel_variance(
 
         # Plot smoothed results
         ax[1].set_title("Smoothed Data")
-        ax[1].scatter(range(len(S_norm_smooth)),S_norm_smooth,c='k')
+        t=range(len(S_norm_smooth))
+        index = locs_smooth[-1]+1
+        c1 = color_pallet[(len(locs_smooth)-1)%len(color_pallet)]
+        c2 = 'dimgray'
+        ax[1].scatter(t[:index],S_norm_smooth[:index],c=c1)
+        ax[1].scatter(t[index:], S_norm_smooth[index:],c=c2)
         for i in range(len(vars_smooth)):
             loc_i = locs_smooth[i]
             var_i = vars_smooth[i]
@@ -185,6 +195,12 @@ def plot_hankel_variance(
     else:
         fig = plt.figure(figsize=(7,5))
         plt.title("Singular Values of Hankel Matrix")
+        t=range(len(S_norm))
+        index = locs[-1]+1
+        c1 = color_pallet[(len(locs)-1)%len(color_pallet)]
+        c2 = 'dimgray'
+        plt.scatter(t[:index],S_norm[:index],c=c1)
+        plt.scatter(t[index:], S_norm[index:], c=c2)
         plt.scatter(range(len(S_norm)),S_norm)
         for i in range(len(vars)):
             loc_i = locs[i]
