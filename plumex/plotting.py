@@ -150,7 +150,7 @@ def plot_hankel_variance(
 
         # Plot unsmoothed results
         ax[0].set_title("Data")
-        ax[0].scatter(range(len(S_norm)),S_norm)
+        ax[0].scatter(range(len(S_norm)),S_norm,c='k')
         for i in range(len(vars)):
             loc_i = locs[i]
             var_i = vars[i]
@@ -166,7 +166,7 @@ def plot_hankel_variance(
 
         # Plot smoothed results
         ax[1].set_title("Smoothed Data")
-        ax[1].scatter(range(len(S_norm_smooth)),S_norm_smooth)
+        ax[1].scatter(range(len(S_norm_smooth)),S_norm_smooth,c='k')
         for i in range(len(vars_smooth)):
             loc_i = locs_smooth[i]
             var_i = vars_smooth[i]
