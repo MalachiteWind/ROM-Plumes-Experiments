@@ -39,7 +39,7 @@ def run(
     metrics["raw-collinearity"]=data_collinearity
 
     # Construct Hankel Matrix
-    H = _construct_hankel(data, **hankel_kwargs)
+    H = _hankel(data, **hankel_kwargs)
 
     # Compute SVD
     U,S,Vh = np.linalg.svd(H)
@@ -64,7 +64,7 @@ def run(
             diff_params
         )
 
-        H_smooth = _construct_hankel(data_smooth,**hankel_kwargs)
+        H_smooth = _hankel(data_smooth,**hankel_kwargs)
         _,S_smooth,Vh_smooth = np.linalg.svd(H_smooth)
         num_of_modes_smooth, vars_captured_smooth = _get_variances_modes(
             S_smooth, vars=variance
@@ -88,16 +88,24 @@ def run(
     H_dmd = dmd.reconstructed_data.real
 
     if 'window' in hankel_kwargs:
-        hankel_kwargs.pop('window')
+        win_val = hankel_kwargs.pop('window')
+        data_dmd = _dehankel(H_dmd,**hankel_kwargs)
+        hankel_kwargs['window']=win_val
+    else:
+        data_dmd = _dehankel(H_dmd,**hankel_kwargs)
 
-    data_dmd = _dehankel(H_dmd,**hankel_kwargs)
 
     data_and_dmd_kws = {}
     if diff_params:
         dmd_smooth = DMD(svd_rank=num_of_modes_smooth[0]+1)
         dmd_smooth.fit(H_smooth)
         H_dmd_smooth = dmd_smooth.reconstructed_data.real
-        data_dmd_smooth = _dehankel(H_dmd_smooth,**hankel_kwargs)
+        if 'window' in hankel_kwargs:
+            win_val =hankel_kwargs.pop('window')
+            data_dmd_smooth = _dehankel(H_dmd_smooth,**hankel_kwargs)
+            hankel_kwargs['window'] = win_val
+        else:
+            data_dmd_smooth = _dehankel(H_dmd_smooth,**hankel_kwargs)
 
         t = range(len(data_dmd_smooth.T))
         data_and_dmd_kws["smooth_data"] = data_smooth[:len(t),:]
@@ -158,29 +166,31 @@ def run(
 
 
 # Helper Functions
-def _construct_hankel(
+def _hankel(
         A: PolyData,
         k: int=10,
-        window: float=0.8,
-        dt: int=1  
+        dt: int=1,
+        window: float=0,  
 ) -> Float2D:
     """
     Construct a Hankel Matrix from a given array A (nxd)
 
     Parameters:
     ----------
-    A: np.ndarray
+    A: np.ndarray (n x d)
         Array to apply time delay embedding too.
 
     k: int (default 10)
         Number of time delay embeddings to apply 
 
-    window: float in [0,1] (default 0.8)
-        Percentage of data to create window size of embedding. 
-
     dt: int (default 1)
         time delay time size. I.e. how much to shift data by
         for each row of Hankel matrix.
+
+    window: float in [0,1] (default 0)
+        Percentage of data to create window size of embedding. 
+        If window=0 or 1, then size will be determined by k to use all
+        of data.
         
     Returns:
     -------
@@ -189,7 +199,10 @@ def _construct_hankel(
     """
 
     n,d = A.shape
-    m=int(n*window)
+    if window==1 or window==0:
+        m=n-(k-1)*dt
+    else:
+        m=int(n*window)
     
     H = []
     l=0

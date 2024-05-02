@@ -77,9 +77,11 @@ sindy_lookup = {
 
 hankel_lookup = {
     "hankel_kwargs": {
-        "default": {"k":10,"window":0.8},
+        "default": {"k":10},
+        "default_80": {"k":10,"window":0.8},
         "large_k": {"k":50},
         "small_k": {"k":5},
+        "very_small":{"k":5, "window":0.7}
     },
     "variance": {
         "default": [0.9,0.95,0.99],
