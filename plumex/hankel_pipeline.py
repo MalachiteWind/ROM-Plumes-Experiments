@@ -26,6 +26,7 @@ def run(
     #################
     # Preprocessing #
     #################
+    metrics = {}
     scalar = StandardScaler()
     if normalize:
         data = scalar.fit_transform(data)
@@ -34,7 +35,6 @@ def run(
         eigvals, eigvecs = np.linalg.eigh(np.cov(data.T))
         data: PolyData = (data@eigvecs)/np.sqrt(eigvals) 
 
-    metrics = {}
     data_collinearity = np.linalg.cond(data)
     metrics["raw-collinearity"]=data_collinearity
 
@@ -93,6 +93,10 @@ def run(
         hankel_kwargs['window']=win_val
     else:
         data_dmd = _dehankel(H_dmd,**hankel_kwargs)
+    
+    l = len(data_dmd.T)
+    err = np.linalg.norm(data[:l,:]-data_dmd.T)/np.linalg.norm(data[:l,:])
+    metrics["reconst_acc"]=1-err
 
 
     data_and_dmd_kws = {}
@@ -106,6 +110,10 @@ def run(
             hankel_kwargs['window'] = win_val
         else:
             data_dmd_smooth = _dehankel(H_dmd_smooth,**hankel_kwargs)
+
+        l = len(data_dmd_smooth.T)
+        err = np.linalg.norm(data[:l,:]-data_dmd_smooth.T)/np.linalg.norm(data[:l,:])
+        metrics["reconst_smooth_acc"] = 1-err
 
         t = range(len(data_dmd_smooth.T))
         data_and_dmd_kws["smooth_data"] = data_smooth[:len(t),:]
@@ -157,10 +165,14 @@ def run(
     )
     plt.show()
 
+    # Store results/metrics/data
+    results = {}
+    if diff_params:
+        results['main'] = metrics["reconst_smooth_acc"]
+    else:
+        results['main'] = metrics["reconst_acc"]
 
-    results = {
-        "main": 1,
-    }
+    results["metrics"] = metrics
 
     return results
 
