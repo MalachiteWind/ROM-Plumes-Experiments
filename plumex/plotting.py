@@ -252,3 +252,47 @@ def plot_dominate_hankel_modes(
             plt.plot(V[:,i], label=f"Mode {i}")
         plt.legend(loc='upper right')
     return fig
+
+def plot_data_and_dmd(
+        t,
+        data,
+        dmd_data,
+        var,
+        svd_rank,
+        feature_names,
+        smooth_data=None,
+        smooth_dmd_data=None, 
+        var_smooth=None,
+        svd_rank_smooth=None    
+):
+    if (
+        isinstance(smooth_data,np.ndarray) and
+        isinstance(smooth_dmd_data, np.ndarray)
+    ):
+        fig, ax = plt.subplots(3,2, figsize=(15,10), layout="constrained")
+        for i, feat in enumerate(feature_names):
+            ax[i][0].plot(t,data[:,i], label="Data",color=CMEAS)
+            ax[i][0].plot(t,dmd_data[:,i], label="DMD", color='k')
+            ax[i][0].set_ylabel(f"Coeff {feat}")
+
+            ax[i][1].plot(t,smooth_data[:,i], label="Smooth Data",color=CSMOOTH)
+            ax[i][1].plot(t,smooth_dmd_data[:,i], label="DMD", color='k')
+            
+            if i==0:
+                ax[i][0].set_title(f"Data ({int(100*var)}% var, svd_rank={svd_rank})")
+                ax[i][0].legend()
+                ax[i][1].set_title(f"Smoothed Data ({int(100*var_smooth)}% var, svd_rank={svd_rank_smooth})")
+                ax[i][1].legend()
+    else:    
+        fig, ax = plt.subplots(3,1,figsize=(7,5),layout="constrained")
+        for i, feat in enumerate(feature_names):
+            ax[i].plot(t,data[:,i], label="Data",color=CMEAS)
+            ax[i].plot(t,dmd_data[:,i], label="DMD", color='k')
+            ax[i].set_ylabel(f"Coeff {feat}")
+
+            if i==0:
+                ax[i].legend()
+                
+    fig.suptitle("Exact DMD Reconstruction",size="x-large")
+    plt.tight_layout()
+    return fig

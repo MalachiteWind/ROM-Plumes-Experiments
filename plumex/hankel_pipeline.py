@@ -1,20 +1,15 @@
 # Run Analysis on time-series 
 
-# TO DO:
-# - Fix plotting to include variance capture for first columnbs of V [Done]
-# - Fix mitosis bug [DONE]
-# - Add plotting of orginal function [Done]
-# - Load dill files and smoothing
-# - Add data smoothing option
-# - Add check that svd worked well
 import numpy as  np
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import StandardScaler
 from typing import Any, Optional
 import gen_experiments
+from pydmd import DMD
+
 
 from .types import PolyData, Float1D, Float2D
-from .plotting import plot_hankel_variance, plot_dominate_hankel_modes, plot_time_series
+from .plotting import plot_hankel_variance, plot_dominate_hankel_modes, plot_time_series, plot_data_and_dmd
 
 Kwargs = dict[str, Any]
 
@@ -31,9 +26,6 @@ def run(
     #################
     # Preprocessing #
     #################
-
-    # Need this in order to not throw issue bug in mitosis
-    # print("My Flag!")
     scalar = StandardScaler()
     if normalize:
         data = scalar.fit_transform(data)
@@ -42,11 +34,20 @@ def run(
         eigvals, eigvecs = np.linalg.eigh(np.cov(data.T))
         data: PolyData = (data@eigvecs)/np.sqrt(eigvals) 
 
+    metrics = {}
+    data_collinearity = np.linalg.cond(data)
+    metrics["raw-collinearity"]=data_collinearity
+
     # Construct Hankel Matrix
     H = _construct_hankel(data, **hankel_kwargs)
 
     # Compute SVD
     U,S,Vh = np.linalg.svd(H)
+
+    # Check SVD Decomposition
+    H_SVD = (U*S)@Vh[:len(S),:]
+    if not np.allclose(H,H_SVD):
+        print("SVD decomposition issue")
 
     # Obtain number of modes
     num_of_modes, vars_captured = _get_variances_modes(
@@ -78,6 +79,31 @@ def run(
         dominate_modes_kws["V_smooth"] = Vh_smooth.T
         dominate_modes_kws["num_of_modes_smooth"] = num_of_modes_smooth[0]
         dominate_modes_kws["variance_smooth"] = vars_captured_smooth[0]
+
+    #############
+    # Exact DMD #
+    #############
+    dmd = DMD(svd_rank=num_of_modes[0]+1)
+    dmd.fit(H)
+    H_dmd = dmd.reconstructed_data.real
+
+    if 'window' in hankel_kwargs:
+        hankel_kwargs.pop('window')
+
+    data_dmd = _dehankel(H_dmd,**hankel_kwargs)
+
+    data_and_dmd_kws = {}
+    if diff_params:
+        dmd_smooth = DMD(svd_rank=num_of_modes_smooth[0]+1)
+        dmd_smooth.fit(H_smooth)
+        H_dmd_smooth = dmd_smooth.reconstructed_data.real
+        data_dmd_smooth = _dehankel(H_dmd_smooth,**hankel_kwargs)
+
+        t = range(len(data_dmd_smooth.T))
+        data_and_dmd_kws["smooth_data"] = data_smooth[:len(t),:]
+        data_and_dmd_kws["smooth_dmd_data"]=data_dmd_smooth.T
+        data_and_dmd_kws["var_smooth"] = vars_captured_smooth[0]
+        data_and_dmd_kws["svd_rank_smooth"] = num_of_modes_smooth[0]+1
 
     ############
     # Plotting #
@@ -112,9 +138,20 @@ def run(
     )
     plt.show()
 
+    # Plot DMD reconstruction
+    t=range(len(data_dmd.T))
+    plot_data_and_dmd(
+        t=t, data=data[:len(t),:],dmd_data=data_dmd.T,
+        feature_names=feature_names,
+        var=vars_captured[0],
+        svd_rank=num_of_modes[0]+1,
+        **data_and_dmd_kws
+    )
+    plt.show()
+
+
     results = {
         "main": 1,
-        "metrics": {"results": 1}
     }
 
     return results
@@ -143,7 +180,7 @@ def _construct_hankel(
 
     dt: int (default 1)
         time delay time size. I.e. how much to shift data by
-        for each row of Hankel.
+        for each row of Hankel matrix.
         
     Returns:
     -------
@@ -161,8 +198,30 @@ def _construct_hankel(
         l+=dt
     H=np.array(H)
 
-    
     return H
+
+def _dehankel(H,k=10,dt=1):
+    """
+    Given a Hankel matrix H as a 2-D numpy.ndarray, uses the `delays`
+    and `lag` attributes to unravel the data in the Hankel matrix.
+
+    :param H: 2-D Hankel matrix of data.
+    :type H: numpy.ndarray
+    :return: de-Hankeled (m,) or (n, m) array of data.
+    :rtype: numpy.ndarray
+    """
+    if not isinstance(H, np.ndarray) or H.ndim != 2:
+        raise ValueError("Data must be a 2-D numpy array.")
+
+    Hn, Hm = H.shape
+    n = int(Hn / k)
+    m = int(Hm + ((k - 1) * dt))
+    X = np.empty((n, m))
+    for i in range(k):
+        X[:, i * dt : i * dt + Hm] = H[i * n : (i + 1) * n]
+
+    return np.squeeze(X)
+
 
 def _get_variances_modes(
         S: Float1D, 
