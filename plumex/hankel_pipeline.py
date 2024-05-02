@@ -50,7 +50,7 @@ def run(
         print("SVD decomposition issue")
 
     # Obtain number of modes
-    num_of_modes, vars_captured = _get_variances_modes(
+    mode_indices, vars_captured = _get_variances_modes(
         S, vars=variance
     )
 
@@ -66,24 +66,24 @@ def run(
 
         H_smooth = _hankel(data_smooth,**hankel_kwargs)
         _,S_smooth,Vh_smooth = np.linalg.svd(H_smooth)
-        num_of_modes_smooth, vars_captured_smooth = _get_variances_modes(
+        mode_indices_smooth, vars_captured_smooth = _get_variances_modes(
             S_smooth, vars=variance
         )
 
         time_series_kws["smooth_data"] = data_smooth
 
         hankel_variance_kws["S_norm_smooth"] = S_smooth/np.sum(S_smooth)
-        hankel_variance_kws["locs_smooth"] = num_of_modes_smooth
+        hankel_variance_kws["locs_smooth"] = mode_indices_smooth
         hankel_variance_kws["vars_smooth"] = vars_captured_smooth
 
         dominate_modes_kws["V_smooth"] = Vh_smooth.T
-        dominate_modes_kws["num_of_modes_smooth"] = num_of_modes_smooth[0]
+        dominate_modes_kws["mode_indices_smooth"] = mode_indices_smooth[0]
         dominate_modes_kws["variance_smooth"] = vars_captured_smooth[0]
 
     #############
     # Exact DMD #
     #############
-    dmd = DMD(svd_rank=num_of_modes[0]+1)
+    dmd = DMD(svd_rank=mode_indices[0]+1)
     dmd.fit(H)
     H_dmd = dmd.reconstructed_data.real
 
@@ -97,7 +97,7 @@ def run(
 
     data_and_dmd_kws = {}
     if diff_params:
-        dmd_smooth = DMD(svd_rank=num_of_modes_smooth[0]+1)
+        dmd_smooth = DMD(svd_rank=mode_indices_smooth[0]+1)
         dmd_smooth.fit(H_smooth)
         H_dmd_smooth = dmd_smooth.reconstructed_data.real
         if 'window' in hankel_kwargs:
@@ -111,7 +111,7 @@ def run(
         data_and_dmd_kws["smooth_data"] = data_smooth[:len(t),:]
         data_and_dmd_kws["smooth_dmd_data"]=data_dmd_smooth.T
         data_and_dmd_kws["var_smooth"] = vars_captured_smooth[0]
-        data_and_dmd_kws["svd_rank_smooth"] = num_of_modes_smooth[0]+1
+        data_and_dmd_kws["svd_rank_smooth"] = mode_indices_smooth[0]+1
 
     ############
     # Plotting #
@@ -131,7 +131,7 @@ def run(
     S_norm = S/np.sum(S)
     plot_hankel_variance(
         S_norm, 
-        locs=num_of_modes, 
+        locs=mode_indices, 
         vars=vars_captured,
         **hankel_variance_kws
     )
@@ -140,7 +140,7 @@ def run(
     # Plot dominate modes
     plot_dominate_hankel_modes(
         Vh.T, 
-        num_of_modes=num_of_modes[0], 
+        mode_indices=mode_indices[0], 
         variance=vars_captured[0],
         **dominate_modes_kws
     )
@@ -152,7 +152,7 @@ def run(
         t=t, data=data[:len(t),:],dmd_data=data_dmd.T,
         feature_names=feature_names,
         var=vars_captured[0],
-        svd_rank=num_of_modes[0]+1,
+        svd_rank=mode_indices[0]+1,
         **data_and_dmd_kws
     )
     plt.show()
@@ -251,17 +251,17 @@ def _get_variances_modes(
         [np.sum(S[:i]) for i in range(len(S))]
     ) / np.sum(S)
 
-    num_of_modes = []
+    mode_indices = []
     vars_captured = []
     for var_i in vars:
         loc_i = np.min(
             np.argwhere(var_sums>=var_i)
         )
-        num_of_modes.append(loc_i)
+        mode_indices.append(loc_i)
         vars_captured.append(var_sums[loc_i])
 
 
-    return num_of_modes, vars_captured
+    return mode_indices, vars_captured
 
 def _smooth_data(
         A: PolyData,

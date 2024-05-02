@@ -219,27 +219,27 @@ def plot_hankel_variance(
 
 def plot_dominate_hankel_modes(
         V: np.ndarray,
-        num_of_modes:np.int64, 
+        mode_indices:np.int64, 
         variance:np.float64,
         V_smooth:Optional[np.ndarray]=None,
-        num_of_modes_smooth:Optional[np.int64]=None,
+        mode_indices_smooth:Optional[np.int64]=None,
         variance_smooth:Optional[np.float64]=None
 ) -> Figure:
     if (
         isinstance(V_smooth,np.ndarray) and
-        isinstance(num_of_modes_smooth,np.int64) and
+        isinstance(mode_indices_smooth,np.int64) and
         isinstance(variance_smooth,np.float64)
     ):
         fig, ax = plt.subplots(1,2,figsize=(15,5), layout='constrained')
         # plot unsmothed modes
         ax[0].set_title(f"Data ({int(variance*100)}% var) ")
-        for i in range(num_of_modes):
+        for i in range(mode_indices):
             ax[0].plot(V[:,i], label=f"Mode {i}")
         ax[0].legend(loc="upper right")
 
         # Plot smoothed modes
         ax[1].set_title(f"Smoothed Data ({int(variance_smooth*100)}% var)")
-        for i in range(num_of_modes_smooth):
+        for i in range(mode_indices_smooth):
             ax[1].plot(V_smooth[:,i], label=f"Mode {i}")
         ax[1].legend(loc="upper right")
 
@@ -248,7 +248,7 @@ def plot_dominate_hankel_modes(
     else:
         fig = plt.figure(figsize=(7,5))
         plt.title(f"Dominant Modes of V ({int(variance*100)}% var)")
-        for i in range(num_of_modes):
+        for i in range(mode_indices):
             plt.plot(V[:,i], label=f"Mode {i}")
         plt.legend(loc='upper right')
     return fig
