@@ -80,10 +80,10 @@ hankel_lookup = {
         "default": {"k":10,"window":0.8},
         "large_k": {"k":50},
         "small_k": {"k":5},
-        "very_small": {"k": 5, "window": 0.7}
     },
     "variance": {
-        "default": [0.9,0.95,0.99]
+        "default": [0.9,0.95,0.99],
+        "95": [0.95]
     },    
     "diff_params": sindy_lookup["diff_params"]
 }
