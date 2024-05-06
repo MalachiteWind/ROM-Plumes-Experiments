@@ -6,10 +6,11 @@ build-backend = "setuptools.build_meta"
 name = "pysindy-plume-experiments"
 dynamic = ["version"]
 dependencies = [
-  "mitosis>=0.3.0",
+  "mitosis>=0.5.2",
   "pysindy[cvxpy] @ git+https://github.com/dynamicslab/pysindy",
   "matplotlib",
-  "pysindy-experiments @ git+https://github.com/Jacob-Stevens-Haas/gen-experiments"
+  "pysindy-experiments @ git+https://github.com/Jacob-Stevens-Haas/gen-experiments",
+  "ara_plumes @ git+https://github.com/Jacob-Stevens-Haas/ARA-Plumes",
 ]
 
 [tool.setuptools]
