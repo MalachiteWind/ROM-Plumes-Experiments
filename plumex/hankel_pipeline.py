@@ -51,7 +51,7 @@ def run(
 
     # Obtain number of modes
     mode_indices, vars_captured = _get_variances_modes(
-        S, vars=variance
+        S, variances=variance
     )
 
     # Get Smooth data
@@ -67,7 +67,7 @@ def run(
         H_smooth = _hankel(data_smooth,**hankel_kwargs)
         _,S_smooth,Vh_smooth = np.linalg.svd(H_smooth)
         mode_indices_smooth, vars_captured_smooth = _get_variances_modes(
-            S_smooth, vars=variance
+            S_smooth, variances=variance
         )
 
         time_series_kws["smooth_data"] = data_smooth
@@ -250,7 +250,7 @@ def _dehankel(H,k=10,dt=1):
 
 def _get_variances_modes(
         S: Float1D, 
-        vars: list[float] = [.9,.95,.99]
+        variances: list[float] = [.9,.95,.99]
 ) -> tuple[list[int],list[float]]:
     """
     Return number of modes (descending) that captures desired variance 
@@ -265,7 +265,7 @@ def _get_variances_modes(
 
     mode_indices = []
     vars_captured = []
-    for var_i in vars:
+    for var_i in variances:
         loc_i = np.min(
             np.argwhere(var_sums>=var_i)
         )
