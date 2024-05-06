@@ -137,85 +137,56 @@ def plot_hankel_variance(
         locs_smooth:Optional[list[int]]=None,
         variances_smooth:Optional[list[float]]=None
 ) -> Figure:
-    color_pallet = ['r','g','b','c','m','k','w']
 
-    # If ALL smooth params are non-empty, then plot both
-    # smooth and non-smoothed data. 
     if (
-        isinstance(S_norm_smooth,np.ndarray) and
-        isinstance(locs_smooth,list) and
-        isinstance(variances_smooth,list)
+        (S_norm_smooth is not None) and
+        locs_smooth and
+        variances_smooth
     ):
         fig, ax = plt.subplots(1,2,figsize=(15,5),layout="constrained")
 
         # Plot unsmoothed results
+        draw_singval_plot(S_norm,locs,variances,ax[0])
         ax[0].set_title("Data")
-        t=range(len(S_norm))
-        index = locs[-1]+1
-        c1 = color_pallet[(len(locs)-1)%len(color_pallet)]
-        c2 = 'dimgray'
-        ax[0].scatter(t[:index],S_norm[:index],c=c1)
-        ax[0].scatter(t[index:],S_norm[index:],c=c2)
-        for i in range(len(variances)):
-            loc_i = locs[i]
-            var_i = variances[i]
-            ax[0].vlines(
-                loc_i,
-                linestyles='--',
-                ymin=0,
-                ymax=np.max(S_norm),
-                color=color_pallet[i%len(color_pallet)],
-                label=fr"{int(var_i*100)} Var ({loc_i + 1} $\sigma$)"
-            )
-            ax[0].legend(loc='upper right')
 
         # Plot smoothed results
+        draw_singval_plot(S_norm_smooth,locs_smooth,variances_smooth,ax[1])
         ax[1].set_title("Smoothed Data")
-        t=range(len(S_norm_smooth))
-        index = locs_smooth[-1]+1
-        c1 = color_pallet[(len(locs_smooth)-1)%len(color_pallet)]
-        c2 = 'dimgray'
-        ax[1].scatter(t[:index],S_norm_smooth[:index],c=c1)
-        ax[1].scatter(t[index:], S_norm_smooth[index:],c=c2)
-        for i in range(len(variances_smooth)):
-            loc_i = locs_smooth[i]
-            var_i = variances_smooth[i]
-            ax[1].vlines(
-                loc_i,
-                linestyles='--',
-                ymin=0,
-                ymax=np.max(S_norm_smooth),
-                color=color_pallet[i%len(color_pallet)],
-                label=fr"{int(var_i*100)} Var ({loc_i + 1} $\sigma$)"
-            )
-            ax[1].legend(loc='upper right')
         fig.suptitle("Singular Values of Hankel Matrix",size='x-large')
 
-    # Otherwise print just unsmoothed data
     else:
         fig = plt.figure(figsize=(7,5))
+        ax = fig.gca()
+        draw_singval_plot(S_norm,locs,variances,ax)
         plt.title("Singular Values of Hankel Matrix")
-        t=range(len(S_norm))
+
+    return fig
+
+def draw_singval_plot(
+        singvals: Float1D, 
+        locs: list[int], 
+        variance: list[float], 
+        ax: mpl.axes.Axes
+) -> None:
+        t=range(len(singvals))
         index = locs[-1]+1
-        c1 = color_pallet[(len(locs)-1)%len(color_pallet)]
+        c1 = CMAP[(len(locs)-1)%len(CMAP)]
         c2 = 'dimgray'
-        plt.scatter(t[:index],S_norm[:index],c=c1)
-        plt.scatter(t[index:], S_norm[index:], c=c2)
-        plt.scatter(range(len(S_norm)),S_norm)
-        for i in range(len(variances)):
+        ax.scatter(t[:index],singvals[:index],c=c1)
+        ax.scatter(t[index:],singvals[index:],c=c2)
+        for i in range(len(variance)):
             loc_i = locs[i]
-            var_i = variances[i]
-            plt.vlines(
+            var_i = variance[i]
+            ax.vlines(
                 loc_i,
                 linestyles='--',
                 ymin=0,
-                ymax=np.max(S_norm),
-                color = color_pallet[i%len(color_pallet)],
-                label=fr"{int(var_i*100)} Var ({loc_i+1} $\sigma$)"
+                ymax=np.max(singvals),
+                color=CMAP[i%len(CMAP)],
+                label=fr"{int(var_i*100)} Var ({loc_i + 1} $\sigma$)"
             )
-        plt.legend()
+            ax.legend(loc='upper right')
 
-    return fig
 
 def plot_dominant_hankel_modes(
         V: np.ndarray,
