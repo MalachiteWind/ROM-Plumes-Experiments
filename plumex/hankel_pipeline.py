@@ -74,7 +74,7 @@ def run(
 
         hankel_variance_kws["S_norm_smooth"] = S_smooth/np.sum(S_smooth)
         hankel_variance_kws["locs_smooth"] = mode_indices_smooth
-        hankel_variance_kws["vars_smooth"] = vars_captured_smooth
+        hankel_variance_kws["variances_smooth"] = vars_captured_smooth
 
         dominate_modes_kws["V_smooth"] = Vh_smooth.T
         dominate_modes_kws["mode_indices_smooth"] = mode_indices_smooth[0]
@@ -140,7 +140,7 @@ def run(
     plot_hankel_variance(
         S_norm, 
         locs=mode_indices, 
-        vars=vars_captured,
+        variances=vars_captured,
         **hankel_variance_kws
     )
     plt.show()

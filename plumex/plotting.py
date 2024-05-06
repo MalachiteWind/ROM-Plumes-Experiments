@@ -132,10 +132,10 @@ def plot_time_series(
 def plot_hankel_variance(
         S_norm: Float1D, 
         locs:list[int], 
-        vars: list[float], 
+        variances: list[float], 
         S_norm_smooth:Optional[Float1D]=None,
         locs_smooth:Optional[list[int]]=None,
-        vars_smooth:Optional[list[float]]=None
+        variances_smooth:Optional[list[float]]=None
 ) -> Figure:
     color_pallet = ['r','g','b','c','m','k','w']
 
@@ -144,7 +144,7 @@ def plot_hankel_variance(
     if (
         isinstance(S_norm_smooth,np.ndarray) and
         isinstance(locs_smooth,list) and
-        isinstance(vars_smooth,list)
+        isinstance(variances_smooth,list)
     ):
         fig, ax = plt.subplots(1,2,figsize=(15,5),layout="constrained")
 
@@ -156,9 +156,9 @@ def plot_hankel_variance(
         c2 = 'dimgray'
         ax[0].scatter(t[:index],S_norm[:index],c=c1)
         ax[0].scatter(t[index:],S_norm[index:],c=c2)
-        for i in range(len(vars)):
+        for i in range(len(variances)):
             loc_i = locs[i]
-            var_i = vars[i]
+            var_i = variances[i]
             ax[0].vlines(
                 loc_i,
                 linestyles='--',
@@ -177,9 +177,9 @@ def plot_hankel_variance(
         c2 = 'dimgray'
         ax[1].scatter(t[:index],S_norm_smooth[:index],c=c1)
         ax[1].scatter(t[index:], S_norm_smooth[index:],c=c2)
-        for i in range(len(vars_smooth)):
+        for i in range(len(variances_smooth)):
             loc_i = locs_smooth[i]
-            var_i = vars_smooth[i]
+            var_i = variances_smooth[i]
             ax[1].vlines(
                 loc_i,
                 linestyles='--',
@@ -202,9 +202,9 @@ def plot_hankel_variance(
         plt.scatter(t[:index],S_norm[:index],c=c1)
         plt.scatter(t[index:], S_norm[index:], c=c2)
         plt.scatter(range(len(S_norm)),S_norm)
-        for i in range(len(vars)):
+        for i in range(len(variances)):
             loc_i = locs[i]
-            var_i = vars[i]
+            var_i = variances[i]
             plt.vlines(
                 loc_i,
                 linestyles='--',
