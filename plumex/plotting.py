@@ -118,7 +118,7 @@ def plot_time_series(
     for i, feat in enumerate(feature_names):
         ax[i].plot(t, data[:,i], label="Data", color=CMEAS)
 
-        if isinstance(smooth_data,np.ndarray):
+        if smooth_data is not None:
             ax[i].plot(t,smooth_data[:,i], label="Smoothed", color=CSMOOTH)
 
         ax[i].set_title(f"Coeff {feat}")
@@ -197,9 +197,9 @@ def plot_dominant_hankel_modes(
         variance_smooth:Optional[np.float64]=None
 ) -> Figure:
     if (
-        isinstance(V_smooth,np.ndarray) and
-        isinstance(mode_indices_smooth,np.int64) and
-        isinstance(variance_smooth,np.float64)
+        (V_smooth is not None) and
+        mode_indices_smooth and
+        variance_smooth
     ):
         fig, ax = plt.subplots(1,2,figsize=(15,5), layout='constrained')
         # plot unsmothed modes
@@ -237,8 +237,8 @@ def plot_data_and_dmd(
         svd_rank_smooth=None    
 ):
     if (
-        isinstance(smooth_data,np.ndarray) and
-        isinstance(smooth_dmd_data, np.ndarray)
+        (smooth_data is not None) and
+        (smooth_dmd_data is not None)
     ):
         fig, ax = plt.subplots(3,2, figsize=(15,10), layout="constrained")
         for i, feat in enumerate(feature_names):
