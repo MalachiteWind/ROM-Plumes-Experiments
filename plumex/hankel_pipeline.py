@@ -9,7 +9,7 @@ from pydmd import DMD
 
 
 from .types import PolyData, Float1D, Float2D
-from .plotting import plot_hankel_variance, plot_dominate_hankel_modes, plot_time_series, plot_data_and_dmd
+from .plotting import plot_hankel_variance, plot_dominant_hankel_modes, plot_time_series, plot_data_and_dmd
 
 Kwargs = dict[str, Any]
 
@@ -146,7 +146,7 @@ def run(
     plt.show()
 
     # Plot dominate modes
-    plot_dominate_hankel_modes(
+    plot_dominant_hankel_modes(
         Vh.T, 
         mode_indices=mode_indices[0], 
         variance=vars_captured[0],

@@ -217,7 +217,7 @@ def plot_hankel_variance(
 
     return fig
 
-def plot_dominate_hankel_modes(
+def plot_dominant_hankel_modes(
         V: np.ndarray,
         mode_indices:np.int64, 
         variance:np.float64,
