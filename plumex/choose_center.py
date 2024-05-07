@@ -14,7 +14,7 @@ import pickle
 from ara_plumes import PLUME, click_coordinates
 from pathlib import Path
 
-from plumex._data import DATA_DIR
+from plumex.data import pickle_path as DATA_DIR
 
 
 def _select_filename(date: str, wind: str, suffix: str, data_dir: Path) -> Path:
