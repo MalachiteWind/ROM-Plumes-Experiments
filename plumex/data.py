@@ -9,7 +9,7 @@ from .types import PolyData
 
 pickle_path = Path(__file__).parent.resolve() / "../plume_videos/"
 
-def load_pickle(filename: str) -> PolyData:
+def load_pickle(filename: str) -> dict[str, PolyData]:
     with open(pickle_path / filename, 'rb') as f:
         data_file = pickle.load(f)
         if isinstance(data_file,np.ndarray) is True:
