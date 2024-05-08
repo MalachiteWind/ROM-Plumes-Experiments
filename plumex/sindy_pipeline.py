@@ -11,24 +11,17 @@
 # Try simple example on Jake repo
 
 import re
-import pickle
 from typing import Any, cast, Literal, Optional
 from warnings import warn
 
 import gen_experiments
 import numpy as np
-from numpy.typing import NBitBase
 import matplotlib.pyplot as plt
 import pysindy as ps
-from matplotlib.figure import Figure
-from pathlib import Path
 from sklearn.preprocessing import StandardScaler
-from scipy.integrate import solve_ivp
 
-from .types import PolyData, Float1D
+from .types import PolyData, Float1D, Float2D
 from .plotting import plot_smoothing_step, print_diagnostics, plot_predictions, plot_simulation
-
-name = "sindy-pipeline"
 
 Kwargs = dict[str, Any]
 TrapMode = tuple[Literal["trap"], Optional[Kwargs]]
@@ -38,92 +31,10 @@ PolyMode = tuple[Literal["poly"], Optional[tuple[Kwargs, ps.BaseOptimizer, float
 and stabilizing epsilon.
 """
 
-pickle_path = Path(__file__).parent.resolve() / "../plume_videos/"
-
-def _load_pickle(filename: str) -> PolyData:
-    with open(pickle_path / filename, 'rb') as f:
-        data_file = pickle.load(f)
-        if isinstance(data_file,np.ndarray) is True:
-            return data_file
-        elif isinstance(data_file,dict) is True:   
-            return data_file["mean"]
-        else:
-            raise(ValueError("Datafile must be an array or dict with key 'mean'."))
-
-lookup_dict = {
-    "seed": {"bad_seed": 12},
-    "datafile": {"old-default": "July_20_2023/video_low_1/gauss_blur_coeff.pkl",
-                 "jan-10-v1":"Jan_10_2024/high/mean_poly_coeff_plume_jan_10_2024"\
-                             "_high_fixed_range_200_img_range_280_2235_orig_center"\
-                             "_1573_1073_gauss_time_window_21_gauss_time_sigma_6_seed_1234.pkl",
-                 "jan-10-v2":"Jan_10_2024/high/mean_poly_coeff_plume_jan_10_2024"\
-                             "_high_fixed_range_200_img_range_415_2235_orig_center"\
-                             "_1573_1073_gauss_time_window_21_gauss_time_sigma_6_seed_1234.pkl",
-                  "jan-8-v1":"Jan_8_2024/med/mean_poly_coeff_plume_jan_8_2024_"\
-                             "med_img_0871_fixed_range_90_img_range_200_2200_"\
-                             "orig_center_1572_1078_seed_1234.pkl",
-                  "jan-8-v2":"Jan_8_2024/med/mean_poly_coeff_plume_jan_8_2024_"\
-                             "med_img_0871_fixed_range_90_img_range_200_2200_"\
-                             "orig_center_1572_1078_num_of_contours_2_seed_1234.pkl",
-                  "jan-8-v3":"Jan_8_2024/med/mean_poly_coeff_plume_jan_8_2024_"\
-                             "med_img_0871_fixed_range_90_img_range_200_2200_"\
-                             "orig_center_1572_1078_num_of_contours_3_seed_1234.pkl",
-          "jan-8-v3-trimmed":"Jan_8_2024/med/mean_poly_coeff_600_1000_plume_jan_8_2024_"\
-                             "med_img_0871_fixed_range_90_img_range_200_2200_orig_center_"\
-                             "1572_1078_num_of_contours_3_seed_1234.pkl"},
-    "diff_params": {
-        "test": {"diffcls": "SmoothedFiniteDifference", "smoother_kws": {"window_length": 4}},
-        "smoother": {"diffcls": "SmoothedFiniteDifference", "smoother_kws": {"window_length": 15}},
-        "x-smooth": {"diffcls": "SmoothedFiniteDifference", "smoother_kws": {"window_length": 45}},
-        "xx-smooth": {"diffcls": "SmoothedFiniteDifference", "smoother_kws": {"window_length": 100, "polyorder": 2}},
-        "xxx-smooth": {"diffcls": "SmoothedFiniteDifference", "smoother_kws": {"window_length": 500, "polyorder": 2}},
-        "tv": {"diffcls": "sindy", "kind": "trend_filtered", "alpha": 1, "order": 0},
-        "kalman-autoks": {"diffcls": "sindy", "kind": "kalman", "alpha": "gcv"},
-        "kalman": {"diffcls": "sindy", "kind": "kalman", "alpha": 1e-4},
-    },
-    "reg_mode": {
-        "trap-test": ("trap", {"eta": 1e-1}),
-        "trap-merge": ("trap", {"eta": 1e-1, "_n_tgts": 3}),
-        "trap-merge-dindy": ("trap", {"eta": 1e-1, "_n_tgts": 3, "threshold":0}),
-        "old-default": ("poly", (
-            {"degree": 3},
-            ps.STLSQ(threshold=.12, alpha=1e-3, max_iter=100),
-            1e-5
-        )),
-        "choosy-poly": ("poly", (
-            {"degree": 3},
-            ps.STLSQ(threshold=.12, alpha=1e-3, max_iter=100),
-            None
-        )),
-        "choosy-sparser": ("poly", (
-            {"degree": 3},
-            ps.STLSQ(threshold=.12, alpha=1e-1, max_iter=100),
-            None
-        )),
-        "poly-semisparse": ("poly", (
-            {"degree": 3},
-            ps.STLSQ(threshold=.12, alpha=1e-2, max_iter=100),
-            None
-        )),
-        "quad-default": ("poly", (
-            {"degree": 2},
-            ps.STLSQ(threshold=.05, alpha=1e-2, max_iter=100),
-            None
-        )),
-        "c-sparserer": ("poly", (
-            {"degree": 3},
-            ps.STLSQ(threshold=.12, alpha=1e0, max_iter=100),
-            None
-        )),
-    },
-    "ens_kwargs": {"old-default": {"n_models": 20, "n_subset": None}},
-}
-
-
 
 def run(
+        time_series: Float2D,
         seed: int,
-        datafile: str,
         whitening: bool,
         ens_kwargs: Optional[Kwargs] = None,
         diff_params: Optional[Kwargs] = None,
@@ -138,9 +49,8 @@ def run(
 
     Parameters:
     -----------
-    datafile:
-        filename in the pickle folder for data to use.  Must hold an array
-        of n_time x 3, the coefficients of the fit polynomial.
+    data:
+        time series to fit
 
     whitening:
         bool which transforms timeseries into statistically uncorrelated data 
@@ -202,7 +112,6 @@ def run(
         raise ValueError("Regularization mode must be either 'poly' or 'trap'")
 
     np.random.seed(seed=seed)
-    time_series = _load_pickle(datafile)
     
     ############################
     # Apply normalized scaling #

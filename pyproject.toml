@@ -18,3 +18,7 @@ packages=["plumex"]
 
 [tool.setuptools_scm]
 
+[tool.mitosis.steps]
+data = ["plumex.data:load_pickle", "plumex.config:data_lookup"]
+sindy_fe = ["plumex.sindy_pipeline:run", "plumex.config:sindy_lookup"]
+hankel_fe = ["plumex.hankel_pipeline:run", "plumex.config:hankel_lookup"]
