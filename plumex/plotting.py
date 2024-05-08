@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 from matplotlib.gridspec import GridSpec
 from matplotlib import colors as mcolors
@@ -166,7 +167,7 @@ def draw_singval_plot(
         singvals: Float1D, 
         locs: list[int], 
         variance: list[float], 
-        ax: mpl.axes.Axes
+        ax: Axes
 ) -> None:
         t=range(len(singvals))
         index = locs[-1]+1
