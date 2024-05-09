@@ -39,7 +39,6 @@ def run(
         ens_kwargs: Optional[Kwargs] = None,
         diff_params: Optional[Kwargs] = None,
         normalize=True,
-        stabilizing_eps=1e-5,
         reg_mode: TrapMode | PolyMode = ("poly", None)
     ):
     
