@@ -17,7 +17,11 @@ def create_centerline(
     regression_kw: dict[str, Any]=None,
 ) -> dict[str, PolyData]:
     """Calculate the centerline path from a moviefile
-    
+
+    Args:
+        filename: path from plume_videos/ to movie file.  Must have adjacent
+            centerpoint file
+        remainder of args are from ara_plumes.PLUME initialization
     """
     if gauss_kw is None:
         gauss_kw = {}
@@ -30,7 +34,7 @@ def create_centerline(
     with open(pickle_path / origin_filename, "rb") as fh:
         origin = pickle.load(fh)
     plume = PLUME(str(pickle_path / filename))
-    plume.orig_center = origin
+    plume.orig_center = tuple(int(coord) for coord in origin)
     center, _, _ = plume.train(
         img_range=img_range,
         subtraction_method=subtraction_method,

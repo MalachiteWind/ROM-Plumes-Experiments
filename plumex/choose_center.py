@@ -38,7 +38,7 @@ def create_metadata(date: str, wind: str, suffix: str):
     """
     filename = _select_filename(date, wind, suffix, DATA_DIR)
     plume = PLUME(str(filename))
-    source = click_coordinates(plume.video_capture)
+    source = tuple(int(coord) for coord in click_coordinates(plume.video_capture))
     with open(str(filename) + "_ctr.pkl", "wb") as ctr_file:
         pickle.dump(source, ctr_file)
 
