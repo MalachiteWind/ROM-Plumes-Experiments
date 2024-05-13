@@ -45,5 +45,5 @@ def create_centerline(
         regression_kws=regression_kw,
         **gauss_kw
     )
-    return {"main": None, "data": center, "plume": plume}
+    return {"main": None, "data": center}
 
