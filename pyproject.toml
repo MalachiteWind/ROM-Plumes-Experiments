@@ -7,9 +7,9 @@ name = "pysindy-plume-experiments"
 dynamic = ["version"]
 dependencies = [
   "mitosis>=0.5.2",
-  "pysindy[cvxpy] @ git+https://github.com/dynamicslab/pysindy",
+  "pysindy[cvxpy] @ git+https://github.com/dynamicslab/pysindy@a43e217",
   "matplotlib",
-  "pysindy-experiments @ git+https://github.com/Jacob-Stevens-Haas/gen-experiments",
+  "pysindy-experiments @ git+https://github.com/Jacob-Stevens-Haas/gen-experiments@cbaa059",
   "ara_plumes @ git+https://github.com/Jacob-Stevens-Haas/ARA-Plumes",
 ]
 
@@ -20,5 +20,6 @@ packages=["plumex"]
 
 [tool.mitosis.steps]
 data = ["plumex.data:load_pickle", "plumex.config:data_lookup"]
+gen_center = ["plumex.video_digest:create_centerline", "plumex.config:data_lookup"]
 sindy_fe = ["plumex.sindy_pipeline:run", "plumex.config:sindy_lookup"]
 hankel_fe = ["plumex.hankel_pipeline:run", "plumex.config:hankel_lookup"]
