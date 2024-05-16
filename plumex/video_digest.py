@@ -33,7 +33,8 @@ def create_centerline(
     origin_filename = filename + "_ctr.pkl"
     with open(pickle_path / origin_filename, "rb") as fh:
         origin = pickle.load(fh)
-    plume = PLUME(str(pickle_path / filename))
+    plume = PLUME()
+    plume.read_video(str(pickle_path / filename))
     plume.orig_center = tuple(int(coord) for coord in origin)
     center, _, _ = plume.train(
         img_range=img_range,
