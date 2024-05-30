@@ -14,7 +14,7 @@ import pickle
 from ara_plumes import PLUME, click_coordinates
 from pathlib import Path
 
-from plumex._data import DATA_DIR
+from plumex.data import pickle_path as DATA_DIR
 
 
 def _select_filename(date: str, wind: str, suffix: str, data_dir: Path) -> Path:
@@ -38,7 +38,7 @@ def create_metadata(date: str, wind: str, suffix: str):
     """
     filename = _select_filename(date, wind, suffix, DATA_DIR)
     plume = PLUME(str(filename))
-    source = click_coordinates(plume.video_capture)
+    source = tuple(int(coord) for coord in click_coordinates(plume.video_capture))
     with open(str(filename) + "_ctr.pkl", "wb") as ctr_file:
         pickle.dump(source, ctr_file)
 

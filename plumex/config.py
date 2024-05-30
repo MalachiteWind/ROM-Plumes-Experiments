@@ -21,8 +21,10 @@ data_lookup = {
                     "orig_center_1572_1078_num_of_contours_3_seed_1234.pkl",
         "jan-8-v3-trimmed":"Jan_8_2024/med/mean_poly_coeff_600_1000_plume_jan_8_2024_"\
                     "med_img_0871_fixed_range_90_img_range_200_2200_orig_center_"\
-                    "1572_1078_num_of_contours_3_seed_1234.pkl"
+                    "1572_1078_num_of_contours_3_seed_1234.pkl",
+        "test-fullbuild": "Jan_8_2024/low/IMG_0866.MOV",
     },
+    "fixed_range": {"test": 200}
 }
 
 sindy_lookup = {
