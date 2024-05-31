@@ -29,19 +29,15 @@ def test_split_into_train_val():
     for i,(t, frame) in enumerate(result_val):
         np.testing.assert_equal(t,expected_val[i][0])
         np.testing.assert_array_almost_equal(frame,expected_val[i][1])
-    
+
+
 def test_get_L2_acc():
-    x = np.linspace(0,1,11)
-    def f(x):
-        return x**2 + 2*x+3
-    y = f(x)
-    coord_points = np.vstack((x,y)).T
+    x_true = np.array([1,0])
+    x_pred = np.array([1,1])
 
-    coef = np.array([1,2,3])
-
-    expected = 1
-    result = get_L2_acc(coef, coord_points)
-
+    expected = 0
+    result = get_L2_acc(x_true, x_pred)
     np.testing.assert_almost_equal(expected,result)
     
+
     

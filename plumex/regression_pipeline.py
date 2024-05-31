@@ -7,6 +7,7 @@ from typing import List
 from typing import Any
 from .types import Frame
 from .types import PlumePoints
+from .types import NpFlt
 from .types import Float1D
 from .types import Float2D
 
@@ -51,9 +52,10 @@ def split_into_train_val(
 
     return train_set, val_set
 
-def get_L2_acc(coef:Float1D,coord_points: Float2D) -> float:
-    poly = np.polynomial.Polynomial(coef[::-1])
-    y_poly = poly(coord_points[:,0])
-    y_true = coord_points[:,1]
-    err = np.linalg.norm(y_poly-y_true)/np.linalg.norm(y_true)
+
+def get_L2_acc(X_true:np.ndarray[Any,NpFlt], X_pred:np.ndarray[Any,NpFlt]) -> float:
+    """
+    Get L2 accuracy between two arrays
+    """
+    err = np.linalg.norm(X_true-X_pred)/np.linalg.norm(X_true)
     return 1-err
