@@ -1,9 +1,14 @@
 from ara_plumes.models import PLUME
 from tqdm import tqdm
 
+import numpy as np
+
 from typing import List
+from typing import Any
 from .types import Frame
 from .types import PlumePoints
+from .types import Float1D
+from .types import Float2D
 
 
 def split_into_train_val(
@@ -45,3 +50,10 @@ def split_into_train_val(
         val_set.append((t, frame_points[~mask]))
 
     return train_set, val_set
+
+def get_L2_acc(coef:Float1D,coord_points: Float2D) -> float:
+    poly = np.polynomial.Polynomial(coef[::-1])
+    y_poly = poly(coord_points[:,0])
+    y_true = coord_points[:,1]
+    err = np.linalg.norm(y_poly-y_true)/np.linalg.norm(y_true)
+    return 1-err
