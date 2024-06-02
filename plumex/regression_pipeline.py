@@ -15,6 +15,30 @@ from .types import Float1D
 from .types import Float2D
 
 
+def regress_video(
+        mean_points:  List[tuple[Frame, PlumePoints]],
+        x_split: int,
+        regression_method: str,
+        poly_deg: int = 2,
+        decenter: Optional[tuple[int,int]] = None
+):
+    """
+    Apply regression test on train and val data.
+    """
+    train_set, val_set = split_into_train_val(mean_points, x_split)
+
+    coef_time_series = PLUME.regress_multiframe_mean(
+        mean_points=train_set,
+        regression_method=regression_method,
+        poly_deg=poly_deg,
+        decenter=decenter
+    )
+    train_acc = get_coef_acc(coef_time_series, train_set, regression_method)
+    val_acc = get_coef_acc(coef_time_series, val_set, regression_method)
+
+    return {"main": val_acc, "train_acc": train_acc, "val_acc": val_acc}
+
+
 def split_into_train_val(
         mean_points: List[tuple[Frame, PlumePoints]],
         x_split: int
@@ -137,26 +161,5 @@ def get_coef_acc(
     return accs
 
 
-def regress_video(
-        mean_points:  List[tuple[Frame, PlumePoints]],
-        x_split: int,
-        regression_method: str,
-        poly_deg: int = 2,
-        decenter: Optional[tuple[int,int]] = None
-):
-    """
-    Apply regression test on train and val data.
-    """
-    train_set, val_set = split_into_train_val(mean_points, x_split)
 
-    coef_time_series = PLUME.regress_multiframe_mean(
-        mean_points=train_set,
-        regression_method=regression_method,
-        poly_deg=poly_deg,
-        decenter=decenter
-    )
-    train_acc = get_coef_acc(coef_time_series, train_set, regression_method)
-    val_acc = get_coef_acc(coef_time_series, val_set, regression_method)
-
-    return {"main": val_acc, "train_acc": train_acc, "val_acc": val_acc}
 
