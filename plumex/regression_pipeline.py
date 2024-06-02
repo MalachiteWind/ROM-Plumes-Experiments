@@ -88,7 +88,7 @@ def _get_L2_acc(X_true:np.ndarray[Any,NpFlt], X_pred:np.ndarray[Any,NpFlt]) -> f
     return 1-err
 
 def _construct_f(coef: Float1D, regression_method:Optional[str]=None) -> Callable[[float],float] | Callable[[float],Float1D]:
-    """construction function f based on coefficients and regression_method
+    """construct function f based on coefficients and regression_method
 
     Parameters:
     ----------
