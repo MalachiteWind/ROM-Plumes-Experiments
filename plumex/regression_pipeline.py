@@ -145,6 +145,7 @@ def regress_video(
         decenter: Optional[tuple[int,int]] = None
 ):
     """
+    Apply regression test on train and val data.
     """
     train_set, val_set = split_into_train_val(mean_points, x_split)
 
@@ -154,7 +155,7 @@ def regress_video(
         poly_deg=poly_deg,
         decenter=decenter
     )
-    train_acc = get_coef_acc(coef_time_series,train_set, regression_method)
+    train_acc = get_coef_acc(coef_time_series, train_set, regression_method)
     val_acc = get_coef_acc(coef_time_series, val_set, regression_method)
 
     return {"main": val_acc, "train_acc": train_acc, "val_acc": val_acc}
