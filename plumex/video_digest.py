@@ -1,9 +1,10 @@
 import pickle
-from typing import Any
+from typing import Any, cast
 
 from ara_plumes import PLUME
 from ara_plumes.typing import GrayVideo, Frame, PlumePoints
 from matplotlib import pyplot as plt
+from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 
 from .data import pickle_path
@@ -47,7 +48,7 @@ def create_centerline(
         get_contour_kws=contour_kws,
         **gauss_kw
     )
-    visualize_points(plume.numpy_frames, center, bottom, top)
+    visualize_points(plume.numpy_frames, center, bottom, top, n_plots=15)
     return {"main": None, "data": center}
 
 
@@ -63,14 +64,21 @@ def visualize_points(
     max_frame_t = center[-1][0]
     plot_frameskip = (max_frame_t - min_frame_t) / n_plots
     frame_ids = [int(plot_frameskip * i) for i in range(n_plots)]
-    fig, axes = plt.subplots((n_plots + 2) // 3, 3)
+    n_rows = (n_plots + 2) // 3
+    y_px, x_px = vid.shape[1:]
+    vid_aspect = x_px/y_px
+    fig, axes = plt.subplots(n_rows, 3, figsize=[vid_aspect * 9, 3 * n_rows])
     for frame_id, ax in zip(frame_ids, axes.flatten()):
         frame_t, frame_center = center[frame_id]
         _, frame_bottom = bottom[frame_id]
-        _, frame_top = bottom[frame_id]
+        _, frame_top = top[frame_id]
+        ax = cast(Axes, ax)
         ax.imshow(vid[frame_t])
         ax.plot(frame_center[:, 1], frame_center[:, 2], "r.")
         ax.plot(frame_bottom[:, 1], frame_bottom[:, 2], "b.")
-        ax.plot(frame_top[:, 1], frame_top[:, 2], "b.")
+        ax.plot(frame_top[:, 1], frame_top[:, 2], "g.")
         ax.set_title(f"Frame {frame_t}")
+        ax.set_xticks([])
+        ax.set_yticks([])
+    fig.tight_layout()
     return fig
