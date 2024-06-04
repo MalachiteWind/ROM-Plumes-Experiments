@@ -119,8 +119,8 @@ def _get_true_pred(
         regression_method: str
 ) -> tuple[Float1D,Float1D] | tuple[Float2D,Float2D]:
     """
-    Acquire true coordinates from Frame points and predicted points from 
-    learned function based on regression_method used.
+    Vectorize approximation function ``func``, map correct inputs from `r_x_y`, and
+    extract true values from `r_x_y` based on regression_method used.
     """
     if regression_method == "poly" or regression_method == "linear":
         y_pred = func(r_x_y[:,1])
