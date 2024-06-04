@@ -23,6 +23,7 @@ data_lookup = {
                     "med_img_0871_fixed_range_90_img_range_200_2200_orig_center_"\
                     "1572_1078_num_of_contours_3_seed_1234.pkl",
         "test-fullbuild": "Jan_8_2024/low/IMG_0866.MOV",
+        "test-fullbuild2": "Jan_8_2024/low/IMG_0862.MOV",
     },
     "fixed_range": {"test": 200}
 }
