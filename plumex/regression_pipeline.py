@@ -36,7 +36,7 @@ def regress_video(
     train_acc = get_coef_acc(coef_time_series, train_set, regression_method)
     val_acc = get_coef_acc(coef_time_series, val_set, regression_method)
 
-    return {"main": val_acc, "train_acc": train_acc, "val_acc": val_acc}
+    return {"main": val_acc, "train_acc": train_acc, "val_acc": val_acc, "data": coef_time_series}
 
 
 def _split_into_train_val(
