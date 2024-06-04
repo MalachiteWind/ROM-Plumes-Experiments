@@ -95,19 +95,19 @@ def test_get_true_pred():
 
     result_true, result_pred = _get_true_pred(f,r_x_y,regression_method='linear')
 
-    expected = np.array([3,5,7])
+    expected = np.vstack((R,np.array([3,5,7]))).T
 
     np.testing.assert_array_almost_equal(expected,result_true)
     np.testing.assert_array_almost_equal(expected,result_pred)
 
-    # Test "poly" and "linear"
+    # Test "poly" 
     R = np.array([0,1,2])
     f = lambda x: x**2 + 2*x + 3
     r_x_y = np.vstack((R,R,f(R))).T
 
     result_true, result_pred = _get_true_pred(f,r_x_y,regression_method='poly')
 
-    expected = np.array([3,6,11])
+    expected = np.vstack((R,np.array([3,6,11]))).T
 
     np.testing.assert_array_almost_equal(expected,result_true)
     np.testing.assert_array_almost_equal(expected,result_pred)
@@ -119,7 +119,7 @@ def test_get_true_pred():
 
     result_true, result_pred = _get_true_pred(f,r_x_y,regression_method='poly_inv')
 
-    expected = np.array([3,6,11])
+    expected = np.vstack((np.array([3,6,11]),R)).T
 
     np.testing.assert_array_almost_equal(expected,result_true)
     np.testing.assert_array_almost_equal(expected,result_pred)

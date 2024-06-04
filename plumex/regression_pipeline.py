@@ -117,24 +117,27 @@ def _get_true_pred(
         func: Callable[[float],float] | Callable[[float],Float1D], 
         r_x_y: PlumePoints, 
         regression_method: str
-) -> tuple[Float1D,Float1D] | tuple[Float2D,Float2D]:
+) -> tuple[Float2D,Float2D]:
     """
     Vectorize approximation function ``func``, map correct inputs from `r_x_y`, and
     extract true values from `r_x_y` based on regression_method used.
     """
     if regression_method == "poly" or regression_method == "linear":
         y_pred = func(r_x_y[:,1])
-        y_true = r_x_y[:,2]
+        xy_pred = np.vstack((r_x_y[:,1],y_pred)).T
+        xy_true = r_x_y[:,1:]
 
     if regression_method == "poly_inv":
-        y_pred = func(r_x_y[:,2])
-        y_true = r_x_y[:,1]
+        y_true = r_x_y[:,2]
+        x_pred = func(y_true)
+        xy_pred = np.vstack((x_pred,y_true)).T
+        xy_true = r_x_y[:,1:]
 
     if regression_method == "poly_para":
-        y_pred = func(r_x_y[:,0]).T
-        y_true = r_x_y[:,1:]
+        xy_pred = func(r_x_y[:,0]).T
+        xy_true = r_x_y[:,1:]
     
-    return y_true, y_pred
+    return xy_true, xy_pred
 
 
 
