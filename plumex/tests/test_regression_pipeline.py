@@ -139,11 +139,4 @@ def test_get_true_pred():
 
     np.testing.assert_array_almost_equal(expected,result_true)
     np.testing.assert_array_almost_equal(expected,result_pred)
-
-
-
-
-
-    
-
     
