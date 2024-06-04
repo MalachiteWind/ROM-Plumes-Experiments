@@ -1,6 +1,5 @@
 from ..regression_pipeline import get_coef_acc
 from ..regression_pipeline import _split_into_train_val
-from ..regression_pipeline import _get_L2_acc
 from ..regression_pipeline import _construct_f
 from ..regression_pipeline import _get_true_pred
 
@@ -56,13 +55,6 @@ def test_split_into_train_val():
         np.testing.assert_array_almost_equal(frame,expected_val[i][1])
 
 
-def test_get_L2_acc():
-    x_true = np.array([1,0])
-    x_pred = np.array([1,1])
-
-    expected = 0
-    result = _get_L2_acc(x_true, x_pred)
-    np.testing.assert_almost_equal(expected,result)
 
 def test_construct_f():
     coef = (1,2,3)

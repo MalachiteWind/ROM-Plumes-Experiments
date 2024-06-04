@@ -80,13 +80,6 @@ def _split_into_train_val(
     return train_set, val_set
 
 
-def _get_L2_acc(X_true:np.ndarray[Any,NpFlt], X_pred:np.ndarray[Any,NpFlt]) -> float:
-    """
-    Get L2 accuracy between two arrays
-    """
-    err = np.linalg.norm(X_true-X_pred)/np.linalg.norm(X_true)
-    return 1-err
-
 def _construct_f(coef: Float1D, regression_method:Optional[str]=None) -> Callable[[float],float] | Callable[[float],Float1D]:
     """construct function f based on coefficients and regression_method
 
@@ -158,8 +151,8 @@ def get_coef_acc(
         f = _construct_f(coef_i,regression_method)
         _, r_x_y = train_val_set[i]
 
-        y_true, y_pred = _get_true_pred(f,r_x_y, regression_method)
-        accs[i] = _get_L2_acc(y_true,y_pred) 
+        xy_true, xy_pred = _get_true_pred(f,r_x_y, regression_method)
+        accs[i] = 1 - np.linalg.norm(xy_true-xy_pred)/np.linalg.norm(xy_true)
     
     return accs
 
