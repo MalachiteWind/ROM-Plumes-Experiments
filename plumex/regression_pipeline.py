@@ -25,7 +25,7 @@ def regress_video(
     """
     Apply regression test on train and val data.
     """
-    train_set, val_set = split_into_train_val(mean_points, x_split)
+    train_set, val_set = _split_into_train_val(mean_points, x_split)
 
     coef_time_series = PLUME.regress_multiframe_mean(
         mean_points=train_set,
@@ -39,7 +39,7 @@ def regress_video(
     return {"main": val_acc, "train_acc": train_acc, "val_acc": val_acc}
 
 
-def split_into_train_val(
+def _split_into_train_val(
         mean_points: List[tuple[Frame, PlumePoints]],
         x_split: int
 ) -> tuple[

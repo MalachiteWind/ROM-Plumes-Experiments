@@ -1,5 +1,5 @@
 from ..regression_pipeline import get_coef_acc
-from ..regression_pipeline import split_into_train_val
+from ..regression_pipeline import _split_into_train_val
 from ..regression_pipeline import _get_L2_acc
 from ..regression_pipeline import _construct_f
 from ..regression_pipeline import _get_true_pred
@@ -43,7 +43,7 @@ def test_split_into_train_val():
         (1,frame_points),
         (2,frame_points)
     ]
-    result_train, result_val=split_into_train_val(
+    result_train, result_val=_split_into_train_val(
         mean_points,x_split=4
     )
 
