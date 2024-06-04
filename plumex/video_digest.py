@@ -12,8 +12,8 @@ from .types import PolyData
 
 def create_centerline(
     filename: str,
-    img_range: tuple[int]=(0, -1),
-    fixed_range: tuple[int]=(0, -1),
+    img_range: list[int]=[0, -1],
+    fixed_range: list[int]=[0, -1],
     gauss_kw: dict[str, Any]=None,
     circle_kw: dict[str, Any]=None,
     contour_kws: dict[str, Any]=None,
@@ -47,7 +47,7 @@ def create_centerline(
         get_contour_kws=contour_kws,
         **gauss_kw
     )
-    visualize_points(plume.numpy_frames)
+    visualize_points(plume.numpy_frames, center, bottom, top)
     return {"main": None, "data": center}
 
 
@@ -56,7 +56,7 @@ def visualize_points(
     center: list[tuple[Frame, PlumePoints]],
     bottom: list[tuple[Frame, PlumePoints]],
     top: list[tuple[Frame, PlumePoints]],
-    n_plots: int
+    n_plots: int=9
 ) -> Figure:
     n_plots = 9
     min_frame_t = center[0][0]
