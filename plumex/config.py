@@ -91,3 +91,9 @@ hankel_lookup = {
     },    
     "diff_params": sindy_lookup["diff_params"]
 }
+
+regress_lookup = {
+    "x_split":{
+        "half": 1080//2
+    }
+}
