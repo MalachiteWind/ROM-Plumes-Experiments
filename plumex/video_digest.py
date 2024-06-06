@@ -49,7 +49,7 @@ def create_centerline(
         **gauss_kw
     )
     visualize_points(plume.numpy_frames, center, bottom, top, n_plots=15)
-    return {"main": None, "data": center}
+    return {"main": None, "data": {"center": center, "bottom": bottom, "top": top}}
 
 
 def visualize_points(
