@@ -15,16 +15,31 @@ from .types import Float1D
 from .types import Float2D
 
 
-def regress_video(
-        mean_points:  List[tuple[Frame, PlumePoints]],
-        x_split: int,
-        regression_method: str,
-        poly_deg: int = 2,
-        decenter: Optional[tuple[int,int]] = None
-):
+def regress_centerline(
+    data: dict[List[tuple[Frame, PlumePoints]]],
+    x_split: int,
+    regression_method: str,
+    poly_deg: int = 2,
+    decenter: Optional[tuple[int,int]] = None
+) -> dict[str, Any]:
+    """Mitosis experiment to fit mean path of plume points
+    
+    Args:
+        data: output of video_digest step, a dictionary of center, top, and
+            bottom points for each frame of a video
+        x_split: the pixel coordinate of boundary between validation (left)
+            and training (right) data
+        regression_method: method for drawing curve through points as
+            understood by PLUME.regress_multiframe_mean
+        poly_deg: polynomial degree of curve used in regression_method
+        decenter: Shift to apply to plume coordinates before fitting curve
+
+    Returns:
+        Experiment results of train and validation accuracy.  "data" key
+        is of shape (number of timepoints, number of coefficients in
+        regression_method)
     """
-    Apply regression test on train and val data.
-    """
+    mean_points = data["center"]
     train_set, val_set = _split_into_train_val(mean_points, x_split)
 
     coef_time_series = PLUME.regress_multiframe_mean(
