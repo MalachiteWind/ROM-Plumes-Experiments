@@ -34,7 +34,7 @@ def multi_regress_centerline(
     meth_results = {}
     for method in regression_methods:
         meth_results[method] = regress_centerline(
-            data, x_split, method, poly_deg, decenter
+            data, x_split, method, poly_deg, decenter, display=False
         )
     val_accs = [(method, result.pop("main")) for method, result in meth_results.items()]
     val_accs.sort(key=lambda tup: tup[1])
@@ -57,7 +57,8 @@ def regress_centerline(
     x_split: int,
     regression_method: str,
     poly_deg: int = 2,
-    decenter: Optional[tuple[int,int]] = None
+    decenter: Optional[tuple[int,int]] = None,
+    display: bool = True,
 ) -> dict[str, Any]:
     """Mitosis experiment to fit mean path of plume points
     
@@ -79,12 +80,18 @@ def regress_centerline(
     mean_points = data["center"]
     train_set, val_set = _split_into_train_val(mean_points, x_split)
 
+    # silence all the printing
+    import tqdm
+    temp = tqdm.tqdm
+    tqdm.tqdm = lambda x: x
     coef_time_series = PLUME.regress_multiframe_mean(
         mean_points=train_set,
         regression_method=regression_method,
         poly_deg=poly_deg,
         decenter=decenter
     )
+    tqdm.tqdm = temp
+
     train_acc = get_coef_acc(coef_time_series, train_set, regression_method)
     val_acc = get_coef_acc(coef_time_series, val_set, regression_method)
 

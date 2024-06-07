@@ -44,6 +44,11 @@ def create_plumepoints(
     with open(PICKLE_PATH / np_filename, "rb") as fh:
         plume.numpy_frames = pickle.load(fh)
     plume.orig_center = tuple(int(coord) for coord in origin)
+
+    # silence all the printing
+    import tqdm
+    temp = tqdm.tqdm
+    tqdm.tqdm = lambda x: x
     center, bottom, top = plume.train(
         img_range=img_range,
         fixed_range=fixed_range,
@@ -52,6 +57,8 @@ def create_plumepoints(
         gauss_space_kws=gauss_space_kws,
         gauss_time_kws=gauss_time_kws,
     )
+    tqdm.tqdm = temp
+
     visualize_points(plume.numpy_frames, center, bottom, top, n_plots=15)
     return {"main": None, "data": {"center": center, "bottom": bottom, "top": top}}
 
