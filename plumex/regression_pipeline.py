@@ -2,12 +2,12 @@ from ara_plumes.models import PLUME
 from tqdm import tqdm
 
 import numpy as np
+from matplotlib import pyplot as plt
 
 from typing import List
 from typing import Any
 from typing import Optional
 from typing import Callable
-from typing import Literal
 from .types import Frame
 from .types import PlumePoints
 from .types import NpFlt
@@ -36,14 +36,20 @@ def multi_regress_centerline(
         meth_results[method] = regress_centerline(
             data, x_split, method, poly_deg, decenter, display=False
         )
-    val_accs = [(method, result.pop("main")) for method, result in meth_results.items()]
-    val_accs.sort(key=lambda tup: tup[1])
-    best_method = val_accs[-1][0]
+    main_accs = [(method, result.pop("main")) for method, result in meth_results.items()]
+    main_accs.sort(key=lambda tup: tup[1])
+    best_method = main_accs[-1][0]
     best_data = meth_results[best_method]["data"],
     n_frames = -1
     for result in meth_results:
         result.pop("data")
         n_frames = result.pop("n_frames")
+
+    val_accs = {method: result["val_acc"] for method, result in meth_results.items()}
+    plt.hist(val_accs.values(), label=regression_methods.keys())
+    plt.legend()
+    plt.title(f"Validation Accuracy over {n_frames} frames")
+    plt.legend()
 
     return {
         "main": best_method,
@@ -95,18 +101,25 @@ def regress_centerline(
     train_acc = get_coef_acc(coef_time_series, train_set, regression_method)
     val_acc = get_coef_acc(coef_time_series, val_set, regression_method)
 
+    n_frames = len(mean_points)
+    if display:
+        plt.hist((train_acc, val_acc), label=("Train", "Validation"))
+        plt.legend()
+        plt.title(f"Accuracy over {n_frames} frames")
+        plt.legend()
+
     return {
         "main": val_acc.mean(),
         "train_acc": train_acc,
         "val_acc": val_acc,
         "data": coef_time_series,
-        "n_frames": len(mean_points)
+        "n_frames": n_frames
     }
 
 
 def _split_into_train_val(
-        mean_points: List[tuple[Frame, PlumePoints]],
-        x_split: int
+    mean_points: List[tuple[Frame, PlumePoints]],
+    x_split: int
 ) -> tuple[
     List[tuple[Frame, PlumePoints]],
     List[tuple[Frame, PlumePoints]]
@@ -171,6 +184,7 @@ def _construct_f(coef: Float1D, regression_method:Optional[str]=None) -> Callabl
         f = np.polynomial.Polynomial(coef[::-1])
     return f
 
+
 def _get_true_pred(
         func: Callable[[float],float] | Callable[[float],Float1D], 
         r_x_y: PlumePoints, 
@@ -196,7 +210,6 @@ def _get_true_pred(
         xy_true = r_x_y[:,1:]
     
     return xy_true, xy_pred
-
 
 
 def get_coef_acc(
