@@ -15,6 +15,43 @@ from .types import Float1D
 from .types import Float2D
 
 
+def multi_regress_centerline(
+    data: dict[List[tuple[Frame, PlumePoints]]],
+    x_split: int,
+    poly_deg: int = 2,
+    decenter: Optional[tuple[int,int]] = None
+) -> dict[str, Any]:
+    """Mitosis experiment to compare regress_centerline across methods
+
+    Arguments same as regress_centerline, without 'regression_method'
+
+    Returns:
+        Experiment results as regress_centerline, but main metric is name of
+        best method, "data" is data from best method, and "accs" is dictionary
+        of method name to its validation and train accuracies by frame
+    """
+    regression_methods = ("linear", "poly", "poly_inv", "poly_para")
+    meth_results = {}
+    for method in regression_methods:
+        meth_results[method] = regress_centerline(
+            data, x_split, method, poly_deg, decenter
+        )
+    val_accs = [(method, result.pop("main")) for method, result in meth_results.items()]
+    val_accs.sort(key=lambda tup: tup[1])
+    best_method = val_accs[-1][0]
+    best_data = meth_results[best_method]["data"],
+    n_frames = -1
+    for result in meth_results:
+        result.pop("data")
+        n_frames = result.pop("n_frames")
+
+    return {
+        "main": best_method,
+        "data": best_data,
+        "n_frames": n_frames,
+        "accs": meth_results
+    }
+
 def regress_centerline(
     data: dict[List[tuple[Frame, PlumePoints]]],
     x_split: int,
