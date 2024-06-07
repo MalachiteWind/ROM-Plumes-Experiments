@@ -37,7 +37,7 @@ def regress_centerline(
     Returns:
         Experiment results of train and validation accuracy.  "data" key
         is of shape (number of timepoints, number of coefficients in
-        regression_method)
+        regression_method). "main" metric is average validation accuracy
     """
     mean_points = data["center"]
     train_set, val_set = _split_into_train_val(mean_points, x_split)
@@ -51,7 +51,13 @@ def regress_centerline(
     train_acc = get_coef_acc(coef_time_series, train_set, regression_method)
     val_acc = get_coef_acc(coef_time_series, val_set, regression_method)
 
-    return {"main": val_acc, "train_acc": train_acc, "val_acc": val_acc, "data": coef_time_series}
+    return {
+        "main": val_acc.mean(),
+        "train_acc": train_acc,
+        "val_acc": val_acc,
+        "data": coef_time_series,
+        "n_frames": len(mean_points)
+    }
 
 
 def _split_into_train_val(
