@@ -11,7 +11,7 @@ from .data import pickle_path
 from .types import PolyData
 
 
-def create_centerline(
+def create_plumepoints(
     filename: str,
     img_range: list[int]=[0, -1],
     fixed_range: list[int]=[0, -1],
