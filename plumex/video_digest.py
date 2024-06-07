@@ -7,7 +7,7 @@ from matplotlib import pyplot as plt
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 
-from .data import pickle_path
+from .data import PICKLE_PATH
 from .types import PolyData
 
 
@@ -37,11 +37,11 @@ def create_plumepoints(
         contour_kws = {}
 
     origin_filename = filename + "_ctr.pkl"
-    with open(pickle_path / origin_filename, "rb") as fh:
+    with open(PICKLE_PATH / origin_filename, "rb") as fh:
         origin = pickle.load(fh)
     plume = PLUME()
     np_filename = filename[:-3]+ "pkl" # replace mov with pkl
-    with open(pickle_path / np_filename, "rb") as fh:
+    with open(PICKLE_PATH / np_filename, "rb") as fh:
         plume.numpy_frames = pickle.load(fh)
     plume.orig_center = tuple(int(coord) for coord in origin)
     center, bottom, top = plume.train(
