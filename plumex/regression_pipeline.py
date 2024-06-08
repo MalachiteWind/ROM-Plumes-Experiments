@@ -1,8 +1,10 @@
+from collections.abc import Sequence
 from warnings import warn
 
 from ara_plumes.models import PLUME
 import numpy as np
 from matplotlib import pyplot as plt
+from matplotlib.figure import Figure
 from tqdm import tqdm
 
 from typing import List
@@ -34,11 +36,13 @@ def multi_regress_centerline(
     regression_methods = ("linear", "poly", "poly_inv", "poly_para")
     meth_results = {}
     main_accs = []
+    coeffs = []
     for method in regression_methods:
         meth_results[method] = regress_centerline(
             data, x_split, method, poly_deg, decenter, display=False
         )
         main_accs.append((method, meth_results[method].pop("main")))
+        coeffs.append(meth_results[method]["data"])
 
     main_accs.sort(key=lambda tup: tup[1])
     best_method = main_accs[-1][0]
@@ -53,7 +57,9 @@ def multi_regress_centerline(
     plt.legend()
     plt.title(f"Validation Accuracy over {n_frames} frames")
     plt.legend()
-
+    _visualize_points(
+        data["center"], coeffs, regression_methods, x_split, n_plots=9
+    )
     return {
         "main": best_method,
         "data": best_data,
@@ -110,6 +116,9 @@ def regress_centerline(
         plt.legend()
         plt.title(f"Accuracy over {n_frames} frames")
         plt.legend()
+        _visualize_points(
+            mean_points, [coef_time_series], [regression_method], x_split, n_plots=15
+        )
 
     non_nan_val_acc = val_acc[~np.isnan(val_acc)]
     if len(non_nan_val_acc) == 0:
@@ -205,20 +214,18 @@ def _get_true_pred(
     Vectorize approximation function ``func``, map correct inputs from `r_x_y`, and
     extract true values from `r_x_y` based on regression_method used.
     """
+    xy_true = r_x_y[:,1:]
     if regression_method == "poly" or regression_method == "linear":
         y_pred = func(r_x_y[:,1])
         xy_pred = np.vstack((r_x_y[:,1],y_pred)).T
-        xy_true = r_x_y[:,1:]
 
     if regression_method == "poly_inv":
         y_true = r_x_y[:,2]
         x_pred = func(y_true)
         xy_pred = np.vstack((x_pred,y_true)).T
-        xy_true = r_x_y[:,1:]
 
     if regression_method == "poly_para":
         xy_pred = func(r_x_y[:,0]).T
-        xy_true = r_x_y[:,1:]
     
     return xy_true, xy_pred
 
@@ -246,5 +253,37 @@ def get_coef_acc(
     return accs
 
 
+def _visualize_points(
+    mean_points: list[tuple[Frame, PlumePoints]],
+    coef_time_series: Sequence[Float2D],
+    regression_methods: Sequence[str],
+    x_split: None | float=None,
+    n_plots: int=9,
+) -> Figure:
+    min_frame_t = mean_points[0][0]
+    max_frame_t = mean_points[-1][0]
+    plot_frameskip = (max_frame_t - min_frame_t) / n_plots
+    frame_ids = [int(plot_frameskip * i) for i in range(n_plots)]
+    n_rows = (n_plots + 2) // 3
+    x_max = max(np.max(points[1][:, 1]) for points in mean_points)
+    y_max = max(np.max(points[1][:, 2]) for points in mean_points)
+    fig, axes = plt.subplots(n_rows, 3, figsize=[1.5 * 9, 3 * n_rows])
+    fig.suptitle("How well does regression work?")
+    for frame_id, ax in zip(frame_ids, axes.flatten()):
+        frame_t, frame_points = mean_points[frame_id]
+        xy_true = frame_points[:, 1:]
+        ax.plot(xy_true[:, 0], xy_true[:, 1], ".", label="centerpoints")
+        if x_split:
+            ax.axvline(x_split, 0, frame_points[:, 2].max(), color="gray")
+        for coeff_meth, method in zip(coef_time_series, regression_methods):
+            coeffs = coeff_meth[frame_id]
+            f = _construct_f(coeffs, method)
+            _, xy_pred = _get_true_pred(f, frame_points, method)
+            ax.plot(xy_pred[:, 0], xy_pred[:, 1], "-", label=f"{method} regression")
+        ax.set_title(f"Frame {frame_t}")
+        ax.set_xlim([0, x_max])
+        ax.set_ylim([0, y_max])
 
-
+    ax.legend()
+    fig.tight_layout()
+    return fig
