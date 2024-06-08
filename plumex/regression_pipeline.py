@@ -42,7 +42,7 @@ def multi_regress_centerline(
 
     main_accs.sort(key=lambda tup: tup[1])
     best_method = main_accs[-1][0]
-    best_data = meth_results[best_method]["data"],
+    best_data = meth_results[best_method]["data"]
     n_frames = -1
     for result in meth_results.values():
         result.pop("data")
