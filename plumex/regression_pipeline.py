@@ -1,8 +1,9 @@
-from ara_plumes.models import PLUME
-from tqdm import tqdm
+from warnings import warn
 
+from ara_plumes.models import PLUME
 import numpy as np
 from matplotlib import pyplot as plt
+from tqdm import tqdm
 
 from typing import List
 from typing import Any
@@ -32,21 +33,23 @@ def multi_regress_centerline(
     """
     regression_methods = ("linear", "poly", "poly_inv", "poly_para")
     meth_results = {}
+    main_accs = []
     for method in regression_methods:
         meth_results[method] = regress_centerline(
             data, x_split, method, poly_deg, decenter, display=False
         )
-    main_accs = [(method, result.pop("main")) for method, result in meth_results.items()]
+        main_accs.append((method, meth_results[method].pop("main")))
+
     main_accs.sort(key=lambda tup: tup[1])
     best_method = main_accs[-1][0]
     best_data = meth_results[best_method]["data"],
     n_frames = -1
-    for result in meth_results:
+    for result in meth_results.values():
         result.pop("data")
         n_frames = result.pop("n_frames")
 
     val_accs = {method: result["val_acc"] for method, result in meth_results.items()}
-    plt.hist(val_accs.values(), label=regression_methods.keys())
+    plt.hist(val_accs.values(), label=list(val_accs.keys()))
     plt.legend()
     plt.title(f"Validation Accuracy over {n_frames} frames")
     plt.legend()
@@ -108,8 +111,16 @@ def regress_centerline(
         plt.title(f"Accuracy over {n_frames} frames")
         plt.legend()
 
+    non_nan_val_acc = val_acc[~np.isnan(val_acc)]
+    if len(non_nan_val_acc) == 0:
+        raise RuntimeError("No frames have any points in the validation set.  "
+            "Try increasing x_split to allow more points in validation set.")
+    if len(non_nan_val_acc) < len(val_acc):
+        warn("Some frames do not have any points in the validation set",
+             RuntimeWarning, stacklevel=2)
+
     return {
-        "main": val_acc.mean(),
+        "main": non_nan_val_acc.mean(),
         "train_acc": train_acc,
         "val_acc": val_acc,
         "data": coef_time_series,
