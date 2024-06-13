@@ -36,6 +36,8 @@ def test_split_into_train_val():
     frame_val = np.vstack((val_i,val_i,val_i)).T
     expected_val = [(1,frame_val),(2,frame_val)]
 
+    expected_train, expected_val = expected_val, expected_train
+
     R = np.arange(10)
     frame_points = np.vstack((R,R,R)).T
     mean_points = [
@@ -43,7 +45,7 @@ def test_split_into_train_val():
         (2,frame_points)
     ]
     result_train, result_val=_split_into_train_val(
-        mean_points,x_split=4
+        mean_points,r_split=3
     )
 
     for i,(t, frame) in enumerate(result_train):
