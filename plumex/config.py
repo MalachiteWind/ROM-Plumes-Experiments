@@ -40,7 +40,7 @@ data_lookup = {
     },
     "fixed_range": {"test": 200, "862": (0,240), "864": (0, 240)},
     "img_range": {"862": (1000, 1450), "864": (500, 1650)},
-    "contour_kws": {"2c": {"num_of_contours": 2}, "2c-variant": {"num_of_contours": 2, }}
+    "contour_kws": {"2c": {"num_of_contours": 2}}
 }
 
 sindy_lookup = {
