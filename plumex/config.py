@@ -23,8 +23,24 @@ data_lookup = {
                     "med_img_0871_fixed_range_90_img_range_200_2200_orig_center_"\
                     "1572_1078_num_of_contours_3_seed_1234.pkl",
         "test-fullbuild": "Jan_8_2024/low/IMG_0866.MOV",
+        "low-862": "Jan_8_2024/low/IMG_0862.MOV",
+        "low-864": "Jan_8_2024/low/IMG_0864.MOV",
+        "low-865": "Jan_8_2024/low/IMG_0865.MOV",
+        "low-866": "Jan_8_2024/low/IMG_0866.MOV",
+        "low-867": "Jan_8_2024/low/IMG_0867.MOV",
+        "low-868": "Jan_8_2024/low/IMG_0868.MOV",
+        "low-869": "Jan_8_2024/low/IMG_0869.MOV",
+        "low-913": "Jan_10_2024/low/IMG_0913.MOV",
+        "med-914": "Jan_10_2024/med/IMG_0914.MOV",
+        "med-916": "Jan_10_2024/med/IMG_0916.MOV",
+        "med-917": "Jan_10_2024/med/IMG_0917.MOV",
+        "med-871": "Jan_8_2024/med/IMG_0871.MOV",
+        "hi-919": "Jan_10_2024/high/IMG_0919.MOV",
+        "hi-920": "Jan_10_2024/high/IMG_0920.MOV",
     },
-    "fixed_range": {"test": 200}
+    "fixed_range": {"test": 200, "862": (0,240), "864": (0, 240)},
+    "img_range": {"862": (1000, 1450), "864": (500, 1650)},
+    "contour_kws": {"2c": {"num_of_contours": 2}}
 }
 
 sindy_lookup = {
