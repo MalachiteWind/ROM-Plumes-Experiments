@@ -13,8 +13,8 @@ from .types import PolyData
 
 def create_plumepoints(
     filename: str,
-    img_range: list[int]=[0, -1],
-    fixed_range: list[int]=[0, -1],
+    img_range: tuple[int, int]=(0, -1),
+    fixed_range: tuple[int, int]=(0, -1),
     gauss_space_kws: dict[str, Any]=None,
     gauss_time_kws: dict[str, Any]=None,
     circle_kw: dict[str, Any]=None,

@@ -248,7 +248,10 @@ def get_coef_acc(
         _, r_x_y = train_val_set[i]
 
         xy_true, xy_pred = _get_true_pred(f,r_x_y, regression_method)
-        accs[i] = 1 - np.linalg.norm(xy_true-xy_pred)/np.linalg.norm(xy_true)
+        if len(xy_true) == 0:
+            accs[i] = np.nan
+        else:
+            accs[i] = 1 - np.linalg.norm(xy_true-xy_pred)/np.linalg.norm(xy_true)
     
     return accs
 
