@@ -95,17 +95,12 @@ def regress_centerline(
     mean_points = data["center"]
     train_set, val_set = _split_into_train_val(mean_points, x_split)
 
-    # silence all the printing
-    import tqdm
-    temp = tqdm.tqdm
-    tqdm.tqdm = lambda x: x
     coef_time_series = PLUME.regress_multiframe_mean(
         mean_points=train_set,
         regression_method=regression_method,
         poly_deg=poly_deg,
         decenter=decenter
     )
-    tqdm.tqdm = temp
 
     train_acc = get_coef_acc(coef_time_series, train_set, regression_method)
     val_acc = get_coef_acc(coef_time_series, val_set, regression_method)
@@ -178,7 +173,9 @@ def _split_into_train_val(
     return train_set, val_set
 
 
-def _construct_f(coef: Float1D, regression_method:Optional[str]=None) -> Callable[[float],float] | Callable[[float],Float1D]:
+def _construct_f(
+    coef: Float1D, regression_method:Optional[str]=None
+) -> Callable[[float],float] | Callable[[float],Float1D]:
     """construct function f based on coefficients and regression_method
 
     Parameters:
