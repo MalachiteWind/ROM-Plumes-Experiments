@@ -11,6 +11,7 @@ from typing import List
 from typing import Any
 from typing import Optional
 from typing import Callable
+from .plotting import CMEAS, CEST, CMAP
 from .types import Frame
 from .types import PlumePoints
 from .types import NpFlt
@@ -272,14 +273,35 @@ def _visualize_points(
     for frame_id, ax in zip(frame_ids, axes.flatten()):
         frame_t, frame_points = mean_points[frame_id]
         xy_true = frame_points[:, 1:]
-        ax.plot(xy_true[:, 0], xy_true[:, 1], ".", label="centerpoints")
+        # y ordinate is pixels below top, but for plots, up is above axis
+        ax.plot(
+            xy_true[:, 0],
+            y_max - xy_true[:, 1],
+            ".",
+            color=CMEAS,
+            label="centerpoints")
         if x_split:
             ax.axvline(x_split, 0, frame_points[:, 2].max(), color="gray")
         for coeff_meth, method in zip(coef_time_series, regression_methods):
             coeffs = coeff_meth[frame_id]
             f = _construct_f(coeffs, method)
             _, xy_pred = _get_true_pred(f, frame_points, method)
-            ax.plot(xy_pred[:, 0], xy_pred[:, 1], "-", label=f"{method} regression")
+            ax.plot(
+                xy_pred[:, 0],
+                y_max - xy_pred[:, 1],
+                "x",
+                color=CEST,
+                label=f"{method} regression"
+            )
+            rxy_max = frame_points.max(axis=0)
+            interp_points = np.linspace(0, rxy_max, 20)
+            _, xy_interp = _get_true_pred(f, interp_points, method)
+            ax.plot(
+                xy_interp[:, 0],
+                y_max - xy_interp[:, 1],
+                "--", color=CEST,
+                label=f"{method} regression"
+            )
         ax.set_title(f"Frame {frame_t}")
         ax.set_xlim([0, x_max])
         ax.set_ylim([0, y_max])
