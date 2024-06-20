@@ -39,20 +39,26 @@ def create_centerline(
     origin_filename = filename + "_ctr.pkl"
     with open(pickle_path / origin_filename, "rb") as fh:
         origin = pickle.load(fh)
-    plume = PLUME()
     np_filename = filename[:-3]+ "pkl" # replace mov with pkl
     with open(pickle_path / np_filename, "rb") as fh:
-        plume.numpy_frames = pickle.load(fh)
-    plume.orig_center = tuple(int(coord) for coord in origin)
-    center, bottom, top = plume.train(
-        img_range=img_range,
-        fixed_range=fixed_range,
-        concentric_circle_kws=circle_kw,
-        get_contour_kws=contour_kws,
+        numpy_frames = pickle.load(fh)
+    orig_center = tuple(int(coord) for coord in origin)
+    clean_vid = PLUME.clean_video(
+        numpy_frames,
+        fixed_range,
+        gauss_space_blur=True,
+        gauss_time_blur=True,
         gauss_space_kws=gauss_space_kws,
         gauss_time_kws=gauss_time_kws,
     )
-    visualize_points(plume.numpy_frames, center, bottom, top, n_plots=15)
+    center, bottom, top = PLUME.video_to_ROM(
+        clean_vid,
+        orig_center,
+        img_range,
+        concentric_circle_kws=circle_kw,
+        get_contour_kws=contour_kws
+    )
+    visualize_points(numpy_frames, center, bottom, top, n_plots=15)
     return {"main": None, "data": {"center": center, "bottom": bottom, "top": top}}
 
 
