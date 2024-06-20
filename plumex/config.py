@@ -37,6 +37,8 @@ data_lookup = {
         "med-871": "Jan_8_2024/med/IMG_0871.MOV",
         "hi-919": "Jan_10_2024/high/IMG_0919.MOV",
         "hi-920": "Jan_10_2024/high/IMG_0920.MOV",
+        "blender-nowind": "blender/basic_plume.mp4",
+        "blender-wind": "blender/plume_wind.mp4",
     },
     "fixed_range": {"test": 200, "862": (0,240), "864": (0, 240)},
     "img_range": {"862": (1000, 1450), "864": (500, 1650)},
