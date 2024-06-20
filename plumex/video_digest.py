@@ -7,11 +7,11 @@ from matplotlib import pyplot as plt
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 
-from .data import pickle_path
+from .data import PICKLE_PATH
 from .types import PolyData
 
 
-def create_centerline(
+def create_plumepoints(
     filename: str,
     img_range: tuple[int, int]=(0, -1),
     fixed_range: tuple[int, int]=(0, -1),
@@ -37,13 +37,14 @@ def create_centerline(
         contour_kws = {}
 
     origin_filename = filename + "_ctr.pkl"
-    with open(pickle_path / origin_filename, "rb") as fh:
+    with open(PICKLE_PATH / origin_filename, "rb") as fh:
         origin = pickle.load(fh)
     plume = PLUME()
     np_filename = filename[:-3]+ "pkl" # replace mov with pkl
-    with open(pickle_path / np_filename, "rb") as fh:
+    with open(PICKLE_PATH / np_filename, "rb") as fh:
         plume.numpy_frames = pickle.load(fh)
     plume.orig_center = tuple(int(coord) for coord in origin)
+
     center, bottom, top = plume.train(
         img_range=img_range,
         fixed_range=fixed_range,
@@ -52,6 +53,7 @@ def create_centerline(
         gauss_space_kws=gauss_space_kws,
         gauss_time_kws=gauss_time_kws,
     )
+
     visualize_points(plume.numpy_frames, center, bottom, top, n_plots=15)
     return {"main": None, "data": {"center": center, "bottom": bottom, "top": top}}
 
