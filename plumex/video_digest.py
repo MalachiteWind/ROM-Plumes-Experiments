@@ -1,13 +1,17 @@
 import pickle
-from typing import Any, cast
+from typing import Any, cast, Optional
 
 from ara_plumes import PLUME
+from ara_plumes.models import get_contour
 from ara_plumes.typing import GrayVideo, Frame, PlumePoints
 from matplotlib import pyplot as plt
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
+from matplotlib.path import Path
+from matplotlib.patches import PathPatch
 
 from .data import pickle_path
+from .plotting import CEST
 from .types import PolyData
 
 
@@ -41,10 +45,10 @@ def create_centerline(
         origin = pickle.load(fh)
     np_filename = filename[:-3]+ "pkl" # replace mov with pkl
     with open(pickle_path / np_filename, "rb") as fh:
-        numpy_frames = pickle.load(fh)
+        raw_vid = pickle.load(fh)
     orig_center = tuple(int(coord) for coord in origin)
     clean_vid = PLUME.clean_video(
-        numpy_frames,
+        raw_vid,
         fixed_range,
         gauss_space_blur=True,
         gauss_time_blur=True,
@@ -58,36 +62,62 @@ def create_centerline(
         concentric_circle_kws=circle_kw,
         get_contour_kws=contour_kws
     )
-    visualize_points(numpy_frames, center, bottom, top, n_plots=15)
+    visualize_points(raw_vid, clean_vid, center, bottom, top, 15, contour_kws)
     return {"main": None, "data": {"center": center, "bottom": bottom, "top": top}}
 
 
 def visualize_points(
-    vid: GrayVideo,
+    raw_vid: GrayVideo,
+    clean_vid: GrayVideo,
     center: list[tuple[Frame, PlumePoints]],
     bottom: list[tuple[Frame, PlumePoints]],
     top: list[tuple[Frame, PlumePoints]],
-    n_plots: int=9
+    n_frames: int=9,
+    contour_kws: Optional[dict[str, Any]] = None,
 ) -> Figure:
+    if contour_kws is None:
+        contour_kws = {}
     min_frame_t = center[0][0]
     max_frame_t = center[-1][0]
-    plot_frameskip = (max_frame_t - min_frame_t) / n_plots
-    frame_ids = [int(plot_frameskip * i) for i in range(n_plots)]
-    n_rows = (n_plots + 2) // 3
-    y_px, x_px = vid.shape[1:]
+    plot_frameskip = (max_frame_t - min_frame_t) / n_frames
+    frame_ids = [int(plot_frameskip * i) for i in range(n_frames)]
+    n_cols = 4
+    y_px, x_px = raw_vid.shape[1:]
     vid_aspect = x_px/y_px
-    fig, axes = plt.subplots(n_rows, 3, figsize=[vid_aspect * 9, 3 * n_rows])
-    for frame_id, ax in zip(frame_ids, axes.flatten()):
+    fig, axes = plt.subplots(n_frames, n_cols, figsize=[vid_aspect * 8, 2 * n_frames])
+    for frame_id, ax_row in zip(frame_ids, axes.flatten()):
         frame_t, frame_center = center[frame_id]
         _, frame_bottom = bottom[frame_id]
         _, frame_top = top[frame_id]
-        ax = cast(Axes, ax)
-        ax.imshow(vid[frame_t], cmap='gray', vmin=0, vmax=255)
-        ax.plot(frame_center[:, 1], frame_center[:, 2], "r.")
-        ax.plot(frame_bottom[:, 1], frame_bottom[:, 2], "b.")
-        ax.plot(frame_top[:, 1], frame_top[:, 2], "g.")
-        ax.set_title(f"Frame {frame_t}")
-        ax.set_xticks([])
-        ax.set_yticks([])
+        raw_im = raw_vid[frame_t]
+        cln_im = clean_vid[frame_t]
+        ax_row = cast(list[Axes], ax_row)
+        ax_row[0].set_ylabel(f"Frame {frame_t}")
+        _plot_frame(ax_row[0], raw_im)
+        contours = get_contour(cln_im, **contour_kws)
+        _plot_cleaning(ax_row[1], cln_im, contours)
+        _plot_learn_path(ax_row[2], cln_im, frame_center, frame_top, frame_bottom)
+        _plot_learn_path(ax_row[3], raw_im, frame_center, frame_top, frame_bottom)
     fig.tight_layout()
     return fig
+
+
+def _plot_frame(ax: Axes, image):
+    ax.imshow(image, cmap='gray', vmin=0, vmax=255)
+    ax.set_xticks([])
+    ax.set_yticks([])
+
+
+def _plot_cleaning(ax: Axes, image, contours):
+    _plot_frame(ax, image)
+    for contour in contours:
+        cpath = Path(contour, closed=True)
+        cpatch = PathPatch(cpath, alpha=.5, edgecolor=CEST, facecolor=CEST)
+        ax.add_patch(cpatch)
+
+
+def _plot_learn_path(ax: Axes, image, frame_center, frame_top, frame_bottom):
+    _plot_frame(ax, image)
+    ax.plot(frame_center[:, 1], frame_center[:, 2], "r.")
+    ax.plot(frame_bottom[:, 1], frame_bottom[:, 2], "b.")
+    ax.plot(frame_top[:, 1], frame_top[:, 2], "g.")
