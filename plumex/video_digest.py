@@ -11,12 +11,12 @@ from matplotlib.figure import Figure
 from matplotlib.path import Path
 from matplotlib.patches import Circle, PathPatch
 
-from .data import pickle_path
+from .data import PICKLE_PATH
 from .plotting import CEST, CMAP
 from .types import PolyData
 
 
-def create_centerline(
+def create_plumepoints(
     filename: str,
     img_range: tuple[int, int]=(0, -1),
     fixed_range: tuple[int, int]=(0, -1),
@@ -42,10 +42,10 @@ def create_centerline(
         contour_kws = {}
 
     origin_filename = filename + "_ctr.pkl"
-    with open(pickle_path / origin_filename, "rb") as fh:
+    with open(PICKLE_PATH / origin_filename, "rb") as fh:
         origin = pickle.load(fh)
     np_filename = filename[:-3]+ "pkl" # replace mov with pkl
-    with open(pickle_path / np_filename, "rb") as fh:
+    with open(PICKLE_PATH / np_filename, "rb") as fh:
         raw_vid = pickle.load(fh)
     orig_center = tuple(int(coord) for coord in origin)
     clean_vid = PLUME.clean_video(
