@@ -1,17 +1,18 @@
 import pickle
 from typing import Any, cast, Optional
 
+import numpy as np
 from ara_plumes import PLUME
 from ara_plumes.models import get_contour
-from ara_plumes.typing import GrayVideo, Frame, PlumePoints
+from ara_plumes.typing import GrayVideo, GrayImage, Frame, PlumePoints, Contour_List
 from matplotlib import pyplot as plt
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 from matplotlib.path import Path
-from matplotlib.patches import PathPatch
+from matplotlib.patches import Circle, PathPatch
 
 from .data import pickle_path
-from .plotting import CEST
+from .plotting import CEST, CMAP
 from .types import PolyData
 
 
@@ -62,13 +63,16 @@ def create_centerline(
         concentric_circle_kws=circle_kw,
         get_contour_kws=contour_kws
     )
-    visualize_points(raw_vid, clean_vid, center, bottom, top, 15, contour_kws)
+    visualize_points(
+        raw_vid, clean_vid, orig_center, center, bottom, top, 15, contour_kws
+    )
     return {"main": None, "data": {"center": center, "bottom": bottom, "top": top}}
 
 
 def visualize_points(
     raw_vid: GrayVideo,
     clean_vid: GrayVideo,
+    origin: tuple[float, float],
     center: list[tuple[Frame, PlumePoints]],
     bottom: list[tuple[Frame, PlumePoints]],
     top: list[tuple[Frame, PlumePoints]],
@@ -81,11 +85,12 @@ def visualize_points(
     max_frame_t = center[-1][0]
     plot_frameskip = (max_frame_t - min_frame_t) / n_frames
     frame_ids = [int(plot_frameskip * i) for i in range(n_frames)]
-    n_cols = 4
+    n_cols = 5
     y_px, x_px = raw_vid.shape[1:]
     vid_aspect = x_px/y_px
     fig, axes = plt.subplots(n_frames, n_cols, figsize=[vid_aspect * 8, 2 * n_frames])
-    for frame_id, ax_row in zip(frame_ids, axes.flatten()):
+    axes = np.reshape(axes, (n_frames, n_cols))  # enforce 2D array even if n_frames=1
+    for frame_id, ax_row in zip(frame_ids, axes):
         frame_t, frame_center = center[frame_id]
         _, frame_bottom = bottom[frame_id]
         _, frame_top = top[frame_id]
@@ -95,28 +100,41 @@ def visualize_points(
         ax_row[0].set_ylabel(f"Frame {frame_t}")
         _plot_frame(ax_row[0], raw_im)
         contours = get_contour(cln_im, **contour_kws)
-        _plot_cleaning(ax_row[1], cln_im, contours)
-        _plot_learn_path(ax_row[2], cln_im, frame_center, frame_top, frame_bottom)
-        _plot_learn_path(ax_row[3], raw_im, frame_center, frame_top, frame_bottom)
+        _plot_frame(ax_row[1], cln_im)
+        _plot_contours(ax_row[2], cln_im, origin, contours)
+        _plot_learn_path(ax_row[3], cln_im, frame_center, frame_top, frame_bottom)
+        _plot_learn_path(ax_row[4], raw_im, frame_center, frame_top, frame_bottom)
     fig.tight_layout()
     return fig
 
 
-def _plot_frame(ax: Axes, image):
+def _plot_frame(ax: Axes, image: GrayImage):
     ax.imshow(image, cmap='gray', vmin=0, vmax=255)
     ax.set_xticks([])
     ax.set_yticks([])
 
 
-def _plot_cleaning(ax: Axes, image, contours):
+def _plot_contours(
+    ax: Axes, image: GrayImage, origin: tuple[float, float], contours: Contour_List
+):
     _plot_frame(ax, image)
     for contour in contours:
-        cpath = Path(contour, closed=True)
+        cpath = Path(contour.reshape((-1, 2)), closed=True)
         cpatch = PathPatch(cpath, alpha=.5, edgecolor=CEST, facecolor=CEST)
         ax.add_patch(cpatch)
+    radii = 300
+    num_circs = 6
+    for radius in range(radii, num_circs * radii, radii):
+        ax.add_patch(Circle(origin, radius, color=CMAP[4], fill=False))
 
 
-def _plot_learn_path(ax: Axes, image, frame_center, frame_top, frame_bottom):
+def _plot_learn_path(
+    ax: Axes,
+    image: GrayImage,
+    frame_center: PlumePoints,
+    frame_top: PlumePoints,
+    frame_bottom: PlumePoints,
+):
     _plot_frame(ax, image)
     ax.plot(frame_center[:, 1], frame_center[:, 2], "r.")
     ax.plot(frame_bottom[:, 1], frame_bottom[:, 2], "b.")
