@@ -1,3 +1,5 @@
+ex.sh
+*.out
 *.png
 *.jpg
 *.mp4
@@ -22,7 +24,9 @@ debugging/
 sindy_results/
 plume_results/
 plume_videos/
+plume_videos
 testing/
 matlab/
 figures/
+trials
 trials/

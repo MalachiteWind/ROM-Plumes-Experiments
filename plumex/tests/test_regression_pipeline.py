@@ -26,6 +26,15 @@ def test_get_coef_acc():
 
     np.testing.assert_array_almost_equal(expected,result)
 
+    # empty 
+    train_val_set = [
+        (1,r_x_y_1),
+        (2,r_x_y_2[np.array([False for _ in range(3)])])
+    ]
+    expected = np.array([1,np.nan])
+    result = get_coef_acc(coef_time_series, train_val_set,regression_method='poly')
+    np.testing.assert_array_almost_equal(expected,result)
+
 def test_split_into_train_val():
     train_i = np.arange(6)+4
     frame_train = np.vstack((train_i, train_i, train_i)).T
