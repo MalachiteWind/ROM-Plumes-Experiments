@@ -5,6 +5,7 @@ from ara_plumes.models import PLUME
 import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib.figure import Figure
+from matplotlib.patches import Circle
 from tqdm import tqdm
 
 from typing import List
@@ -21,7 +22,7 @@ from .types import Float2D
 
 def multi_regress_centerline(
     data: dict[List[tuple[Frame, PlumePoints]]],
-    x_split: int,
+    r_split: int,
     poly_deg: int = 2,
     decenter: Optional[tuple[int,int]] = None
 ) -> dict[str, Any]:
@@ -40,7 +41,7 @@ def multi_regress_centerline(
     coeffs = []
     for method in regression_methods:
         meth_results[method] = regress_centerline(
-            data, x_split, method, poly_deg, decenter, display=False
+            data, r_split, method, poly_deg, decenter, display=False
         )
         main_accs.append((method, meth_results[method].pop("main")))
         coeffs.append(meth_results[method]["data"])
@@ -58,8 +59,10 @@ def multi_regress_centerline(
     plt.legend()
     plt.title(f"Validation Accuracy over {n_frames} frames")
     plt.legend()
+    if not decenter:
+        decenter = (0,0)
     _visualize_points(
-        data["center"], coeffs, regression_methods, x_split, n_plots=9
+        data["center"], coeffs, regression_methods, r_split, n_plots=9, origin=decenter
     )
     return {
         "main": best_method,
@@ -70,7 +73,7 @@ def multi_regress_centerline(
 
 def regress_centerline(
     data: dict[List[tuple[Frame, PlumePoints]]],
-    x_split: int,
+    r_split: int,
     regression_method: str,
     poly_deg: int = 2,
     decenter: Optional[tuple[int,int]] = None,
@@ -81,7 +84,7 @@ def regress_centerline(
     Args:
         data: output of video_digest step, a dictionary of center, top, and
             bottom points for each frame of a video
-        x_split: the pixel coordinate of boundary between validation (left)
+        r_split: the pixel coordinate of boundary between validation (left)
             and training (right) data
         regression_method: method for drawing curve through points as
             understood by PLUME.regress_multiframe_mean
@@ -94,7 +97,7 @@ def regress_centerline(
         regression_method). "main" metric is average validation accuracy
     """
     mean_points = data["center"]
-    train_set, val_set = _split_into_train_val(mean_points, x_split)
+    train_set, val_set = _split_into_train_val(mean_points, r_split)
 
     coef_time_series = PLUME.regress_multiframe_mean(
         mean_points=train_set,
@@ -112,14 +115,18 @@ def regress_centerline(
         plt.legend()
         plt.title(f"Accuracy over {n_frames} frames")
         plt.legend()
+
+        if not decenter:
+            decenter = (0,0)
+
         _visualize_points(
-            mean_points, [coef_time_series], [regression_method], x_split, n_plots=15
+            mean_points, [coef_time_series], [regression_method], r_split, n_plots=15, origin=decenter
         )
 
     non_nan_val_acc = val_acc[~np.isnan(val_acc)]
     if len(non_nan_val_acc) == 0:
         raise RuntimeError("No frames have any points in the validation set.  "
-            "Try increasing x_split to allow more points in validation set.")
+            "Try decreasing r_split to allow more points in validation set.")
     if len(non_nan_val_acc) < len(val_acc):
         warn("Some frames do not have any points in the validation set",
              RuntimeWarning, stacklevel=2)
@@ -156,11 +163,11 @@ def _split_into_train_val(
     -------
     train_set:
         Frame points associated with x-coordinate values greater than 
-        or equal to x_split.
+        or equal to r_split.
         
     val_set:
         Frame points associated with x-coordinate values less than 
-        x_split.
+        r_split.
     """
     train_set = []
     val_set = []
@@ -258,7 +265,8 @@ def _visualize_points(
     mean_points: list[tuple[Frame, PlumePoints]],
     coef_time_series: Sequence[Float2D],
     regression_methods: Sequence[str],
-    x_split: None | float=None,
+    origin: tuple[int,int],
+    r_split: None | float=None,
     n_plots: int=9,
 ) -> Figure:
     min_frame_t = mean_points[0][0]
@@ -280,8 +288,8 @@ def _visualize_points(
             ".",
             color=CMEAS,
             label="centerpoints")
-        if x_split:
-            ax.axvline(x_split, 0, frame_points[:, 2].max(), color="gray")
+        if r_split:
+            ax.add_patch(Circle(origin, r_split, color=CMAP[4], fill=False))
         for coeff_meth, method in zip(coef_time_series, regression_methods):
             coeffs = coeff_meth[frame_id]
             f = _construct_f(coeffs, method)
