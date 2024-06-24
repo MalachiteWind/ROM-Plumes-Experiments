@@ -172,9 +172,8 @@ def _split_into_train_val(
     train_set = []
     val_set = []
     for (t, frame_points) in tqdm(mean_points):
-        
         mask = frame_points[:,0] <= r_split
-
+        
         train_set.append((t, frame_points[mask]))
         val_set.append((t, frame_points[~mask]))
 
