@@ -141,9 +141,6 @@ hankel_lookup = {
 }
 
 regress_lookup = {
-    "x_split":{
-        "half": 1080//2
-    },
     "r_split":{
         "default": 50*15
     }
