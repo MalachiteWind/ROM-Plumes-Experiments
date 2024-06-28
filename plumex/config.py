@@ -85,11 +85,11 @@ data_lookup = {
         "hi2": (700, 1100),
     },
     "gauss_space_kws": {
-        "off": {"kernel_size": (1, 1), "sigma_x": 1e-1},
-        "low": {"kernel_size": (15, 15), "sigma_x": 5e0},
-        "med": {"kernel_size": (45, 45), "sigma_x": 15},
-        "high": {"kernel_size": (301, 301), "sigma_x": 1e2},
-        "shear": {"kernel_size": (301, 31), "sigma_x": 1e2, "sigma_y": 1e1},
+        "off": {"kernel_size": (1, 1), "sigma_x": 0.1, "sigma_y": 0.1},
+        "low": {"kernel_size": (15, 15), "sigma_x": 5, "sigma_y": 5},
+        "med": {"kernel_size": (45, 45), "sigma_x": 15, "sigma_y": 15},
+        "high": {"kernel_size": (301, 301), "sigma_x": 100, "sigma_y": 100},
+        "shear": {"kernel_size": (301, 31), "sigma_x": 100, "sigma_y": 10},
     },
     "gauss_time_kws": {
         "off": {"kernel_size": 1, "sigma": 1e-1},
