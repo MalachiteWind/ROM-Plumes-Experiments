@@ -1,5 +1,5 @@
+import cv2
 import pysindy as ps
-
 
 data_lookup = {
     "filename": {
@@ -38,6 +38,8 @@ data_lookup = {
         "med-871": "Jan_8_2024/med/IMG_0871.MOV",
         "hi-919": "Jan_10_2024/high/IMG_0919.MOV",
         "hi-920": "Jan_10_2024/high/IMG_0920.MOV",
+        "blender-nowind": "blender/basic_plume.mp4",
+        "blender-wind": "blender/plume_wind.mp4",
         "hi-921": "Jan_10_2024/high/IMG_0921.MOV",
         "low-1": "July_20_2023/low_1.MP4",
         "low-2": "July_20_2023/low_2.MP4",
@@ -58,6 +60,11 @@ data_lookup = {
         "917": (0, 250),
         "919": (0, 200),
         "920": (0, 150),
+        "nowind": (0, 1),
+        "wind": (0, 1),
+        "lo1": (0, 200),
+        "hi1": (0, 200),
+        "hi2": (0, 200),
     },
     "img_range": {
         "862": (1000, 1450),
@@ -71,8 +78,38 @@ data_lookup = {
         "917": (400, 1679),
         "919": (500, 2453),
         "920": (300, 2094),
+        "nowind": (200, 372),
+        "wind": (130, 411),
+        "lo1": (900, 1400),
+        "hi1": (1000, 1500),
+        "hi2": (700, 1100),
     },
-    "contour_kws": {"2c": {"num_of_contours": 2}}
+    "gauss_space_kws": {
+        "off": {"kernel_size": (1, 1), "sigma_x": 0.1, "sigma_y": 0.1},
+        "low": {"kernel_size": (15, 15), "sigma_x": 5, "sigma_y": 5},
+        "med": {"kernel_size": (45, 45), "sigma_x": 15, "sigma_y": 15},
+        "high": {"kernel_size": (301, 301), "sigma_x": 100, "sigma_y": 100},
+        "shear": {"kernel_size": (301, 31), "sigma_x": 100, "sigma_y": 10},
+    },
+    "gauss_time_kws": {
+        "off": {"kernel_size": 1, "sigma": 1e-1},
+        "low": {"kernel_size": 3, "sigma": 1},
+        "med": {"kernel_size": 9, "sigma": 3},
+        "high": {"kernel_size": 27, "sigma": 9},
+    },
+    "contour_kws": {
+        "2c": {"num_of_contours": 2},
+        "3c": {"num_of_contours": 3},
+        "4c": {"num_of_contours": 4},
+        "2c-chain": {"num_of_contours": 2, "find_contour_method": cv2.CHAIN_APPROX_SIMPLE},
+        "2c-nothresh": {"num_of_contours": 2, "threshold_method": None},
+        "2c-smooth": {"num_of_contours": 2, "contour_smoothing": True},
+    },
+    "circle_kw": {
+        "noscale": {"interior_scale": 1.},
+        "pixeltol": {"atol": 1},
+        "no-smooth": {"mean_smoothing": False}
+    }
 }
 
 sindy_lookup = {
