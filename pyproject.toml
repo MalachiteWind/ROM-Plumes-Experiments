@@ -24,7 +24,6 @@ dev = [
     "pre-commit",
     "pytest-cov",
     "pytest-lazy-fixture",
-    "flake8-builtins-unleashed",
     "setuptools_scm",
 ]
 
