@@ -1,4 +1,5 @@
 import pickle
+from logging import getLogger
 from typing import Any
 from typing import cast
 from typing import Optional
@@ -22,6 +23,9 @@ from .data import PICKLE_PATH
 from .plotting import CEST
 from .plotting import CMAP
 from .types import PolyData
+
+
+logger = getLogger(__name__)
 
 
 def create_plumepoints(
@@ -127,6 +131,9 @@ def _plot_contours(
 ):
     _plot_frame(ax, image)
     for contour in contours:
+        if len(contour) < 3:
+            logger.warn("Skipping plot of contour < 3 points")
+            continue
         cpath = Path(contour.reshape((-1, 2)), closed=True)
         cpatch = PathPatch(cpath, alpha=0.5, edgecolor=CEST, facecolor=CEST)
         ax.add_patch(cpatch)
