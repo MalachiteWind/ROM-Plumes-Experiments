@@ -1,30 +1,32 @@
 from collections.abc import Sequence
+from typing import Any
+from typing import Callable
+from typing import List
+from typing import Optional
 from warnings import warn
 
-from ara_plumes.models import PLUME
 import numpy as np
+from ara_plumes.models import PLUME
 from matplotlib import pyplot as plt
 from matplotlib.figure import Figure
 from matplotlib.patches import Circle
 from tqdm import tqdm
 
-from typing import List
-from typing import Any
-from typing import Optional
-from typing import Callable
-from .plotting import CMEAS, CEST, CMAP
-from .types import Frame
-from .types import PlumePoints
-from .types import NpFlt
+from .plotting import CEST
+from .plotting import CMAP
+from .plotting import CMEAS
 from .types import Float1D
 from .types import Float2D
+from .types import Frame
+from .types import NpFlt
+from .types import PlumePoints
 
 
 def multi_regress_centerline(
     data: dict[List[tuple[Frame, PlumePoints]]],
     r_split: int,
     poly_deg: int = 2,
-    decenter: Optional[tuple[int,int]] = None
+    decenter: Optional[tuple[int, int]] = None,
 ) -> dict[str, Any]:
     """Mitosis experiment to compare regress_centerline across methods
 
@@ -60,7 +62,7 @@ def multi_regress_centerline(
     plt.title(f"Validation Accuracy over {n_frames} frames")
     plt.legend()
     if not decenter:
-        decenter = (0,0)
+        decenter = (0, 0)
     _visualize_points(
         data["center"], coeffs, regression_methods, r_split, n_plots=9, origin=decenter
     )
@@ -68,19 +70,20 @@ def multi_regress_centerline(
         "main": best_method,
         "data": best_data,
         "n_frames": n_frames,
-        "accs": meth_results
+        "accs": meth_results,
     }
+
 
 def regress_centerline(
     data: dict[List[tuple[Frame, PlumePoints]]],
     r_split: int,
     regression_method: str,
     poly_deg: int = 2,
-    decenter: Optional[tuple[int,int]] = None,
+    decenter: Optional[tuple[int, int]] = None,
     display: bool = True,
 ) -> dict[str, Any]:
     """Mitosis experiment to fit mean path of plume points
-    
+
     Args:
         data: output of video_digest step, a dictionary of center, top, and
             bottom points for each frame of a video
@@ -103,7 +106,7 @@ def regress_centerline(
         mean_points=train_set,
         regression_method=regression_method,
         poly_deg=poly_deg,
-        decenter=decenter
+        decenter=decenter,
     )
 
     train_acc = get_coef_acc(coef_time_series, train_set, regression_method)
@@ -117,36 +120,42 @@ def regress_centerline(
         plt.legend()
 
         if not decenter:
-            decenter = (0,0)
+            decenter = (0, 0)
 
         _visualize_points(
-            mean_points, [coef_time_series], [regression_method], r_split, n_plots=15, origin=decenter
+            mean_points,
+            [coef_time_series],
+            [regression_method],
+            r_split,
+            n_plots=15,
+            origin=decenter,
         )
 
     non_nan_val_acc = val_acc[~np.isnan(val_acc)]
     if len(non_nan_val_acc) == 0:
-        raise RuntimeError("No frames have any points in the validation set.  "
-            "Try decreasing r_split to allow more points in validation set.")
+        raise RuntimeError(
+            "No frames have any points in the validation set.  "
+            "Try decreasing r_split to allow more points in validation set."
+        )
     if len(non_nan_val_acc) < len(val_acc):
-        warn("Some frames do not have any points in the validation set",
-             RuntimeWarning, stacklevel=2)
+        warn(
+            "Some frames do not have any points in the validation set",
+            RuntimeWarning,
+            stacklevel=2,
+        )
 
     return {
         "main": non_nan_val_acc.mean(),
         "train_acc": train_acc,
         "val_acc": val_acc,
         "data": coef_time_series,
-        "n_frames": n_frames
+        "n_frames": n_frames,
     }
 
 
 def _split_into_train_val(
-    mean_points: List[tuple[Frame, PlumePoints]],
-    r_split: int
-) -> tuple[
-    List[tuple[Frame, PlumePoints]],
-    List[tuple[Frame, PlumePoints]]
-]:
+    mean_points: List[tuple[Frame, PlumePoints]], r_split: int
+) -> tuple[List[tuple[Frame, PlumePoints]], List[tuple[Frame, PlumePoints]]]:
     """
     Splits mean_points into training and validation sets based
     on coordinate values along the x-axis.
@@ -155,25 +164,26 @@ def _split_into_train_val(
     ----------
     mean_points:
         Mean points returned from PLUME.train().
-    
+
     r_split:
-        Value to determine where the split of data occurs on the frame. Distance along radial axis.
-    
+        Value to determine where the split of data occurs on the frame.
+        Distance along radial axis.
+
     Returns:
     -------
     train_set:
-        Frame points associated with x-coordinate values greater than 
+        Frame points associated with x-coordinate values greater than
         or equal to r_split.
-        
+
     val_set:
-        Frame points associated with x-coordinate values less than 
+        Frame points associated with x-coordinate values less than
         r_split.
     """
     train_set = []
     val_set = []
     for (t, frame_points) in tqdm(mean_points):
-        mask = frame_points[:,0] <= r_split
-        
+        mask = frame_points[:, 0] <= r_split
+
         train_set.append((t, frame_points[mask]))
         val_set.append((t, frame_points[~mask]))
 
@@ -181,82 +191,84 @@ def _split_into_train_val(
 
 
 def _construct_f(
-    coef: Float1D, regression_method:Optional[str]=None
-) -> Callable[[float],float] | Callable[[float],Float1D]:
+    coef: Float1D, regression_method: Optional[str] = None
+) -> Callable[[float], float] | Callable[[float], Float1D]:
     """construct function f based on coefficients and regression_method
 
     Parameters:
     ----------
     coef:
         array of poly coefficients in descending degree order.
-    
+
     regression_method:
-        makes function parametric if regression_method = "poly_para". 
-    
+        makes function parametric if regression_method = "poly_para".
+
     Returns:
     --------
         f:
             Callable function that takes float as argument.
     """
     if regression_method == "poly_para":
-        mid_index = len(coef)//2
+        mid_index = len(coef) // 2
         f1 = np.polynomial.Polynomial(coef[:mid_index][::-1])
         f2 = np.polynomial.Polynomial(coef[mid_index:][::-1])
+
         def f(x):
             return np.array([f1(x), f2(x)])
-    else: 
+
+    else:
         f = np.polynomial.Polynomial(coef[::-1])
     return f
 
 
 def _get_true_pred(
-        func: Callable[[float],float] | Callable[[float],Float1D], 
-        r_x_y: PlumePoints, 
-        regression_method: str
-) -> tuple[Float2D,Float2D]:
+    func: Callable[[float], float] | Callable[[float], Float1D],
+    r_x_y: PlumePoints,
+    regression_method: str,
+) -> tuple[Float2D, Float2D]:
     """
     Vectorize approximation function ``func``, map correct inputs from `r_x_y`, and
     extract true values from `r_x_y` based on regression_method used.
     """
-    xy_true = r_x_y[:,1:]
+    xy_true = r_x_y[:, 1:]
     if regression_method == "poly" or regression_method == "linear":
-        y_pred = func(r_x_y[:,1])
-        xy_pred = np.vstack((r_x_y[:,1],y_pred)).T
+        y_pred = func(r_x_y[:, 1])
+        xy_pred = np.vstack((r_x_y[:, 1], y_pred)).T
 
     if regression_method == "poly_inv":
-        y_true = r_x_y[:,2]
+        y_true = r_x_y[:, 2]
         x_pred = func(y_true)
-        xy_pred = np.vstack((x_pred,y_true)).T
+        xy_pred = np.vstack((x_pred, y_true)).T
 
     if regression_method == "poly_para":
-        xy_pred = func(r_x_y[:,0]).T
-    
+        xy_pred = func(r_x_y[:, 0]).T
+
     return xy_true, xy_pred
 
 
 def get_coef_acc(
-        coef_time_series:np.ndarray[Any, NpFlt],
-        train_val_set: List[tuple[Frame,PlumePoints]], 
-        regression_method: str
+    coef_time_series: np.ndarray[Any, NpFlt],
+    train_val_set: List[tuple[Frame, PlumePoints]],
+    regression_method: str,
 ) -> Float1D:
     """Get the L2 accuracy of learned coefficients on PlumePoints"""
     if len(coef_time_series) != len(train_val_set):
-        raise TypeError(f"length of arrays must match")
-    
+        raise TypeError("length of arrays must match")
+
     n_frames = len(coef_time_series)
     accs = np.zeros(n_frames)
     for i in range(n_frames):
         coef_i = coef_time_series[i]
 
-        f = _construct_f(coef_i,regression_method)
+        f = _construct_f(coef_i, regression_method)
         _, r_x_y = train_val_set[i]
 
-        xy_true, xy_pred = _get_true_pred(f,r_x_y, regression_method)
+        xy_true, xy_pred = _get_true_pred(f, r_x_y, regression_method)
         if len(xy_true) == 0:
             accs[i] = np.nan
         else:
-            accs[i] = 1 - np.linalg.norm(xy_true-xy_pred)/np.linalg.norm(xy_true)
-    
+            accs[i] = 1 - np.linalg.norm(xy_true - xy_pred) / np.linalg.norm(xy_true)
+
     return accs
 
 
@@ -264,9 +276,9 @@ def _visualize_points(
     mean_points: list[tuple[Frame, PlumePoints]],
     coef_time_series: Sequence[Float2D],
     regression_methods: Sequence[str],
-    origin: tuple[int,int],
-    r_split: None | float=None,
-    n_plots: int=9,
+    origin: tuple[int, int],
+    r_split: None | float = None,
+    n_plots: int = 9,
 ) -> Figure:
     min_frame_t = mean_points[0][0]
     max_frame_t = mean_points[-1][0]
@@ -282,11 +294,8 @@ def _visualize_points(
         xy_true = frame_points[:, 1:]
         # y ordinate is pixels below top, but for plots, up is above axis
         ax.plot(
-            xy_true[:, 0],
-            y_max - xy_true[:, 1],
-            ".",
-            color=CMEAS,
-            label="centerpoints")
+            xy_true[:, 0], y_max - xy_true[:, 1], ".", color=CMEAS, label="centerpoints"
+        )
         if r_split:
             ax.add_patch(Circle(origin, r_split, color=CMAP[4], fill=False))
         for coeff_meth, method in zip(coef_time_series, regression_methods):
@@ -298,7 +307,7 @@ def _visualize_points(
                 y_max - xy_pred[:, 1],
                 "x",
                 color=CEST,
-                label=f"{method} regression"
+                label=f"{method} regression",
             )
             rxy_max = frame_points.max(axis=0)
             interp_points = np.linspace(0, rxy_max, 20)
@@ -306,8 +315,9 @@ def _visualize_points(
             ax.plot(
                 xy_interp[:, 0],
                 y_max - xy_interp[:, 1],
-                "--", color=CEST,
-                label=f"{method} regression"
+                "--",
+                color=CEST,
+                label=f"{method} regression",
             )
         ax.set_title(f"Frame {frame_t}")
         ax.set_xlim([0, x_max])
