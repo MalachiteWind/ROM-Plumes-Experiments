@@ -1,27 +1,31 @@
 # Inputs ?
 # - Data matrix
 # - Hyperparameters for Ensemble SINDy?
-
 # Outputs
 # - Fitted plots
 # - Accurcy Score
-
-# Have data generated from plume-pipeline.py? 
-
+# Have data generated from plume-pipeline.py?
 # Try simple example on Jake repo
-
 import re
-from typing import Any, cast, Literal, Optional
+from typing import Any
+from typing import cast
+from typing import Literal
+from typing import Optional
 from warnings import warn
 
 import gen_experiments
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 import pysindy as ps
 from sklearn.preprocessing import StandardScaler
 
-from .types import PolyData, Float1D, Float2D
-from .plotting import plot_smoothing_step, print_diagnostics, plot_predictions, plot_simulation
+from .plotting import plot_predictions
+from .plotting import plot_simulation
+from .plotting import plot_smoothing_step
+from .plotting import print_diagnostics
+from .types import Float1D
+from .types import Float2D
+from .types import PolyData
 
 Kwargs = dict[str, Any]
 TrapMode = tuple[Literal["trap"], Optional[Kwargs]]
@@ -33,15 +37,15 @@ and stabilizing epsilon.
 
 
 def run(
-        time_series: Float2D,
-        seed: int,
-        whitening: bool,
-        ens_kwargs: Optional[Kwargs] = None,
-        diff_params: Optional[Kwargs] = None,
-        normalize=True,
-        reg_mode: TrapMode | PolyMode = ("poly", None)
-    ):
-    
+    time_series: Float2D,
+    seed: int,
+    whitening: bool,
+    ens_kwargs: Optional[Kwargs] = None,
+    diff_params: Optional[Kwargs] = None,
+    normalize=True,
+    reg_mode: TrapMode | PolyMode = ("poly", None),
+):
+
     """
     Takes in a 3-dimensional timeseries and applies an Ensemble Sindy
     pipeline for model discovery and forward simulating.
@@ -52,7 +56,7 @@ def run(
         time series to fit
 
     whitening:
-        bool which transforms timeseries into statistically uncorrelated data 
+        bool which transforms timeseries into statistically uncorrelated data
 
     ens_kwargs:
         kwargs to EnsembleOptimizer
@@ -64,28 +68,28 @@ def run(
     normalize: bool, optional (default True)
         Normalize time_series data by applying StandardScalar() transform from
         sklearn.preprocessing.
-    
+
     reg_mode:
         Regularization mode, either 'trap' or 'poly' and kwargs.  Controls
         whether stability of discovered equation is enforced by Trapping, or by
         adding odd polynomial terms of highest order with negative coefficients.
         A tuple of the name and kwargs, either for trapping optimizer or as
         a tuple of kwargs for polynomial library and STLSQ optimizer.
-    
+
     Returns:
     --------
     err: float
-        normalizing L2 error between time_seris (potentially normalized) and 
+        normalizing L2 error between time_seris (potentially normalized) and
         solved learned ODE system.
-    
+
     model: pySINDy model
 
     X_train: np.ndarray
-        time_series (potentially normalized by StandardScalar()) 
-    
+        time_series (potentially normalized by StandardScalar())
+
     X_train_sim: np.ndarray
         learned time_series from solved ODE system
-    
+
     scalar: StandardScalar object
         StandardScalar object (potentially) used to normalized time_series data.
     """
@@ -111,7 +115,7 @@ def run(
         raise ValueError("Regularization mode must be either 'poly' or 'trap'")
 
     np.random.seed(seed=seed)
-    
+
     ############################
     # Apply normalized scaling #
     ############################
@@ -120,12 +124,10 @@ def run(
     scaler = StandardScaler()
     if normalize:
         time_series: PolyData = scaler.fit_transform(time_series)
-    
+
     if whitening:
         eigvals, eigvecs = np.linalg.eigh(np.cov(time_series.T))
-        time_series: PolyData = (time_series@eigvecs)/np.sqrt(eigvals)
-    
-
+        time_series: PolyData = (time_series @ eigvecs) / np.sqrt(eigvals)
 
     metrics = {}
     data_collinearity = np.linalg.cond(time_series)
@@ -135,10 +137,10 @@ def run(
     ########################
     # Apply Ensemble SINDy #
     ########################
-    feature_names = ['a', 'b', 'c']
+    feature_names = ["a", "b", "c"]
 
     model = gen_experiments.utils.make_model(
-        feature_names, float(t[1]-t[0]), diff_params, feat_params, opt_params
+        feature_names, float(t[1] - t[0]), diff_params, feat_params, opt_params
     )
     model.fit(time_series, t=t)
     x_smooth = model.differentiation_method.smoothed_x_
@@ -161,14 +163,14 @@ def run(
     plt.show()
     metrics["pred-accuracy"] = model.score(x_smooth, t, x_dot_est)
     print("Prediction Accuracy: ", metrics["pred-accuracy"])
-    print("Prediction Relative Error: ", 1-metrics["pred-accuracy"])
+    print("Prediction Relative Error: ", 1 - metrics["pred-accuracy"])
 
     results = {
         "main": metrics["pred-accuracy"],
         "metrics": metrics,
         "model": model,
         "X_train": time_series,
-        "scalar_transform": scaler
+        "scalar_transform": scaler,
     }
 
     ################
@@ -182,7 +184,7 @@ def run(
     integrator_kws["method"] = "LSODA"
     try:
         X_stable_sim = model.simulate(
-            x_smooth[0], t, integrator_kws=integrator_kws, integrator='odeint'
+            x_smooth[0], t, integrator_kws=integrator_kws, integrator="odeint"
         )
         integration_success = True
     except Exception as exc:
@@ -192,21 +194,22 @@ def run(
         X_stable_sim = cast(PolyData, X_stable_sim)  # type: ignore
         ind_sim = min(x_smooth.shape[0], X_stable_sim.shape[0])
         if reg_mode[0] == "poly":
-            title = f"Stabilized: Poly, eps={stabilizing_eps}, degree={stab_order}"  # type: ignore
+            title = f"Stabilized: Poly, eps={stabilizing_eps}, degree={stab_order}"
         else:
             title = "Stabilized: Trapping"
         plot_simulation(
-            t, x_smooth, X_stable_sim, feat_names=model.feature_names, title=title  # type: ignore
+            t, x_smooth, X_stable_sim, feat_names=model.feature_names, title=title
         )
         plt.show()
+
         def L2_error(x_true, x_approx):
-                return np.linalg.norm(x_true-x_approx)/np.linalg.norm(x_true)
+            return np.linalg.norm(x_true - x_approx) / np.linalg.norm(x_true)
+
         sim_err = L2_error(x_smooth[:ind_sim], X_stable_sim[:ind_sim])
         metrics["sim-err"] = sim_err
         results["X_train_sim"] = X_stable_sim
         print(f"Simulation Accuracy: {1-sim_err}")
         print(f"Simulation Relative Error: {sim_err}")
-
 
     return results
 
@@ -254,9 +257,7 @@ def get_func_from_SINDy(model, precision=10):
 
 
 def _stabilize_model(
-    model: ps.SINDy,
-    time_series: PolyData,
-    stabilizing_eps: Optional[float]
+    model: ps.SINDy, time_series: PolyData, stabilizing_eps: Optional[float]
 ) -> int:
     r"""Mutate fitted polynomial SINDy model to apply stabilization
 
@@ -286,7 +287,7 @@ def _stabilize_model(
             fitted
         time_series: the data used to fit the model
         stabilizing_eps: Coefficient for stabilizing polynomial terms.  If None,
-            calcuate it as 1 / (2*max), where max is calculated along each axis.
+            calculate it as 1 / (2*max), where max is calculated along each axis.
             This means that the stabilizing term won't activate except when
             substantially beyond the data range.
 
@@ -303,7 +304,8 @@ def _stabilize_model(
 
     stabilizing_lib = ps.CustomLibrary(
         [lambda x: x**stab_order],
-        [lambda x: f"{x}^{stab_order}"],)
+        [lambda x: f"{x}^{stab_order}"],
+    )
     total_lib = ps.GeneralizedLibrary([poly_lib, stabilizing_lib])
     total_lib.fit(time_series)
     if stabilizing_eps is None:
@@ -311,9 +313,7 @@ def _stabilize_model(
     else:
         coef: Float1D = stabilizing_eps * np.ones(time_series.shape[1])
     dummy_coef = -coef * np.eye(n_coord)
-    model.optimizer.coef_ = np.concatenate(
-        (model.optimizer.coef_, dummy_coef), axis=1
-    )
+    model.optimizer.coef_ = np.concatenate((model.optimizer.coef_, dummy_coef), axis=1)
     model.feature_library = total_lib
     # SINDy.model is a sklearn Pipeline, whose first step is the feature lib
     model.model.steps[0] = ("features", total_lib)

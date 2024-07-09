@@ -1,29 +1,37 @@
 import pickle
-from typing import Any, cast, Optional
+from typing import Any
+from typing import cast
+from typing import Optional
 
 import numpy as np
 from ara_plumes import PLUME
 from ara_plumes.models import get_contour
-from ara_plumes.typing import GrayVideo, GrayImage, Frame, PlumePoints, Contour_List
+from ara_plumes.typing import Contour_List
+from ara_plumes.typing import Frame
+from ara_plumes.typing import GrayImage
+from ara_plumes.typing import GrayVideo
+from ara_plumes.typing import PlumePoints
 from matplotlib import pyplot as plt
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
+from matplotlib.patches import Circle
+from matplotlib.patches import PathPatch
 from matplotlib.path import Path
-from matplotlib.patches import Circle, PathPatch
 
 from .data import PICKLE_PATH
-from .plotting import CEST, CMAP
+from .plotting import CEST
+from .plotting import CMAP
 from .types import PolyData
 
 
 def create_plumepoints(
     filename: str,
-    img_range: tuple[int, int]=(0, -1),
-    fixed_range: tuple[int, int]=(0, -1),
-    gauss_space_kws: dict[str, Any]=None,
-    gauss_time_kws: dict[str, Any]=None,
-    circle_kw: dict[str, Any]=None,
-    contour_kws: dict[str, Any]=None,
+    img_range: tuple[int, int] = (0, -1),
+    fixed_range: tuple[int, int] = (0, -1),
+    gauss_space_kws: dict[str, Any] = None,
+    gauss_time_kws: dict[str, Any] = None,
+    circle_kw: dict[str, Any] = None,
+    contour_kws: dict[str, Any] = None,
 ) -> dict[str, PolyData]:
     """Calculate the centerline path from a moviefile
 
@@ -44,7 +52,7 @@ def create_plumepoints(
     origin_filename = filename + "_ctr.pkl"
     with open(PICKLE_PATH / origin_filename, "rb") as fh:
         origin = pickle.load(fh)
-    np_filename = filename[:-3]+ "pkl" # replace mov with pkl
+    np_filename = filename[:-3] + "pkl"  # replace mov with pkl
     with open(PICKLE_PATH / np_filename, "rb") as fh:
         raw_vid = pickle.load(fh)
     orig_center = tuple(int(coord) for coord in origin)
@@ -61,7 +69,7 @@ def create_plumepoints(
         orig_center,
         img_range,
         concentric_circle_kws=circle_kw,
-        get_contour_kws=contour_kws
+        get_contour_kws=contour_kws,
     )
     visualize_points(
         raw_vid, clean_vid, orig_center, center, bottom, top, 15, contour_kws
@@ -76,7 +84,7 @@ def visualize_points(
     center: list[tuple[Frame, PlumePoints]],
     bottom: list[tuple[Frame, PlumePoints]],
     top: list[tuple[Frame, PlumePoints]],
-    n_frames: int=9,
+    n_frames: int = 9,
     contour_kws: Optional[dict[str, Any]] = None,
 ) -> Figure:
     if contour_kws is None:
@@ -87,7 +95,7 @@ def visualize_points(
     frame_ids = [int(plot_frameskip * i) for i in range(n_frames)]
     n_cols = 5
     y_px, x_px = raw_vid.shape[1:]
-    vid_aspect = x_px/y_px
+    vid_aspect = x_px / y_px
     fig, axes = plt.subplots(n_frames, n_cols, figsize=[vid_aspect * 8, 2 * n_frames])
     axes = np.reshape(axes, (n_frames, n_cols))  # enforce 2D array even if n_frames=1
     for frame_id, ax_row in zip(frame_ids, axes):
@@ -109,7 +117,7 @@ def visualize_points(
 
 
 def _plot_frame(ax: Axes, image: GrayImage):
-    ax.imshow(image, cmap='gray', vmin=0, vmax=255)
+    ax.imshow(image, cmap="gray", vmin=0, vmax=255)
     ax.set_xticks([])
     ax.set_yticks([])
 
@@ -120,7 +128,7 @@ def _plot_contours(
     _plot_frame(ax, image)
     for contour in contours:
         cpath = Path(contour.reshape((-1, 2)), closed=True)
-        cpatch = PathPatch(cpath, alpha=.5, edgecolor=CEST, facecolor=CEST)
+        cpatch = PathPatch(cpath, alpha=0.5, edgecolor=CEST, facecolor=CEST)
         ax.add_patch(cpatch)
     radii = 300
     num_circs = 6

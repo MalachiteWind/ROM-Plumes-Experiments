@@ -8,11 +8,11 @@ python -m plumex.choose_center <date folder> <wind folder> <num>
 So for plume_videos/Jan_10_2024/med/IMG_0943.MOV, you would call
 python -m Jan_10_2024 med 0943
 """
-
 import pickle
-
-from ara_plumes import PLUME, click_coordinates
 from pathlib import Path
+
+from ara_plumes import click_coordinates
+from ara_plumes import PLUME
 
 from plumex.data import PICKLE_PATH as DATA_DIR
 
@@ -43,9 +43,9 @@ def create_metadata(date: str, wind: str, suffix: str):
         pickle.dump(source, ctr_file)
 
 
-
 if __name__ == "__main__":
     import sys
+
     create_metadata(*sys.argv[1:])
 
 # %%
