@@ -32,11 +32,11 @@ def create_plumepoints(
     filename: str,
     img_range: tuple[int, int] = (0, -1),
     fixed_range: tuple[int, int] = (0, -1),
-    gauss_space_kws: dict[str, Any] = None,
-    gauss_time_kws: dict[str, Any] = None,
-    circle_kw: dict[str, Any] = None,
-    contour_kws: dict[str, Any] = None,
-) -> dict[str, PolyData]:
+    gauss_space_kws: Optional[dict[str, Any]] = None,
+    gauss_time_kws: Optional[dict[str, Any]] = None,
+    circle_kw: Optional[dict[str, Any]] = None,
+    contour_kws: Optional[dict[str, Any]] = None,
+) -> dict[str, None | dict[str, PolyData]]:
     """Calculate the centerline path from a moviefile
 
     Args:
@@ -59,7 +59,7 @@ def create_plumepoints(
     np_filename = filename[:-3] + "pkl"  # replace mov with pkl
     with open(PICKLE_PATH / np_filename, "rb") as fh:
         raw_vid = pickle.load(fh)
-    orig_center = tuple(int(coord) for coord in origin)
+    orig_center = (int(origin[0]), int(origin[1]))
     clean_vid = PLUME.clean_video(
         raw_vid,
         fixed_range,
