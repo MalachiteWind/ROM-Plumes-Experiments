@@ -43,4 +43,4 @@ jobs:
         pip install .[dev]
     - name: Test with pytest
       run: |
-        coverage run -m pytest plumex/tests  && coverage xml
+        coverage run -m pytest plumex/tests  && coverage xml -i
