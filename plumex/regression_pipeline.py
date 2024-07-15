@@ -1,12 +1,16 @@
 from collections.abc import Sequence
 from typing import Any
 from typing import Callable
-from typing import List
+from typing import cast
 from typing import Optional
 from warnings import warn
 
 import numpy as np
 from ara_plumes.models import PLUME
+from ara_plumes.typing import Frame
+from ara_plumes.typing import PlumePoints
+from ara_plumes.typing import X_pos
+from ara_plumes.typing import Y_pos
 from matplotlib import pyplot as plt
 from matplotlib.figure import Figure
 from matplotlib.patches import Circle
@@ -17,13 +21,11 @@ from .plotting import CMAP
 from .plotting import CMEAS
 from .types import Float1D
 from .types import Float2D
-from .types import Frame
 from .types import NpFlt
-from .types import PlumePoints
 
 
 def multi_regress_centerline(
-    data: dict[List[tuple[Frame, PlumePoints]]],
+    data: dict[str, list[tuple[Frame, PlumePoints]]],
     r_split: int,
     poly_deg: int = 2,
     decenter: Optional[tuple[int, int]] = None,
@@ -38,7 +40,7 @@ def multi_regress_centerline(
         of method name to its validation and train accuracies by frame
     """
     regression_methods = ("linear", "poly", "poly_inv", "poly_para")
-    meth_results = {}
+    meth_results: dict[str, dict[str, Any]] = {}
     main_accs = []
     coeffs = []
     for method in regression_methods:
@@ -57,14 +59,19 @@ def multi_regress_centerline(
         n_frames = result.pop("n_frames")
 
     val_accs = {method: result["val_acc"] for method, result in meth_results.items()}
-    plt.hist(val_accs.values(), label=list(val_accs.keys()))
+    plt.hist(val_accs.values(), label=list(val_accs.keys()))  # type: ignore
     plt.legend()
     plt.title(f"Validation Accuracy over {n_frames} frames")
     plt.legend()
     if not decenter:
         decenter = (0, 0)
     _visualize_points(
-        data["center"], coeffs, regression_methods, r_split, n_plots=9, origin=decenter
+        data["center"],
+        coeffs,
+        regression_methods,
+        r_split=r_split,
+        n_plots=9,
+        origin=decenter,
     )
     return {
         "main": best_method,
@@ -75,7 +82,7 @@ def multi_regress_centerline(
 
 
 def regress_centerline(
-    data: dict[List[tuple[Frame, PlumePoints]]],
+    data: dict[str, list[tuple[Frame, PlumePoints]]],
     r_split: int,
     regression_method: str,
     poly_deg: int = 2,
@@ -106,7 +113,7 @@ def regress_centerline(
         mean_points=train_set,
         regression_method=regression_method,
         poly_deg=poly_deg,
-        decenter=decenter,
+        decenter=cast(tuple[X_pos, Y_pos], decenter),
     )
 
     train_acc = get_coef_acc(coef_time_series, train_set, regression_method)
@@ -126,7 +133,7 @@ def regress_centerline(
             mean_points,
             [coef_time_series],
             [regression_method],
-            r_split,
+            r_split=r_split,
             n_plots=15,
             origin=decenter,
         )
@@ -154,8 +161,8 @@ def regress_centerline(
 
 
 def _split_into_train_val(
-    mean_points: List[tuple[Frame, PlumePoints]], r_split: int
-) -> tuple[List[tuple[Frame, PlumePoints]], List[tuple[Frame, PlumePoints]]]:
+    mean_points: list[tuple[Frame, PlumePoints]], r_split: int
+) -> tuple[list[tuple[Frame, PlumePoints]], list[tuple[Frame, PlumePoints]]]:
     """
     Splits mean_points into training and validation sets based
     on coordinate values along the x-axis.
@@ -248,7 +255,7 @@ def _get_true_pred(
 
 def get_coef_acc(
     coef_time_series: np.ndarray[Any, NpFlt],
-    train_val_set: List[tuple[Frame, PlumePoints]],
+    train_val_set: list[tuple[Frame, PlumePoints]],
     regression_method: str,
 ) -> Float1D:
     """Get the L2 accuracy of learned coefficients on PlumePoints"""
@@ -256,7 +263,7 @@ def get_coef_acc(
         raise TypeError("length of arrays must match")
 
     n_frames = len(coef_time_series)
-    accs = np.zeros(n_frames)
+    accs = cast(Float1D, np.zeros(n_frames))
     for i in range(n_frames):
         coef_i = coef_time_series[i]
 
