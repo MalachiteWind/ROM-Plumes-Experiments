@@ -232,7 +232,7 @@ def plot_data_and_dmd(
     feature_names,
     smooth_data=None,
     smooth_dmd_data=None,
-    var_smooth=None,
+    var_smooth: float = 0.0,
     svd_rank_smooth=None,
 ):
     if (smooth_data is not None) and (smooth_dmd_data is not None):
