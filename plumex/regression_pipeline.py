@@ -108,7 +108,8 @@ def regress_centerline(
     """
     mean_points = data["center"]
     train_set, val_set = _split_into_train_val(mean_points, r_split)
-
+    n_train = np.array([len(points) for _, points in train_set])
+    n_val = np.array([len(points) for _, points in val_set])
     coef_time_series = PLUME.regress_multiframe_mean(
         mean_points=train_set,
         regression_method=regression_method,
@@ -118,6 +119,8 @@ def regress_centerline(
 
     train_acc = get_coef_acc(coef_time_series, train_set, regression_method)
     val_acc = get_coef_acc(coef_time_series, val_set, regression_method)
+    non_nan_inds = ~np.isnan(val_acc)
+    non_nan_val_acc = val_acc[non_nan_inds]
 
     n_frames = len(mean_points)
     if display:
@@ -137,8 +140,12 @@ def regress_centerline(
             n_plots=15,
             origin=decenter,
         )
+        fig, ax = plt.subplots(1, 1)
+        ax.scatter(val_acc[non_nan_inds], n_val[non_nan_inds] + n_train[non_nan_inds])
+        ax.title("Accuracy Distribution by Frame")
+        ax.set_xlabel("Validation accuracy")
+        ax.set_ylabel("points in frame")
 
-    non_nan_val_acc = val_acc[~np.isnan(val_acc)]
     if len(non_nan_val_acc) == 0:
         raise RuntimeError(
             "No frames have any points in the validation set.  "
@@ -154,6 +161,8 @@ def regress_centerline(
     return {
         "main": non_nan_val_acc.mean(),
         "train_acc": train_acc,
+        "n_train": n_train,
+        "n_val": n_val,
         "val_acc": val_acc,
         "data": coef_time_series,
         "n_frames": n_frames,
