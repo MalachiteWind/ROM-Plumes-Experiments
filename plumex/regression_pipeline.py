@@ -3,6 +3,7 @@ from typing import Any
 from typing import Callable
 from typing import cast
 from typing import Optional
+from typing import TypedDict
 from warnings import warn
 
 import numpy as np
@@ -21,7 +22,25 @@ from .plotting import CMAP
 from .plotting import CMEAS
 from .types import Float1D
 from .types import Float2D
+from .types import Int1D
 from .types import NpFlt
+
+
+class RegressionResults(TypedDict):
+    main: float
+    train_acc: Float1D
+    n_train: Int1D
+    n_val: Int1D
+    val_acc: Float1D
+    data: Float2D
+    n_frames: int
+
+
+class MultiRegressionResults(TypedDict):
+    main: tuple[str]
+    data: Float2D
+    n_frames: int
+    regressions: dict[str, RegressionResults]
 
 
 def multi_regress_centerline(
@@ -29,7 +48,7 @@ def multi_regress_centerline(
     r_split: int,
     poly_deg: int = 2,
     decenter: Optional[tuple[int, int]] = None,
-) -> dict[str, Any]:
+) -> MultiRegressionResults:
     """Mitosis experiment to compare regress_centerline across methods
 
     Arguments same as regress_centerline, without 'regression_method'
@@ -40,14 +59,14 @@ def multi_regress_centerline(
         of method name to its validation and train accuracies by frame
     """
     regression_methods = ("linear", "poly", "poly_inv", "poly_para")
-    meth_results: dict[str, dict[str, Any]] = {}
+    meth_results: dict[str, RegressionResults] = {}
     main_accs = []
     coeffs = []
     for method in regression_methods:
         meth_results[method] = regress_centerline(
             data, r_split, method, poly_deg, decenter, display=False
         )
-        main_accs.append((method, meth_results[method].pop("main")))
+        main_accs.append((method, meth_results[method]["main"]))
         coeffs.append(meth_results[method]["data"])
 
     main_accs.sort(key=lambda tup: tup[1])
@@ -55,8 +74,8 @@ def multi_regress_centerline(
     best_data = meth_results[best_method]["data"]
     n_frames = -1
     for result in meth_results.values():
-        result.pop("data")
-        n_frames = result.pop("n_frames")
+        result["data"]
+        n_frames = result["n_frames"]
 
     val_accs = {method: result["val_acc"] for method, result in meth_results.items()}
     plt.hist(val_accs.values(), label=list(val_accs.keys()))  # type: ignore
@@ -73,12 +92,9 @@ def multi_regress_centerline(
         n_plots=9,
         origin=decenter,
     )
-    return {
-        "main": best_method,
-        "data": best_data,
-        "n_frames": n_frames,
-        "accs": meth_results,
-    }
+    return MultiRegressionResults(
+        main=best_method, data=best_data, n_frames=n_frames, regressions=meth_results
+    )
 
 
 def regress_centerline(
@@ -88,7 +104,7 @@ def regress_centerline(
     poly_deg: int = 2,
     decenter: Optional[tuple[int, int]] = None,
     display: bool = True,
-) -> dict[str, Any]:
+) -> RegressionResults:
     """Mitosis experiment to fit mean path of plume points
 
     Args:
@@ -108,8 +124,8 @@ def regress_centerline(
     """
     mean_points = data["center"]
     train_set, val_set = _split_into_train_val(mean_points, r_split)
-    n_train = np.array([len(points) for _, points in train_set])
-    n_val = np.array([len(points) for _, points in val_set])
+    n_train = cast(Int1D, np.array([len(points) for _, points in train_set]))
+    n_val = cast(Int1D, np.array([len(points) for _, points in val_set]))
     coef_time_series = PLUME.regress_multiframe_mean(
         mean_points=train_set,
         regression_method=regression_method,
@@ -142,14 +158,16 @@ def regress_centerline(
         )
         fig, ax = plt.subplots(1, 1)
         ax.scatter(val_acc[non_nan_inds], n_val[non_nan_inds] + n_train[non_nan_inds])
-        ax.title("Accuracy Distribution by Frame")
+        ax.set_title("Accuracy Distribution by Frame")
         ax.set_xlabel("Validation accuracy")
         ax.set_ylabel("points in frame")
 
     if len(non_nan_val_acc) == 0:
-        raise RuntimeError(
+        warn(
             "No frames have any points in the validation set.  "
-            "Try decreasing r_split to allow more points in validation set."
+            "Try decreasing r_split to allow more points in validation set.",
+            RuntimeWarning,
+            stacklevel=2,
         )
     if len(non_nan_val_acc) < len(val_acc):
         warn(
@@ -158,15 +176,15 @@ def regress_centerline(
             stacklevel=2,
         )
 
-    return {
-        "main": non_nan_val_acc.mean(),
-        "train_acc": train_acc,
-        "n_train": n_train,
-        "n_val": n_val,
-        "val_acc": val_acc,
-        "data": coef_time_series,
-        "n_frames": n_frames,
-    }
+    return RegressionResults(
+        main=non_nan_val_acc.mean(),
+        train_acc=train_acc,
+        n_train=n_train,
+        n_val=n_val,
+        val_acc=val_acc,
+        data=coef_time_series,
+        n_frames=n_frames,
+    )
 
 
 def _split_into_train_val(
