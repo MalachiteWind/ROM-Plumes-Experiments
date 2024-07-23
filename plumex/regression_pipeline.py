@@ -8,16 +8,17 @@ from warnings import warn
 
 import numpy as np
 from ara_plumes.models import PLUME
+from ara_plumes.typing import Bool1D
 from ara_plumes.typing import Frame
 from ara_plumes.typing import PlumePoints
 from ara_plumes.typing import X_pos
 from ara_plumes.typing import Y_pos
 from matplotlib import pyplot as plt
+from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 from matplotlib.patches import Circle
 from tqdm import tqdm
 
-from .plotting import CEST
 from .plotting import CMAP
 from .plotting import CMEAS
 from .types import Float1D
@@ -28,6 +29,7 @@ from .types import NpFlt
 
 class RegressionResults(TypedDict):
     main: float
+    non_nan_inds: Bool1D
     train_acc: Float1D
     n_train: Int1D
     n_val: Int1D
@@ -47,7 +49,6 @@ def multi_regress_centerline(
     data: dict[str, list[tuple[Frame, PlumePoints]]],
     r_split: int,
     poly_deg: int = 2,
-    decenter: Optional[tuple[int, int]] = None,
 ) -> MultiRegressionResults:
     """Mitosis experiment to compare regress_centerline across methods
 
@@ -62,9 +63,10 @@ def multi_regress_centerline(
     meth_results: dict[str, RegressionResults] = {}
     main_accs = []
     coeffs = []
+    decenter = cast(tuple[int, int], data["center"][0][1][0, 1:])
     for method in regression_methods:
         meth_results[method] = regress_centerline(
-            data, r_split, method, poly_deg, decenter, display=False
+            data, r_split, method, poly_deg, display=False
         )
         main_accs.append((method, meth_results[method]["main"]))
         coeffs.append(meth_results[method]["data"])
@@ -77,21 +79,42 @@ def multi_regress_centerline(
         result["data"]
         n_frames = result["n_frames"]
 
-    val_accs = {method: result["val_acc"] for method, result in meth_results.items()}
-    plt.hist(val_accs.values(), label=list(val_accs.keys()))  # type: ignore
+    # Plot validation distribution
+    for method, res in meth_results.items():
+        non_nans = res["non_nan_inds"]
+        if len(res["val_acc"][non_nans]) > 0:
+            plt.hist(res["val_acc"], label=method)
     plt.legend()
     plt.title(f"Validation Accuracy over {n_frames} frames")
-    plt.legend()
-    if not decenter:
-        decenter = (0, 0)
+
+    # Plot each method's points
     _visualize_points(
         data["center"],
         coeffs,
         regression_methods,
         r_split=r_split,
-        n_plots=9,
+        n_plots=15,
         origin=decenter,
     )
+
+    # Plot accuracy distribution by number of data points
+    fig, ax = plt.subplots(1, 1)
+    for method, res in meth_results.items():
+        non_nans = res["non_nan_inds"]
+        _plot_acc_dist(
+            res["val_acc"][non_nans],
+            res["n_val"][non_nans],
+            res["n_train"][non_nans],
+            ax,
+            label=method,
+        )
+    fig.legend()
+
+    # Plot coefficient distributions
+    for method, res in meth_results.items():
+        n_frames = res["n_frames"]
+        fig = _plot_coef_dist(res["data"])
+        fig.suptitle(f"Distribution of {method} coefficients across {n_frames} frames")
     return MultiRegressionResults(
         main=best_method, data=best_data, n_frames=n_frames, regressions=meth_results
     )
@@ -102,7 +125,6 @@ def regress_centerline(
     r_split: int,
     regression_method: str,
     poly_deg: int = 2,
-    decenter: Optional[tuple[int, int]] = None,
     display: bool = True,
 ) -> RegressionResults:
     """Mitosis experiment to fit mean path of plume points
@@ -126,6 +148,7 @@ def regress_centerline(
     train_set, val_set = _split_into_train_val(mean_points, r_split)
     n_train = cast(Int1D, np.array([len(points) for _, points in train_set]))
     n_val = cast(Int1D, np.array([len(points) for _, points in val_set]))
+    decenter = cast(tuple[int, int], data["center"][0][1][0, 1:])
     coef_time_series = PLUME.regress_multiframe_mean(
         mean_points=train_set,
         regression_method=regression_method,
@@ -145,9 +168,6 @@ def regress_centerline(
         plt.title(f"Accuracy over {n_frames} frames")
         plt.legend()
 
-        if not decenter:
-            decenter = (0, 0)
-
         _visualize_points(
             mean_points,
             [coef_time_series],
@@ -156,12 +176,10 @@ def regress_centerline(
             n_plots=15,
             origin=decenter,
         )
-        fig, ax = plt.subplots(1, 1)
-        ax.scatter(val_acc[non_nan_inds], n_val[non_nan_inds] + n_train[non_nan_inds])
-        ax.set_title("Accuracy Distribution by Frame")
-        ax.set_xlabel("Validation accuracy")
-        ax.set_ylabel("points in frame")
-
+        _plot_acc_dist(
+            val_acc[non_nan_inds], n_val[non_nan_inds], n_train[non_nan_inds]
+        )
+        _plot_coef_dist(coef_time_series)
     if len(non_nan_val_acc) == 0:
         warn(
             "No frames have any points in the validation set.  "
@@ -178,6 +196,7 @@ def regress_centerline(
 
     return RegressionResults(
         main=non_nan_val_acc.mean(),
+        non_nan_inds=non_nan_inds,
         train_acc=train_acc,
         n_train=n_train,
         n_val=n_val,
@@ -306,11 +325,39 @@ def get_coef_acc(
     return accs
 
 
+def _plot_acc_dist(
+    val_acc: Float1D,
+    n_val: Int1D,
+    n_train: Int1D,
+    ax: Axes | None = None,
+    label: str | None = None,
+) -> Axes:
+    if ax is None:
+        _, ax = plt.subplots(1, 1)
+        ax = cast(Axes, ax)
+    n_frames = len(val_acc)
+    ax.scatter(val_acc, n_val + n_train, label=label)
+    ax.set_title(f"Accuracy Distribution across {n_frames} frames.")
+    ax.set_xlabel("Validation accuracy")
+    ax.set_ylabel("points in frame")
+    return ax
+
+
+def _plot_coef_dist(coef_time_series: Float2D) -> Figure:
+    n_coeffs = coef_time_series.shape[1]
+    fig, axs = plt.subplots(1, n_coeffs, figsize=[3 * n_coeffs, 3])
+    for ax, coef_ind in zip(axs, range(n_coeffs), strict=True):
+        ax = cast(Axes, ax)
+        ax.hist(coef_time_series[:, coef_ind])
+    fig.suptitle("Distribution of coefficients across frames")
+    return fig
+
+
 def _visualize_points(
     mean_points: list[tuple[Frame, PlumePoints]],
     coef_time_series: Sequence[Float2D],
     regression_methods: Sequence[str],
-    origin: tuple[int, int],
+    origin: tuple[float, float],
     r_split: None | float = None,
     n_plots: int = 9,
 ) -> Figure:
@@ -321,6 +368,7 @@ def _visualize_points(
     n_rows = (n_plots + 2) // 3
     x_max = max(np.max(points[1][:, 1]) for points in mean_points)
     y_max = max(np.max(points[1][:, 2]) for points in mean_points)
+    origin = (origin[0], float(y_max - origin[1]))
     fig, axes = plt.subplots(n_rows, 3, figsize=[1.5 * 9, 3 * n_rows])
     fig.suptitle("How well does regression work?")
     for frame_id, ax in zip(frame_ids, axes.flatten()):
@@ -331,8 +379,10 @@ def _visualize_points(
             xy_true[:, 0], y_max - xy_true[:, 1], ".", color=CMEAS, label="centerpoints"
         )
         if r_split:
-            ax.add_patch(Circle(origin, r_split, color=CMAP[4], fill=False))
-        for coeff_meth, method in zip(coef_time_series, regression_methods):
+            ax.add_patch(Circle(origin, r_split, color="k", fill=False))
+        for meth_ind, (coeff_meth, method) in enumerate(
+            zip(coef_time_series, regression_methods)
+        ):
             coeffs = coeff_meth[frame_id]
             f = _construct_f(coeffs, method)
             _, xy_pred = _get_true_pred(f, frame_points, method)
@@ -340,7 +390,7 @@ def _visualize_points(
                 xy_pred[:, 0],
                 y_max - xy_pred[:, 1],
                 "x",
-                color=CEST,
+                color=CMAP[2 + meth_ind],
                 label=f"{method} regression",
             )
             rxy_max = frame_points.max(axis=0)
@@ -350,7 +400,7 @@ def _visualize_points(
                 xy_interp[:, 0],
                 y_max - xy_interp[:, 1],
                 "--",
-                color=CEST,
+                color=CMAP[2 + meth_ind],
                 label=f"{method} regression",
             )
         ax.set_title(f"Frame {frame_t}")
