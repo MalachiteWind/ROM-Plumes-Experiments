@@ -22,7 +22,6 @@ from matplotlib.path import Path
 from .data import PICKLE_PATH
 from .plotting import CEST
 from .plotting import CMAP
-from .types import PolyData
 
 
 logger = getLogger(__name__)
@@ -36,7 +35,7 @@ def create_plumepoints(
     gauss_time_kws: Optional[dict[str, Any]] = None,
     circle_kw: Optional[dict[str, Any]] = None,
     contour_kws: Optional[dict[str, Any]] = None,
-) -> dict[str, None | dict[str, PolyData]]:
+) -> dict[str, None | dict[str, list[tuple[Frame, PlumePoints]]]]:
     """Calculate the centerline path from a moviefile
 
     Args:
