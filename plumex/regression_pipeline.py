@@ -1,4 +1,5 @@
 from collections.abc import Sequence
+from logging import getLogger
 from typing import Any
 from typing import Callable
 from typing import cast
@@ -25,6 +26,8 @@ from .types import Float1D
 from .types import Float2D
 from .types import Int1D
 from .types import NpFlt
+
+logger = getLogger(__name__)
 
 
 class RegressionResults(TypedDict):
@@ -63,7 +66,7 @@ def multi_regress_centerline(
     meth_results: dict[str, RegressionResults] = {}
     main_accs = []
     coeffs = []
-    decenter = cast(tuple[int, int], data["center"][0][1][0, 1:])
+    decenter = cast(tuple[X_pos, Y_pos], data["center"][0][1][0, 1:])
     for method in regression_methods:
         meth_results[method] = regress_centerline(
             data, r_split, method, poly_deg, display=False
@@ -94,7 +97,7 @@ def multi_regress_centerline(
         regression_methods,
         r_split=r_split,
         n_plots=15,
-        origin=decenter,
+        origin_fc=decenter,
     )
 
     # Plot accuracy distribution by number of data points
@@ -137,7 +140,6 @@ def regress_centerline(
         regression_method: method for drawing curve through points as
             understood by PLUME.regress_multiframe_mean
         poly_deg: polynomial degree of curve used in regression_method
-        decenter: Shift to apply to plume coordinates before fitting curve
 
     Returns:
         Experiment results of train and validation accuracy.  "data" key
@@ -148,16 +150,16 @@ def regress_centerline(
     train_set, val_set = _split_into_train_val(mean_points, r_split)
     n_train = cast(Int1D, np.array([len(points) for _, points in train_set]))
     n_val = cast(Int1D, np.array([len(points) for _, points in val_set]))
-    decenter = cast(tuple[int, int], data["center"][0][1][0, 1:])
-    coef_time_series = PLUME.regress_multiframe_mean(
+    decenter = cast(tuple[X_pos, Y_pos], data["center"][0][1][0, 1:])
+    coef_time_series_dc = PLUME.regress_multiframe_mean(
         mean_points=train_set,
         regression_method=regression_method,
         poly_deg=poly_deg,
-        decenter=cast(tuple[X_pos, Y_pos], decenter),
+        decenter=decenter,
     )
 
-    train_acc = get_coef_acc(coef_time_series, train_set, regression_method)
-    val_acc = get_coef_acc(coef_time_series, val_set, regression_method)
+    train_acc = get_coef_acc(coef_time_series_dc, train_set, regression_method)
+    val_acc = get_coef_acc(coef_time_series_dc, val_set, regression_method)
     non_nan_inds = ~np.isnan(val_acc)
     non_nan_val_acc = val_acc[non_nan_inds]
 
@@ -170,16 +172,16 @@ def regress_centerline(
 
         _visualize_points(
             mean_points,
-            [coef_time_series],
+            [coef_time_series_dc],
             [regression_method],
             r_split=r_split,
             n_plots=15,
-            origin=decenter,
+            origin_fc=decenter,
         )
         _plot_acc_dist(
             val_acc[non_nan_inds], n_val[non_nan_inds], n_train[non_nan_inds]
         )
-        _plot_coef_dist(coef_time_series)
+        _plot_coef_dist(coef_time_series_dc)
     if len(non_nan_val_acc) == 0:
         warn(
             "No frames have any points in the validation set.  "
@@ -201,7 +203,7 @@ def regress_centerline(
         n_train=n_train,
         n_val=n_val,
         val_acc=val_acc,
-        data=coef_time_series,
+        data=coef_time_series_dc,
         n_frames=n_frames,
     )
 
@@ -282,6 +284,8 @@ def _get_pred(
     """
     Vectorize approximation function ``func``, map correct inputs from `r_x_y`, and
     extract true values from `r_x_y` based on regression_method used.
+
+    Points must be in decentered frame coordinates
     """
     if regression_method == "poly" or regression_method == "linear":
         y_pred = func(r_x_y[:, 1])
@@ -356,9 +360,9 @@ def _plot_coef_dist(coef_time_series: Float2D) -> Figure:
 
 def _visualize_points(
     mean_points: list[tuple[Frame, PlumePoints]],
-    coef_time_series: Sequence[Float2D],
+    coef_time_series_dc: Sequence[Float2D],
     regression_methods: Sequence[str],
-    origin: tuple[float, float],
+    origin_fc: tuple[X_pos, Y_pos],
     r_split: None | float = None,
     n_plots: int = 9,
 ) -> Figure:
@@ -369,37 +373,49 @@ def _visualize_points(
     n_rows = (n_plots + 2) // 3
     x_max = max(np.max(points[1][:, 1]) for points in mean_points)
     y_max = max(np.max(points[1][:, 2]) for points in mean_points)
-    origin = (origin[0], float(y_max - origin[1]))
+    # in frame coordinates, y is pixels below top, but in plot coordinates
+    # it's above x-axis
+    origin_pc = (origin_fc[0], float(y_max - origin_fc[1]))
     fig, axes = plt.subplots(n_rows, 3, figsize=[1.5 * 9, 3 * n_rows])
     fig.suptitle("How well does regression work?")
     for frame_id, ax in zip(frame_ids, axes.flatten()):
         frame_t, frame_points = mean_points[frame_id]
-        xy_true = frame_points[:, 1:]
-        # y ordinate is pixels below top, but for plots, up is above axis
+        xy_true_fc = frame_points[:, 1:]
         ax.plot(
-            xy_true[:, 0], y_max - xy_true[:, 1], ".", color=CMEAS, label="centerpoints"
+            xy_true_fc[:, 0],
+            y_max - xy_true_fc[:, 1],
+            ".",
+            color=CMEAS,
+            label="centerpoints",
         )
         if r_split:
-            ax.add_patch(Circle(origin, r_split, color="k", fill=False))
+            ax.add_patch(Circle(origin_pc, r_split, color="k", fill=False))
         for meth_ind, (coeff_meth, method) in enumerate(
-            zip(coef_time_series, regression_methods)
+            zip(coef_time_series_dc, regression_methods)
         ):
             coeffs = coeff_meth[frame_id]
             f = _construct_f(coeffs, method)
-            xy_pred = _get_pred(f, frame_points, method)
+            frame_points_dc = np.hstack(
+                (frame_points[:, :1], frame_points[:, 1:] - origin_fc)
+            )
+            xy_pred_dc = _get_pred(f, frame_points_dc, method)
+            xy_pred_fc = xy_pred_dc + origin_fc
+            logger.debug(f"Moving origin from {xy_pred_dc[0]} to f{xy_pred_fc[0]}")
             ax.plot(
-                xy_pred[:, 0],
-                y_max - xy_pred[:, 1],
+                xy_pred_fc[:, 0],
+                y_max - xy_pred_fc[:, 1],
                 "x",
                 color=CMAP[2 + meth_ind],
                 label=f"{method} regression",
             )
-            rxy_max = frame_points.max(axis=0)
-            interp_points = np.linspace(0, rxy_max, 20)
-            xy_interp = _get_pred(f, interp_points, method)
+            rxy_max_dc = frame_points.max(axis=0) - (0, *origin_fc)
+            rxy_min_dc = frame_points.min(axis=0) - (0, *origin_fc)
+            interp_points_dc = np.linspace(rxy_min_dc, rxy_max_dc, 20)
+            xy_interp_dc = _get_pred(f, interp_points_dc, method)
+            xy_interp_fc = xy_interp_dc + origin_fc
             ax.plot(
-                xy_interp[:, 0],
-                y_max - xy_interp[:, 1],
+                xy_interp_fc[:, 0],
+                y_max - xy_interp_fc[:, 1],
                 "--",
                 color=CMAP[2 + meth_ind],
                 label=f"{method} regression",
