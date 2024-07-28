@@ -1,7 +1,7 @@
 import numpy as np
 
 from ..regression_pipeline import _construct_f
-from ..regression_pipeline import _get_true_pred
+from ..regression_pipeline import _get_pred
 from ..regression_pipeline import _split_into_train_val
 from ..regression_pipeline import get_coef_acc
 
@@ -79,47 +79,51 @@ def test_get_true_pred():
     # Test "linear"
     R = np.array([0, 1, 2])
     f = lambda x: 2 * x + 3
-    r_x_y = np.vstack((R, R, f(R))).T
+    rxy_true = np.vstack((R, R, f(R))).T
+    xy_true = rxy_true[:, 1:]
 
-    result_true, result_pred = _get_true_pred(f, r_x_y, regression_method="linear")
+    result_pred = _get_pred(f, rxy_true, regression_method="linear")
 
     expected = np.vstack((R, np.array([3, 5, 7]))).T
 
-    np.testing.assert_array_almost_equal(expected, result_true)
+    np.testing.assert_array_almost_equal(expected, xy_true)
     np.testing.assert_array_almost_equal(expected, result_pred)
 
     # Test "poly"
     R = np.array([0, 1, 2])
     f = lambda x: x**2 + 2 * x + 3
-    r_x_y = np.vstack((R, R, f(R))).T
+    rxy_true = np.vstack((R, R, f(R))).T
+    xy_true = rxy_true[:, 1:]
 
-    result_true, result_pred = _get_true_pred(f, r_x_y, regression_method="poly")
+    result_pred = _get_pred(f, rxy_true, regression_method="poly")
 
     expected = np.vstack((R, np.array([3, 6, 11]))).T
 
-    np.testing.assert_array_almost_equal(expected, result_true)
+    np.testing.assert_array_almost_equal(expected, xy_true)
     np.testing.assert_array_almost_equal(expected, result_pred)
 
     # Test "poly_inv"
     R = np.array([0, 1, 2])
     f = lambda x: x**2 + 2 * x + 3
-    r_x_y = np.vstack((R, f(R), R)).T
+    rxy_true = np.vstack((R, f(R), R)).T
+    xy_true = rxy_true[:, 1:]
 
-    result_true, result_pred = _get_true_pred(f, r_x_y, regression_method="poly_inv")
+    result_pred = _get_pred(f, rxy_true, regression_method="poly_inv")
 
     expected = np.vstack((np.array([3, 6, 11]), R)).T
 
-    np.testing.assert_array_almost_equal(expected, result_true)
+    np.testing.assert_array_almost_equal(expected, xy_true)
     np.testing.assert_array_almost_equal(expected, result_pred)
 
     # Test "poly_para"
     R = np.array([0, 1, 2])
     f = _construct_f(np.array([1, 2, 3, 3, 2, 1]), regression_method="poly_para")
-    r_x_y = np.vstack((R, f(R))).T
+    rxy_true = np.vstack((R, f(R))).T
+    xy_true = rxy_true[:, 1:]
 
-    result_true, result_pred = _get_true_pred(f, r_x_y, regression_method="poly_para")
+    result_pred = _get_pred(f, rxy_true, regression_method="poly_para")
 
     expected = np.array([[3, 1], [6, 6], [11, 17]])
 
-    np.testing.assert_array_almost_equal(expected, result_true)
+    np.testing.assert_array_almost_equal(expected, xy_true)
     np.testing.assert_array_almost_equal(expected, result_pred)
