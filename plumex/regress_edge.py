@@ -2,16 +2,33 @@ from ara_plumes.models import flatten_edge_points
 from typing import cast
 from typing import List
 from .types import PlumePoints
+from .types import Float2D
 
 import numpy as np
 
 
 # run after video_digest
 def regress_edge(data:dict,
-                 training: float,
+                 train_len: float,
                  randomize: bool = True,
                  seed: int = 1234
 ):
+    """
+    Arguments:
+    ----------
+    data: 
+        dictionary contain top, bottom, and center plumepoints
+    
+    train_len:
+        float value raning from 0 to 1 indicating what percentage of data to 
+        to be used for training. Remaing is used for test set. 
+    
+    randomize:
+        If True training data is selected at random. If False, first sequential frames
+        is used as training data. Remaining frames is test data.
+    
+    """
+    # set seed
     np.random.seed(seed=seed)
     center = cast(List[tuple[int,PlumePoints]],data["center"])
     bot = cast(List[tuple[int,PlumePoints]],data["bottom"])
@@ -44,14 +61,20 @@ def regress_edge(data:dict,
         np.random.shuffle(indices_top)
         np.random.shuffle(indices_bot)
     
-    top_train_idx = int(len(top_flattened)*training)
-    bot_train_idx = int(len(bot_flattened)*training)
+    top_train_idx = int(len(top_flattened)*train_len)
+    bot_train_idx = int(len(bot_flattened)*train_len)
 
-    top_train = top_flattened[:top_train_idx,:]
-    bot_train = top_flattened[:bot_train_idx,:]
+    top_train = cast(Float2D, top_flattened[:top_train_idx,:])
+    bot_train = cast(Float2D,top_flattened[:bot_train_idx,:])
 
-    top_test = top_flattened[top_train_idx:,:]
-    bot_test = bot_flattened[bot_train_idx:,:]
+    top_test = cast(Float2D,top_flattened[top_train_idx:,:])
+    bot_test = cast(Float2D,bot_flattened[bot_train_idx:,:])
+
+
+
+
+    
+
 
 
 
