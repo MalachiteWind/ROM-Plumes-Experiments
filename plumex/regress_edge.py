@@ -70,17 +70,4 @@ def regress_edge(data:dict,
     top_test = cast(Float2D,top_flattened[top_train_idx:,:])
     bot_test = cast(Float2D,bot_flattened[bot_train_idx:,:])
 
-
-
-
-    
-
-
-
-
-
-
-
-        
-    
     
