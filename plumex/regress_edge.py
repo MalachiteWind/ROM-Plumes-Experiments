@@ -1,8 +1,12 @@
 from ara_plumes.models import flatten_edge_points
+from scipy.optimize import curve_fit
+from scipy.linalg import lstsq
+
 from typing import cast
 from typing import List
 from .types import PlumePoints
 from .types import Float2D
+from .types import Float1D
 
 import numpy as np
 
@@ -64,10 +68,39 @@ def regress_edge(data:dict,
     top_train_idx = int(len(top_flattened)*train_len)
     bot_train_idx = int(len(bot_flattened)*train_len)
 
-    top_train = cast(Float2D, top_flattened[:top_train_idx,:])
-    bot_train = cast(Float2D,top_flattened[:bot_train_idx,:])
+    top_train = cast(Float2D, top_flattened[indices_top[:top_train_idx]])
+    bot_train = cast(Float2D,top_flattened[indices_bot[:bot_train_idx]])
 
-    top_test = cast(Float2D,top_flattened[top_train_idx:,:])
-    bot_test = cast(Float2D,bot_flattened[bot_train_idx:,:])
+    top_test = cast(Float2D,top_flattened[indices_top[top_train_idx:]])
+    bot_test = cast(Float2D,bot_flattened[indices_bot[bot_train_idx:]])
 
-    
+
+
+def do_sinusoid_regression(
+    X: Float2D,
+    Y: Float1D,
+    initial_guess: tuple[float, float, float, float],
+) -> Float1D:
+    """
+    Return regressed sinusoid coefficients (a,w,g,t) to function
+    d(t,r) = a*sin(w*r - g*t) + b*r
+    """
+
+    def sinusoid_func(X, A, w, gamma, B):
+        t, r = X
+        return A * np.sin(w * r - gamma * t) + B * r
+
+    coef, _ = curve_fit(sinusoid_func, (X[:, 0], X[:, 1]), Y, initial_guess)
+    return coef
+
+def do_lstsq_regression(X: Float2D, Y: Float1D) -> Float1D:
+    "Calculate multivariate lienar regression. Bias term is first returned term"
+    X = np.hstack([np.ones((X.shape[0], 1)), X])
+    coef, _, _, _ = lstsq(X, Y)
+    return coef
+
+
+n_trials=1000
+
+def ensemble(fit_func,n_trails,):
+    ...
