@@ -4,6 +4,7 @@ from scipy.linalg import lstsq
 
 from typing import cast
 from typing import List
+from typing import Optional
 from .types import PlumePoints
 from .types import Float2D
 from .types import Float1D
@@ -102,5 +103,35 @@ def do_lstsq_regression(X: Float2D, Y: Float1D) -> Float1D:
 
 n_trials=1000
 
-def ensemble(fit_func,n_trails,):
-    ...
+def ensemble(X:Float2D,Y:Float1D,n_trails:int,method:str,replace:bool=True, intial_guess:Optional[tuple]=None):
+    """
+    Apply ensemble bootstrap to data. 
+
+    Parameters:
+    ----------
+    X: Multivate independent data
+    Y: dependent data.
+    n_trails: number of trials to run regression
+    method: "lstsq" or "sinusoid"
+    intial_guess: tuple of intiial guess for optimization alg for "sinusoid" method.
+
+    Returns:
+    --------
+    coef: np.ndarray of learned regression coefficients. 
+
+    """
+
+    coef_data = []
+    for _ in range(n_trails):
+    
+        idxs=np.random.choice(a=len(X),size=len(X),replace=replace)
+        X_bootstrap = X[idxs]
+        Y_bootstrap = Y[idxs]
+
+        if method == "sinusoid":
+            coef = do_sinusoid_regression(X_bootstrap,Y_bootstrap, initial_guess=intial_guess)
+        elif method == "lstsq":
+            coef = do_lstsq_regression(X_bootstrap, Y_bootstrap)
+        coef_data.append(coef)
+
+    return np.array(coef_data)
