@@ -15,6 +15,8 @@ import numpy as np
 # run after video_digest
 def regress_edge(data:dict,
                  train_len: float,
+                 n_trials: int,
+                 intial_guess:tuple,
                  randomize: bool = True,
                  seed: int = 1234
 ):
@@ -74,6 +76,23 @@ def regress_edge(data:dict,
 
     top_test = cast(Float2D,top_flattened[indices_top[top_train_idx:]])
     bot_test = cast(Float2D,bot_flattened[indices_bot[bot_train_idx:]])
+
+    sin_coef_top = ensemble(X=top_train[:,:2],Y=top_train[:,2],n_trails=n_trials,method='sinusoid')
+    lstsq_coef_top = ensemble(X=top_train[:,:2],Y=top_train[:,2],method='stlsq',intial_guess=(1,1,1,1))
+
+    sin_coef_bot = ensemble(X=bot_train[:,:2],Y=bot_train[:,2],n_trails=n_trials,method='sinusoid')
+    lstsq_coef_bot = ensemble(X=bot_train[:,:2],Y=bot_train[:,2],method='stlsq',intial_guess=(1,1,1,1))
+
+    AwgB_sin_top = sin_coef_top.mean(axis=0)
+    coef_lstsq_top = lstsq_coef_top.mean(axis=0)
+
+    AwgB_sin_bot = sin_coef_bot.mean(axis=0)
+    coef_lstsq_bot = lstsq_coef_bot.mean(axis=0)
+
+
+
+
+
 
 
 
