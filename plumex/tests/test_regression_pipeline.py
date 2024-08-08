@@ -170,7 +170,7 @@ def test_ensemble_lstsq():
     Y = f(xx,yy).reshape(-1)
 
     np.random.seed(1234)
-    ensem_result = ensemble(X,Y,n_trails=1000,method='lstsq')
+    ensem_result = ensemble(X,Y,n_trials=1000,method='lstsq')
     result = np.mean(ensem_result,axis=0)
     expected = (1,2,3)
     np.testing.assert_array_almost_equal(expected,result)

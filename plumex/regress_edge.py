@@ -45,53 +45,46 @@ def regress_edge(data:dict,
         For reproducibility of experiements.
     
     """
+    regression_methods = ("linear", "sinusoid")
+    meth_results = {}
+    main_accs = []
     # set seed
     np.random.seed(seed=seed)
     center = cast(List[tuple[int,PlumePoints]],data["center"])
     bot = cast(List[tuple[int,PlumePoints]],data["bottom"])
     top = cast(List[tuple[int,PlumePoints]],data["top"])
 
-    assert len(center) == len(top)
-    assert len(top) == len(bot)
+    top_flat, bot_flat = create_flat_data(center,top,bot)
 
-    bot_flattened = []
-    top_flattened = []
-    for (t,center_pp), (t,bot_pp), (t,top_pp) in zip(center, bot, top):
+    top_train, top_test = train_test_split(top_flat,train_len,randomize)
+    bot_train, bot_test = train_test_split(bot_flat,train_len,randomize)
+
+    for method in regression_methods:
+        coef_top = ensemble(X = top_train[:,:2],Y=top_train[:,2],n_trials=n_trials,method=method,intial_guess=intial_guess)
+        coef_bot = ensemble(X = bot_train[:,:2],Y=bot_train[:,2],n_trials=n_trials,method=method,intial_guess=intial_guess)
+
+        mean_coef_top = coef_top.mean(axis=0)
+        mean_coef_bot = coef_bot.mean(axis=0)
+
+        if method == "linear":
+            func_top = create_lin_func(mean_coef_top)
+            func_bot = create_lin_func(mean_coef_bot)
+        elif method == 'sinusoid':       
+            func_top = create_sin_func(mean_coef_top)
+            func_bot = create_sin_func(mean_coef_bot)
+    
+        top_train_acc, top_test_acc = train_test_acc(top_train,top_test,func_top)
+        bot_train_acc, bot_test_acc = train_test_acc(bot_train,bot_test,func_bot)
+
         
-        rad_dist_bot = flatten_edge_points(center_pp,bot_pp)
-        rad_dist_top = flatten_edge_points(center_pp,top_pp)
 
-        t_rad_dist_bot = np.hstack((t*np.ones(len(rad_dist_bot),1),rad_dist_bot))
-        t_rad_dist_top = np.hstack((t*np.ones(len(rad_dist_top),1),rad_dist_top))
 
-        bot_flattened.append(t_rad_dist_bot)
-        top_flattened.append(t_rad_dist_top)
-    
-    top_flattened = np.concatenate(top_flattened,axis=0)
-    bot_flattened = np.concatenate(bot_flattened,axis=0)
-    
-    # create training data
-    indices_top = np.arange(len(top_flattened))
-    indices_bot = np.arange(len(bot_flattened))
-
-    if randomize:
-        np.random.shuffle(indices_top)
-        np.random.shuffle(indices_bot)
-    
-    top_train_idx = int(len(top_flattened)*train_len)
-    bot_train_idx = int(len(bot_flattened)*train_len)
-
-    top_train = cast(Float2D, top_flattened[indices_top[:top_train_idx]])
-    bot_train = cast(Float2D,top_flattened[indices_bot[:bot_train_idx]])
-
-    top_test = cast(Float2D,top_flattened[indices_top[top_train_idx:]])
-    bot_test = cast(Float2D,bot_flattened[indices_bot[bot_train_idx:]])
 
     # Interpolate 
-    sin_coef_top = ensemble(X=top_train[:,:2],Y=top_train[:,2],n_trails=n_trials,method='sinusoid')
+    sin_coef_top = ensemble(X=top_train[:,:2],Y=top_train[:,2],n_trials=n_trials,method='sinusoid')
     lstsq_coef_top = ensemble(X=top_train[:,:2],Y=top_train[:,2],method='stlsq',intial_guess=(1,1,1,1))
 
-    sin_coef_bot = ensemble(X=bot_train[:,:2],Y=bot_train[:,2],n_trails=n_trials,method='sinusoid')
+    sin_coef_bot = ensemble(X=bot_train[:,:2],Y=bot_train[:,2],n_trials=n_trials,method='sinusoid')
     lstsq_coef_bot = ensemble(X=bot_train[:,:2],Y=bot_train[:,2],method='stlsq',intial_guess=(1,1,1,1))
 
     AwgB_sin_top = sin_coef_top.mean(axis=0)
@@ -100,16 +93,6 @@ def regress_edge(data:dict,
     AwgB_sin_bot = sin_coef_bot.mean(axis=0)
     coef_lstsq_bot = lstsq_coef_bot.mean(axis=0)
 
-    def create_sin_func(awgb):
-        A, w, g, B = awgb
-        def sin_func(t:float,r:float)->float:
-            return A * np.sin(w * r - g * t) + B* r
-        return sin_func
-
-    def create_lin_func(coef):
-        def lin_func(t:float,r:float)->float:
-            return coef[0]+t*coef[1]+r*coef[2]
-        return lin_func
     
     sin_func_top = create_sin_func(AwgB_sin_top)
     sin_func_bot = create_sin_func(AwgB_sin_bot)
@@ -131,25 +114,79 @@ def regress_edge(data:dict,
     train_top_lin_acc = L2_acc(*create_true_pred(top_train,lin_func_top))
     train_bot_lin_acc = L2_acc(*create_true_pred(bot_train,lin_func_bot))
 
+    # Extrapolate
     test_top_sin_acc = L2_acc(*create_true_pred(top_test,sin_func_top))
     test_bot_sin_acc = L2_acc(*create_true_pred(bot_test,sin_func_bot))
 
     test_top_lin_acc = L2_acc(*create_true_pred(top_test,lin_func_top))
     test_bot_lin_acc = L2_acc(*create_true_pred(bot_test,lin_func_bot))
 
+def train_test_acc(top_bot_train,top_bot_test, pred_func):
+    X_train = top_bot_train[:,:2]
+    Y_train = top_bot_train[:,2]
 
+    X_test = top_bot_test[:,:2]
+    Y_test = top_bot_test[:,2]
 
+    Y_train_pred = pred_func(X_train[:,0],X_train[:,1])
+    Y_test_pred = pred_func(X_test[:,0], X_test[:,1])
+
+    train_acc = np.linalg.norm(Y_train-Y_train_pred)/np.linalg.norm(Y_train)
+    test_acc = np.linalg.norm(Y_test - Y_test_pred)/np.linalg.norm(Y_test)
+
+    return train_acc, test_acc
+
+def create_sin_func(awgb):
+    A, w, g, B = awgb
+    def sin_func(t:float,r:float)->float:
+        return A * np.sin(w * r - g * t) + B* r
+    return sin_func
+
+def create_lin_func(coef):
+    def lin_func(t:float,r:float)->float:
+        return coef[0]+t*coef[1]+r*coef[2]
+    return lin_func
+
+def train_test_split(data:Float2D, train_len:float, randomize:bool):
+    idxs = np.arange(len(data))
     
+    if randomize:
+        np.random.shuffle(idxs)
+    
+    train_idxs = idxs[:int(train_len*len(idxs))]
+    test_idxs = idxs[int(train_len*len(idxs)):]
 
+    train_data = data[train_idxs]
+    test_data = data[test_idxs]
 
+    return train_data, test_data
 
+def create_flat_data(
+        center:List[tuple[int,PlumePoints]],
+        top:List[tuple[int,PlumePoints]],
+        bot:List[tuple[int,PlumePoints]]
+)-> tuple[Float2D,Float2D]:
+    assert len(center) == len(top)
+    assert len(top) == len(bot)
 
+    ## Turn into func: create_flat_data
+    bot_flattened = []
+    top_flattened = []
+    for (t,center_pp), (t,bot_pp), (t,top_pp) in zip(center, bot, top):
+        
+        rad_dist_bot = flatten_edge_points(center_pp,bot_pp)
+        rad_dist_top = flatten_edge_points(center_pp,top_pp)
 
+        t_rad_dist_bot = np.hstack((t*np.ones(len(rad_dist_bot),1),rad_dist_bot))
+        t_rad_dist_top = np.hstack((t*np.ones(len(rad_dist_top),1),rad_dist_top))
 
+        bot_flattened.append(t_rad_dist_bot)
+        top_flattened.append(t_rad_dist_top)
+    
+    top_flattened = np.concatenate(top_flattened,axis=0)
+    bot_flattened = np.concatenate(bot_flattened,axis=0)
 
-
-
-
+    return top_flattened,bot_flattened
 
 
 def do_sinusoid_regression(
@@ -178,7 +215,7 @@ def do_lstsq_regression(X: Float2D, Y: Float1D) -> Float1D:
 
 n_trials=1000
 
-def ensemble(X:Float2D,Y:Float1D,n_trails:int,method:str,replace:bool=True, intial_guess:Optional[tuple]=None):
+def ensemble(X:Float2D,Y:Float1D,n_trials:int,method:str,replace:bool=True, intial_guess:Optional[tuple]=None):
     """
     Apply ensemble bootstrap to data. 
 
@@ -197,7 +234,7 @@ def ensemble(X:Float2D,Y:Float1D,n_trails:int,method:str,replace:bool=True, inti
     """
 
     coef_data = []
-    for _ in range(n_trails):
+    for _ in range(n_trials):
     
         idxs=np.random.choice(a=len(X),size=len(X),replace=replace)
         X_bootstrap = X[idxs]
