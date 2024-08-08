@@ -5,6 +5,7 @@ from scipy.linalg import lstsq
 from typing import cast
 from typing import List
 from typing import Optional
+from typing import Callable
 from .types import PlumePoints
 from .types import Float2D
 from .types import Float1D
@@ -16,7 +17,7 @@ import numpy as np
 def regress_edge(data:dict,
                  train_len: float,
                  n_trials: int,
-                 intial_guess:tuple,
+                 intial_guess:tuple[float,float,float,float],
                  randomize: bool = True,
                  seed: int = 1234
 ):
@@ -30,9 +31,18 @@ def regress_edge(data:dict,
         float value raning from 0 to 1 indicating what percentage of data to 
         to be used for training. Remaing is used for test set. 
     
+    n_trials:
+        number of trials to run.
+    
+    initial_guess:
+        Initial guess for sinusoid optimizaiton alg.
+    
     randomize:
         If True training data is selected at random. If False, first sequential frames
         is used as training data. Remaining frames is test data.
+    
+    seed:
+        For reproducibility of experiements.
     
     """
     # set seed
@@ -77,6 +87,7 @@ def regress_edge(data:dict,
     top_test = cast(Float2D,top_flattened[indices_top[top_train_idx:]])
     bot_test = cast(Float2D,bot_flattened[indices_bot[bot_train_idx:]])
 
+    # Interpolate 
     sin_coef_top = ensemble(X=top_train[:,:2],Y=top_train[:,2],n_trails=n_trials,method='sinusoid')
     lstsq_coef_top = ensemble(X=top_train[:,:2],Y=top_train[:,2],method='stlsq',intial_guess=(1,1,1,1))
 
@@ -88,6 +99,51 @@ def regress_edge(data:dict,
 
     AwgB_sin_bot = sin_coef_bot.mean(axis=0)
     coef_lstsq_bot = lstsq_coef_bot.mean(axis=0)
+
+    def create_sin_func(awgb):
+        A, w, g, B = awgb
+        def sin_func(t:float,r:float)->float:
+            return A * np.sin(w * r - g * t) + B* r
+        return sin_func
+
+    def create_lin_func(coef):
+        def lin_func(t:float,r:float)->float:
+            return coef[0]+t*coef[1]+r*coef[2]
+        return lin_func
+    
+    sin_func_top = create_sin_func(AwgB_sin_top)
+    sin_func_bot = create_sin_func(AwgB_sin_bot)
+
+    lin_func_top = create_lin_func(coef_lstsq_top)
+    lin_func_bot = create_lin_func(coef_lstsq_bot)
+
+    def L2_acc(Y_true, Y_pred):
+        return np.linalg.norm(Y_true-Y_pred)/np.linalg(Y_true)
+    
+    def create_true_pred(top_bot:Float2D,func_pred:Callable[[float,float],float])->float:
+        Y_true = top_bot[:,-1]
+        Y_pred = func_pred(top_bot[:,0],top_bot[:,1])
+        return Y_true, Y_pred
+    
+    train_top_sin_acc = L2_acc(*create_true_pred(top_train,sin_func_top))
+    train_bot_sin_acc = L2_acc(*create_true_pred(bot_train,sin_func_bot))
+
+    train_top_lin_acc = L2_acc(*create_true_pred(top_train,lin_func_top))
+    train_bot_lin_acc = L2_acc(*create_true_pred(bot_train,lin_func_bot))
+
+    test_top_sin_acc = L2_acc(*create_true_pred(top_test,sin_func_top))
+    test_bot_sin_acc = L2_acc(*create_true_pred(bot_test,sin_func_bot))
+
+    test_top_lin_acc = L2_acc(*create_true_pred(top_test,lin_func_top))
+    test_bot_lin_acc = L2_acc(*create_true_pred(bot_test,lin_func_bot))
+
+
+
+    
+
+
+
+
 
 
 
