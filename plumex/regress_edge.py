@@ -60,8 +60,8 @@ def regress_edge(data:dict,
     bot_train, bot_test = train_test_split(bot_flat,train_len,randomize)
 
     for method in regression_methods:
-        coef_top = ensemble(X = top_train[:,:2],Y=top_train[:,2],n_trials=n_trials,method=method,intial_guess=intial_guess)
-        coef_bot = ensemble(X = bot_train[:,:2],Y=bot_train[:,2],n_trials=n_trials,method=method,intial_guess=intial_guess)
+        coef_top = ensemble(X = top_train[:,:2],Y=top_train[:,2],n_trials=n_trials,method=method,intial_guess=intial_guess,seed=seed)
+        coef_bot = ensemble(X = bot_train[:,:2],Y=bot_train[:,2],n_trials=n_trials,method=method,intial_guess=intial_guess,seed=seed)
 
         mean_coef_top = coef_top.mean(axis=0)
         mean_coef_bot = coef_bot.mean(axis=0)
@@ -71,55 +71,13 @@ def regress_edge(data:dict,
             func_bot = create_lin_func(mean_coef_bot)
         elif method == 'sinusoid':       
             func_top = create_sin_func(mean_coef_top)
-            func_bot = create_sin_func(mean_coef_bot)
+            func_bot = create_sin_func(mean_coef_bot) 
     
         top_train_acc, top_test_acc = train_test_acc(top_train,top_test,func_top)
         bot_train_acc, bot_test_acc = train_test_acc(bot_train,bot_test,func_bot)
 
-        
+        top = {}
 
-
-
-    # Interpolate 
-    sin_coef_top = ensemble(X=top_train[:,:2],Y=top_train[:,2],n_trials=n_trials,method='sinusoid')
-    lstsq_coef_top = ensemble(X=top_train[:,:2],Y=top_train[:,2],method='stlsq',intial_guess=(1,1,1,1))
-
-    sin_coef_bot = ensemble(X=bot_train[:,:2],Y=bot_train[:,2],n_trials=n_trials,method='sinusoid')
-    lstsq_coef_bot = ensemble(X=bot_train[:,:2],Y=bot_train[:,2],method='stlsq',intial_guess=(1,1,1,1))
-
-    AwgB_sin_top = sin_coef_top.mean(axis=0)
-    coef_lstsq_top = lstsq_coef_top.mean(axis=0)
-
-    AwgB_sin_bot = sin_coef_bot.mean(axis=0)
-    coef_lstsq_bot = lstsq_coef_bot.mean(axis=0)
-
-    
-    sin_func_top = create_sin_func(AwgB_sin_top)
-    sin_func_bot = create_sin_func(AwgB_sin_bot)
-
-    lin_func_top = create_lin_func(coef_lstsq_top)
-    lin_func_bot = create_lin_func(coef_lstsq_bot)
-
-    def L2_acc(Y_true, Y_pred):
-        return np.linalg.norm(Y_true-Y_pred)/np.linalg(Y_true)
-    
-    def create_true_pred(top_bot:Float2D,func_pred:Callable[[float,float],float])->float:
-        Y_true = top_bot[:,-1]
-        Y_pred = func_pred(top_bot[:,0],top_bot[:,1])
-        return Y_true, Y_pred
-    
-    train_top_sin_acc = L2_acc(*create_true_pred(top_train,sin_func_top))
-    train_bot_sin_acc = L2_acc(*create_true_pred(bot_train,sin_func_bot))
-
-    train_top_lin_acc = L2_acc(*create_true_pred(top_train,lin_func_top))
-    train_bot_lin_acc = L2_acc(*create_true_pred(bot_train,lin_func_bot))
-
-    # Extrapolate
-    test_top_sin_acc = L2_acc(*create_true_pred(top_test,sin_func_top))
-    test_bot_sin_acc = L2_acc(*create_true_pred(bot_test,sin_func_bot))
-
-    test_top_lin_acc = L2_acc(*create_true_pred(top_test,lin_func_top))
-    test_bot_lin_acc = L2_acc(*create_true_pred(bot_test,lin_func_bot))
 
 def train_test_acc(top_bot_train,top_bot_test, pred_func):
     X_train = top_bot_train[:,:2]
@@ -215,7 +173,7 @@ def do_lstsq_regression(X: Float2D, Y: Float1D) -> Float1D:
 
 n_trials=1000
 
-def ensemble(X:Float2D,Y:Float1D,n_trials:int,method:str,replace:bool=True, intial_guess:Optional[tuple]=None):
+def ensemble(X:Float2D,Y:Float1D,n_trials:int,method:str, seed:int,replace:bool=True,intial_guess:Optional[tuple]=None):
     """
     Apply ensemble bootstrap to data. 
 
@@ -225,6 +183,7 @@ def ensemble(X:Float2D,Y:Float1D,n_trials:int,method:str,replace:bool=True, inti
     Y: dependent data.
     n_trails: number of trials to run regression
     method: "lstsq" or "sinusoid"
+    seed: Reproducability of experiments.
     intial_guess: tuple of intiial guess for optimization alg for "sinusoid" method.
 
     Returns:
@@ -232,7 +191,7 @@ def ensemble(X:Float2D,Y:Float1D,n_trials:int,method:str,replace:bool=True, inti
     coef: np.ndarray of learned regression coefficients. 
 
     """
-
+    np.random.seed(seed=seed)
     coef_data = []
     for _ in range(n_trials):
     
@@ -246,4 +205,22 @@ def ensemble(X:Float2D,Y:Float1D,n_trials:int,method:str,replace:bool=True, inti
             coef = do_lstsq_regression(X_bootstrap, Y_bootstrap)
         coef_data.append(coef)
 
+    
     return np.array(coef_data)
+
+
+def ensem_regress_edge(X:Float2D,Y:Float1D,n_trials:int,method:str, seed:int,replace:bool=True,intial_guess:Optional[tuple]=None):
+    coef = ensemble(X = X,Y=Y,n_trials=n_trials,method=method,intial_guess=intial_guess,seed=seed)
+
+    mean_coef = coef.mean(axis=0)
+
+    if method == "linear":
+        coef_func = create_lin_func(mean_coef)
+    elif method == 'sinusoid':       
+        coef_func = create_sin_func(mean_coef) 
+
+    train_acc, test_acc = train_test_acc(top_train,top_test,func_top)
+
+
+    ...
+
