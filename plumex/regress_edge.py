@@ -6,6 +6,7 @@ from typing import cast
 from typing import List
 from typing import Optional
 from typing import Callable
+from typing import Any
 from .types import PlumePoints
 from .types import Float2D
 from .types import Float1D
@@ -19,6 +20,7 @@ def regress_edge(data:dict,
                  n_trials: int,
                  intial_guess:tuple[float,float,float,float],
                  randomize: bool = True,
+                 replace: bool = True,
                  seed: int = 1234
 ):
     """
@@ -46,7 +48,10 @@ def regress_edge(data:dict,
     
     """
     regression_methods = ("linear", "sinusoid")
-    meth_results = {}
+    meth_results = {
+        "top" : {},
+        "bot" : {},
+    }
     main_accs = []
     # set seed
     np.random.seed(seed=seed)
@@ -56,43 +61,31 @@ def regress_edge(data:dict,
 
     top_flat, bot_flat = create_flat_data(center,top,bot)
 
-    top_train, top_test = train_test_split(top_flat,train_len,randomize)
-    bot_train, bot_test = train_test_split(bot_flat,train_len,randomize)
-
     for method in regression_methods:
-        coef_top = ensemble(X = top_train[:,:2],Y=top_train[:,2],n_trials=n_trials,method=method,intial_guess=intial_guess,seed=seed)
-        coef_bot = ensemble(X = bot_train[:,:2],Y=bot_train[:,2],n_trials=n_trials,method=method,intial_guess=intial_guess,seed=seed)
+        meth_results["top"][method] = ensem_regress_edge(
+            X=top_flat[:,:2],
+            Y=top_flat[:,2],
+            train_len=train_len,
+            n_trials=n_trials,
+            method=method,
+            seed=seed,
+            replace = replace,
+            randomize=randomize,
+            intial_guess=intial_guess
+        )
 
-        mean_coef_top = coef_top.mean(axis=0)
-        mean_coef_bot = coef_bot.mean(axis=0)
+        meth_results["bot"][method] = ensem_regress_edge(
+            X=bot_flat[:,:2],
+            Y=bot_flat[:,2],
+            train_len=train_len,
+            n_trials=n_trials,
+            method=method,
+            seed=seed,
+            replace = replace,
+            randomize=randomize,
+            intial_guess=intial_guess
+        )        
 
-        if method == "linear":
-            func_top = create_lin_func(mean_coef_top)
-            func_bot = create_lin_func(mean_coef_bot)
-        elif method == 'sinusoid':       
-            func_top = create_sin_func(mean_coef_top)
-            func_bot = create_sin_func(mean_coef_bot) 
-    
-        top_train_acc, top_test_acc = train_test_acc(top_train,top_test,func_top)
-        bot_train_acc, bot_test_acc = train_test_acc(bot_train,bot_test,func_bot)
-
-        top = {}
-
-
-def train_test_acc(top_bot_train,top_bot_test, pred_func):
-    X_train = top_bot_train[:,:2]
-    Y_train = top_bot_train[:,2]
-
-    X_test = top_bot_test[:,:2]
-    Y_test = top_bot_test[:,2]
-
-    Y_train_pred = pred_func(X_train[:,0],X_train[:,1])
-    Y_test_pred = pred_func(X_test[:,0], X_test[:,1])
-
-    train_acc = np.linalg.norm(Y_train-Y_train_pred)/np.linalg.norm(Y_train)
-    test_acc = np.linalg.norm(Y_test - Y_test_pred)/np.linalg.norm(Y_test)
-
-    return train_acc, test_acc
 
 def create_sin_func(awgb):
     A, w, g, B = awgb
@@ -104,20 +97,6 @@ def create_lin_func(coef):
     def lin_func(t:float,r:float)->float:
         return coef[0]+t*coef[1]+r*coef[2]
     return lin_func
-
-def train_test_split(data:Float2D, train_len:float, randomize:bool):
-    idxs = np.arange(len(data))
-    
-    if randomize:
-        np.random.shuffle(idxs)
-    
-    train_idxs = idxs[:int(train_len*len(idxs))]
-    test_idxs = idxs[int(train_len*len(idxs)):]
-
-    train_data = data[train_idxs]
-    test_data = data[test_idxs]
-
-    return train_data, test_data
 
 def create_flat_data(
         center:List[tuple[int,PlumePoints]],
@@ -173,7 +152,7 @@ def do_lstsq_regression(X: Float2D, Y: Float1D) -> Float1D:
 
 n_trials=1000
 
-def ensemble(X:Float2D,Y:Float1D,n_trials:int,method:str, seed:int,replace:bool=True,intial_guess:Optional[tuple]=None):
+def bootstrap(X:Float2D,Y:Float1D,n_trials:int,method:str, seed:int,replace:bool=True,intial_guess:Optional[tuple]=None):
     """
     Apply ensemble bootstrap to data. 
 
@@ -209,18 +188,55 @@ def ensemble(X:Float2D,Y:Float1D,n_trials:int,method:str, seed:int,replace:bool=
     return np.array(coef_data)
 
 
-def ensem_regress_edge(X:Float2D,Y:Float1D,n_trials:int,method:str, seed:int,replace:bool=True,intial_guess:Optional[tuple]=None):
-    coef = ensemble(X = X,Y=Y,n_trials=n_trials,method=method,intial_guess=intial_guess,seed=seed)
+def ensem_regress_edge(
+        X:Float2D,
+        Y:Float1D,
+        train_len:float, 
+        n_trials:int,method:str, 
+        seed:int,replace:bool=True, 
+        randomize:bool=True,
+        intial_guess:Optional[tuple]=None
+)-> dict[str, Any]:
+    assert len(X) == len(Y)
 
-    mean_coef = coef.mean(axis=0)
+    idxs = np.arange(len(X))
+    if randomize:
+        np.random.shuffle(idxs)
+    train_idx, val_idx = idxs[:int(train_len*len(X))], idxs[int(train_len*len(X)):]
+
+    X_train, X_val = X[train_idx], X[val_idx]
+    Y_train, Y_val = Y[train_idx], Y[val_idx]
+
+    coef_bs = bootstrap(
+        X=X_train,
+        Y=Y_train,
+        n_trials=n_trials,
+        method=method,
+        intial_guess=intial_guess,
+        seed=seed,
+        replace=replace
+    )
+
+    mean_coef = coef_bs.mean(axis=0)
 
     if method == "linear":
         coef_func = create_lin_func(mean_coef)
     elif method == 'sinusoid':       
         coef_func = create_sin_func(mean_coef) 
 
-    train_acc, test_acc = train_test_acc(top_train,top_test,func_top)
 
+    # train acc
+    Y_train_pred = coef_func(X_train[:,0],X_train[:,1])
+    train_acc = np.linalg.norm(Y_train_pred-Y_train)/np.linalg.norm(Y_train)
 
-    ...
+    # val_acc
+    Y_val_pred = coef_func(X_val[:,0],X_val[:,1])
+    val_acc = np.linalg.norm(Y_val_pred-Y_val)/np.linalg.norm(Y_val)
+
+    return {
+        "val_acc": val_acc,
+        "train_acc": train_acc,
+        "coeffs": coef_bs
+    }
+
 

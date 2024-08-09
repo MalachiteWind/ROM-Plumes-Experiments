@@ -6,7 +6,7 @@ from ..regression_pipeline import _split_into_train_val
 from ..regression_pipeline import get_coef_acc
 from ..regress_edge import do_sinusoid_regression
 from ..regress_edge import do_lstsq_regression
-from ..regress_edge import ensemble
+from ..regress_edge import bootstrap
 
 
 def test_get_coef_acc():
@@ -162,15 +162,15 @@ def test_do_lstsq_regression():
     np.testing.assert_array_almost_equal(expected,result)
 
 
-def test_ensemble_lstsq():
+def test_bootstrap_lstsq():
     def f(x1,x2):
         return 1 + 2*x1+3*x2
     xx,yy = np.meshgrid(np.linspace(0,1,101),np.linspace(0,1,101))
     X = np.vstack((xx.reshape(-1),yy.reshape(-1))).T
     Y = f(xx,yy).reshape(-1)
 
-    np.random.seed(1234)
-    ensem_result = ensemble(X,Y,n_trials=1000,method='lstsq')
+    # np.random.seed(1234)
+    ensem_result = bootstrap(X,Y,n_trials=1000,method='lstsq',seed=1234)
     result = np.mean(ensem_result,axis=0)
     expected = (1,2,3)
     np.testing.assert_array_almost_equal(expected,result)
