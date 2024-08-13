@@ -27,7 +27,13 @@ from .types import Float2D
 from .types import Int1D
 from .types import NpFlt
 
-logger = getLogger(__name__)
+LOGGER = getLogger(__name__)
+REGRESSION_METHODS = {
+    "linear": ("y=ax + b", "ab"),
+    "poly": ("y=ax^2 + bx + c", "abc"),
+    "poly_inv": ("x=ay^2 + by + c", "abc"),
+    "poly_para": ("x=ar^2 + br + c\n y=dr^2 + er + f", "abcdef"),
+}
 
 
 class RegressionResults(TypedDict):
@@ -62,12 +68,11 @@ def multi_regress_centerline(
         best method, "data" is data from best method, and "accs" is dictionary
         of method name to its validation and train accuracies by frame
     """
-    regression_methods = ("linear", "poly", "poly_inv", "poly_para")
     meth_results: dict[str, RegressionResults] = {}
     main_accs = []
     coeffs = []
     decenter = cast(tuple[X_pos, Y_pos], data["center"][0][1][0, 1:])
-    for method in regression_methods:
+    for method in REGRESSION_METHODS:
         meth_results[method] = regress_centerline(
             data, r_split, method, poly_deg, display=False
         )
@@ -94,7 +99,7 @@ def multi_regress_centerline(
     _visualize_points(
         data["center"],
         coeffs,
-        regression_methods,
+        list(REGRESSION_METHODS.keys()),
         r_split=r_split,
         n_plots=15,
         origin_fc=decenter,
@@ -116,7 +121,7 @@ def multi_regress_centerline(
     # Plot coefficient distributions
     for method, res in meth_results.items():
         n_frames = res["n_frames"]
-        fig = _plot_coef_dist(res["data"])
+        fig = _plot_coef_dist(res["data"], *REGRESSION_METHODS[method])
         fig.suptitle(f"Distribution of {method} coefficients across {n_frames} frames")
     return MultiRegressionResults(
         main=best_method, data=best_data, n_frames=n_frames, regressions=meth_results
@@ -181,7 +186,7 @@ def regress_centerline(
         _plot_acc_dist(
             val_acc[non_nan_inds], n_val[non_nan_inds], n_train[non_nan_inds]
         )
-        _plot_coef_dist(coef_time_series_dc)
+        _plot_coef_dist(coef_time_series_dc, *REGRESSION_METHODS[regression_method])
     if len(non_nan_val_acc) == 0:
         warn(
             "No frames have any points in the validation set.  "
@@ -348,12 +353,22 @@ def _plot_acc_dist(
     return ax
 
 
-def _plot_coef_dist(coef_time_series: Float2D) -> Figure:
+def _plot_coef_dist(
+    coef_time_series: Float2D,
+    expression: Optional[str] = None,
+    terms: Optional[Sequence[str]] = None,
+) -> Figure:
     n_coeffs = coef_time_series.shape[1]
     fig, axs = plt.subplots(1, n_coeffs, figsize=[3 * n_coeffs, 3])
-    for ax, coef_ind in zip(axs, range(n_coeffs), strict=True):
+    if not terms:
+        terms = [chr(coef_ind) for coef_ind in range(n_coeffs)]
+    for ax, coef_ind, term_symbol in zip(axs, range(n_coeffs), terms, strict=True):
         ax = cast(Axes, ax)
         ax.hist(coef_time_series[:, coef_ind])
+        ax.set_xlabel(term_symbol)
+    suptitle = "Distribution of coefficients across frames"
+    if expression:
+        suptitle += f"\n{expression}"
     fig.suptitle("Distribution of coefficients across frames")
     return fig
 
@@ -400,7 +415,7 @@ def _visualize_points(
             )
             xy_pred_dc = _get_pred(f, frame_points_dc, method)
             xy_pred_fc = xy_pred_dc + origin_fc
-            logger.debug(f"Moving origin from {xy_pred_dc[0]} to f{xy_pred_fc[0]}")
+            LOGGER.debug(f"Moving origin from {xy_pred_dc[0]} to f{xy_pred_fc[0]}")
             ax.plot(
                 xy_pred_fc[:, 0],
                 y_max - xy_pred_fc[:, 1],
