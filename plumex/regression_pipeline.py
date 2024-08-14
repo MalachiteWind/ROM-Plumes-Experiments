@@ -48,7 +48,7 @@ class RegressionResults(TypedDict):
 
 
 class MultiRegressionResults(TypedDict):
-    main: tuple[str]
+    main: str
     data: Float2D
     n_frames: int
     regressions: dict[str, RegressionResults]
@@ -69,7 +69,7 @@ def multi_regress_centerline(
         of method name to its validation and train accuracies by frame
     """
     meth_results: dict[str, RegressionResults] = {}
-    main_accs = []
+    main_accs: list[tuple[str, float]] = []
     coeffs = []
     decenter = cast(tuple[X_pos, Y_pos], data["center"][0][1][0, 1:])
     for method in REGRESSION_METHODS:
@@ -88,12 +88,11 @@ def multi_regress_centerline(
         n_frames = result["n_frames"]
 
     # Plot validation distribution
-    for method, res in meth_results.items():
-        non_nans = res["non_nan_inds"]
-        if len(res["val_acc"][non_nans]) > 0:
-            plt.hist(res["val_acc"], label=method)
-    plt.legend()
-    plt.title(f"Validation Accuracy over {n_frames} frames")
+    methods_ascending = [metric for metric, _ in main_accs]
+    nested_best_n_results = _nest_best_n_results(methods_ascending, meth_results)
+
+    fig = _plot_acc_hist_by_tranche(nested_best_n_results)
+    fig.suptitle(f"Validation Accuracy over {n_frames} frames")
 
     # Plot each method's points
     _visualize_points(
@@ -106,17 +105,8 @@ def multi_regress_centerline(
     )
 
     # Plot accuracy distribution by number of data points
-    fig, ax = plt.subplots(1, 1)
-    for method, res in meth_results.items():
-        non_nans = res["non_nan_inds"]
-        _plot_acc_dist(
-            res["val_acc"][non_nans],
-            res["n_val"][non_nans],
-            res["n_train"][non_nans],
-            ax,
-            label=method,
-        )
-    fig.legend()
+    fig = _scatter_accuracy_npoints_by_tranche(nested_best_n_results)
+    fig.suptitle("Validation Accuracy by number of train/validation points")
 
     # Plot coefficient distributions
     for method, res in meth_results.items():
@@ -442,3 +432,51 @@ def _visualize_points(
     ax.legend()
     fig.tight_layout()
     return fig
+
+
+def _plot_acc_hist_by_tranche(
+    nested_best_n_results: Sequence[dict[str, RegressionResults]]
+) -> Figure:
+    fig, axes = plt.subplots(1, len(nested_best_n_results))
+    axes = cast(list[Axes], axes)
+    for ax, tranche in zip(axes, nested_best_n_results):
+        non_nan_data = []
+        non_nan_methods = []
+        for method, res in tranche.items():
+            non_nans = res["non_nan_inds"]
+            if len(res["val_acc"][non_nans]) > 0:
+                non_nan_data.append(res["val_acc"])
+                non_nan_methods.append(method)
+        ax.hist(non_nan_data, label=non_nan_methods)
+        ax.legend()
+    return fig
+
+
+def _scatter_accuracy_npoints_by_tranche(
+    nested_best_n_results: Sequence[dict[str, RegressionResults]]
+) -> Figure:
+    fig, axes = plt.subplots(1, len(nested_best_n_results))
+    axes = cast(list[Axes], axes)
+    for ax, tranche in zip(axes, nested_best_n_results):
+        for method, res in tranche.items():
+            non_nans = res["non_nan_inds"]
+            _plot_acc_dist(
+                res["val_acc"][non_nans],
+                res["n_val"][non_nans],
+                res["n_train"][non_nans],
+                ax,
+                label=method,
+            )
+        ax.legend()
+    return fig
+
+
+def _nest_best_n_results(
+    methods_ascending: Sequence[str], meth_results: dict[str, RegressionResults]
+) -> list[dict[str, RegressionResults]]:
+    """Repeat a dictionary of regression results, trimming one each time"""
+    n_methods = len(methods_ascending)
+    return [
+        {method: meth_results[method] for method in methods_ascending[-n:]}
+        for n in range(1, n_methods)
+    ]
