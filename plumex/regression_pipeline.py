@@ -32,7 +32,7 @@ REGRESSION_METHODS = {
     "linear": ("y=ax + b", "ab"),
     "poly": ("y=ax^2 + bx + c", "abc"),
     "poly_inv": ("x=ay^2 + by + c", "abc"),
-    "poly_para": ("x=ar^2 + br + c\n y=dr^2 + er + f", "abcdef"),
+    "poly_para": ("x=ar^2 + br + c;  y=dr^2 + er + f", "abcdef"),
 }
 
 
@@ -112,7 +112,7 @@ def multi_regress_centerline(
     for method, res in meth_results.items():
         n_frames = res["n_frames"]
         fig = _plot_coef_dist(res["data"], *REGRESSION_METHODS[method])
-        fig.suptitle(f"Distribution of {method} coefficients across {n_frames} frames")
+        fig.suptitle(fig.get_suptitle() + f" ({n_frames} frames)")
     return MultiRegressionResults(
         main=best_method, data=best_data, n_frames=n_frames, regressions=meth_results
     )
@@ -331,13 +331,15 @@ def _plot_acc_dist(
     n_train: Int1D,
     ax: Axes | None = None,
     label: str | None = None,
+    title_on: bool = True,
 ) -> Axes:
     if ax is None:
         _, ax = plt.subplots(1, 1)
         ax = cast(Axes, ax)
     n_frames = len(val_acc)
     ax.scatter(val_acc, n_val + n_train, label=label)
-    ax.set_title(f"Accuracy Distribution across {n_frames} frames.")
+    if title_on:
+        ax.set_title(f"Accuracy Distribution across {n_frames} frames.")
     ax.set_xlabel("Validation accuracy")
     ax.set_ylabel("points in frame")
     return ax
@@ -356,10 +358,10 @@ def _plot_coef_dist(
         ax = cast(Axes, ax)
         ax.hist(coef_time_series[:, coef_ind])
         ax.set_xlabel(term_symbol)
-    suptitle = "Distribution of coefficients across frames"
+    suptitle = "Distribution of coefficients"
     if expression:
-        suptitle += f"\n{expression}"
-    fig.suptitle("Distribution of coefficients across frames")
+        suptitle += f": {expression}"
+    fig.suptitle(suptitle)
     return fig
 
 
@@ -437,7 +439,8 @@ def _visualize_points(
 def _plot_acc_hist_by_tranche(
     nested_best_n_results: Sequence[dict[str, RegressionResults]]
 ) -> Figure:
-    fig, axes = plt.subplots(1, len(nested_best_n_results))
+    n_sub = len(nested_best_n_results)
+    fig, axes = plt.subplots(1, n_sub, figsize=[3 * n_sub, 3])
     axes = cast(list[Axes], axes)
     for ax, tranche in zip(axes, nested_best_n_results):
         non_nan_data = []
@@ -448,14 +451,15 @@ def _plot_acc_hist_by_tranche(
                 non_nan_data.append(res["val_acc"])
                 non_nan_methods.append(method)
         ax.hist(non_nan_data, label=non_nan_methods)
-        ax.legend()
+    axes[-1].legend()
     return fig
 
 
 def _scatter_accuracy_npoints_by_tranche(
     nested_best_n_results: Sequence[dict[str, RegressionResults]]
 ) -> Figure:
-    fig, axes = plt.subplots(1, len(nested_best_n_results))
+    n_sub = len(nested_best_n_results)
+    fig, axes = plt.subplots(1, n_sub, figsize=[3 * n_sub, 3])
     axes = cast(list[Axes], axes)
     for ax, tranche in zip(axes, nested_best_n_results):
         for method, res in tranche.items():
@@ -466,8 +470,9 @@ def _scatter_accuracy_npoints_by_tranche(
                 res["n_train"][non_nans],
                 ax,
                 label=method,
+                title_on=False,
             )
-        ax.legend()
+    axes[-1].legend()
     return fig
 
 
@@ -476,7 +481,8 @@ def _nest_best_n_results(
 ) -> list[dict[str, RegressionResults]]:
     """Repeat a dictionary of regression results, trimming one each time"""
     n_methods = len(methods_ascending)
+    methods_descending = methods_ascending[::-1]
     return [
-        {method: meth_results[method] for method in methods_ascending[-n:]}
-        for n in range(1, n_methods)
+        {method: meth_results[method] for method in methods_descending[:n]}
+        for n in range(1, n_methods + 1)
     ]
