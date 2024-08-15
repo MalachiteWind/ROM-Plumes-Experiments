@@ -1,3 +1,11 @@
+"""Experiment and utilities to regress the center of a plume video.
+
+Developer's note:
+    The abbreviations "fc", "dc", and "pc" refer to frame coordinates (in which
+    origin is the top left, y axis pointing down), decentered coordinates (in
+    which origin is the plume source, origin pointing down), and plot
+    coordinates (in which origin is the bottom left, y axis pointing up)
+"""
 from collections.abc import Sequence
 from logging import getLogger
 from typing import Any
@@ -240,61 +248,55 @@ def _split_into_train_val(
     return train_set, val_set
 
 
-def _construct_f(
-    coef: Float1D, regression_method: Optional[str] = None
-) -> Callable[[Float1D], Float1D | Float2D]:
-    """construct function f based on coefficients and regression_method
+def _construct_rxy_f(
+    coef: Float1D, regression_method: str
+) -> Callable[[PlumePoints], PlumePoints]:
+    """Create a function from regression that maps r,x,y to the inputs
+
+    Note that functions fit on decentered coordinates should only act on
+    decentered coordinates.
 
     Parameters:
-    ----------
-    coef:
-        array of poly coefficients in descending degree order.
-
-    regression_method:
-        makes function parametric if regression_method = "poly_para".
+        coef:
+            array of poly coefficients in descending degree order.
 
     Returns:
-    --------
-        f:
-            Callable function that takes float as argument.
+        Callable function that takes r, x, and y as the -1 axis of the
+        argument and returns in the same shape
     """
     if regression_method == "poly_para":
         mid_index = len(coef) // 2
         f1 = np.polynomial.Polynomial(coef[:mid_index][::-1])
         f2 = np.polynomial.Polynomial(coef[mid_index:][::-1])
 
-        def f(x):
-            return np.array([f1(x), f2(x)])
+        def f(rxy):  # type: ignore
+            r = rxy[..., 0]
+            x = f1(r)
+            y = f2(r)
+            return np.stack([r, x, y])
+
+    elif regression_method == "poly_inv":
+        # if x = ay^2 + by + c, then y = sqrt((x-c)/a + b^2/(4a^2)) - b/(2a)
+        a, b, c = coef
+
+        def f(rxy):  # type: ignore
+            r = rxy[..., 0]
+            x = rxy[..., 1]
+            y = np.sqrt((x - c) / a + b**2 / (4 * a**2)) - b / (2 * a)
+            return np.stack([r, x, y])
+
+    elif regression_method in ("linear", "poly"):
+
+        def f(rxy):
+            f_y_of_x = np.polynomial.Polynomial(coef[::-1])  # type: ignore
+            r = rxy[..., 0]
+            x = rxy[..., 1]
+            y = f_y_of_x(x)
+            return np.stack([r, x, y])
 
     else:
-        f = np.polynomial.Polynomial(coef[::-1])  # type: ignore
+        raise ValueError("Unrecognized regression method")
     return f
-
-
-def _get_pred(
-    func: Callable[[Float1D], Float1D | Float2D],
-    r_x_y: PlumePoints,
-    regression_method: str,
-) -> Float2D:
-    """
-    Vectorize approximation function ``func``, map correct inputs from `r_x_y`, and
-    extract true values from `r_x_y` based on regression_method used.
-
-    Points must be in decentered frame coordinates
-    """
-    if regression_method == "poly" or regression_method == "linear":
-        y_pred = func(r_x_y[:, 1])
-        xy_pred = np.vstack((r_x_y[:, 1], y_pred)).T
-
-    if regression_method == "poly_inv":
-        y_true = r_x_y[:, 2]
-        x_pred = func(y_true)
-        xy_pred = np.vstack((x_pred, y_true)).T
-
-    if regression_method == "poly_para":
-        xy_pred = func(r_x_y[:, 0]).T
-
-    return cast(Float2D, xy_pred)
 
 
 def get_coef_acc(
@@ -311,15 +313,15 @@ def get_coef_acc(
     for i in range(n_frames):
         coef_i = coef_time_series[i]
 
-        f = _construct_f(coef_i, regression_method)
+        pred_dc = _construct_rxy_f(coef_i, regression_method)
         _, rxy_true = train_val_set[i]
 
-        xy_pred = _get_pred(f, rxy_true, regression_method)
+        rxy_pred = pred_dc(rxy_true)
         if len(rxy_true) == 0:
             accs[i] = np.nan
         else:
-            accs[i] = 1 - np.linalg.norm(rxy_true[:, 1:] - xy_pred) / np.linalg.norm(
-                rxy_true[:, 1:]
+            accs[i] = -np.linalg.norm(rxy_true[:, 2] - rxy_pred[:, 2]) / np.linalg.norm(
+                rxy_true[:, 2]
             )
 
     return accs
@@ -401,11 +403,11 @@ def _visualize_points(
             zip(coef_time_series_dc, regression_methods)
         ):
             coeffs = coeff_meth[frame_id]
-            f = _construct_f(coeffs, method)
+            predict_dc = _construct_rxy_f(coeffs, method)
             frame_points_dc = np.hstack(
                 (frame_points[:, :1], frame_points[:, 1:] - origin_fc)
             )
-            xy_pred_dc = _get_pred(f, frame_points_dc, method)
+            xy_pred_dc = predict_dc(frame_points_dc)
             xy_pred_fc = xy_pred_dc + origin_fc
             LOGGER.debug(f"Moving origin from {xy_pred_dc[0]} to f{xy_pred_fc[0]}")
             ax.plot(
@@ -418,7 +420,7 @@ def _visualize_points(
             rxy_max_dc = frame_points.max(axis=0) - (0, *origin_fc)
             rxy_min_dc = frame_points.min(axis=0) - (0, *origin_fc)
             interp_points_dc = np.linspace(rxy_min_dc, rxy_max_dc, 20)
-            xy_interp_dc = _get_pred(f, interp_points_dc, method)
+            xy_interp_dc = predict_dc(interp_points_dc)
             xy_interp_fc = xy_interp_dc + origin_fc
             ax.plot(
                 xy_interp_fc[:, 0],
