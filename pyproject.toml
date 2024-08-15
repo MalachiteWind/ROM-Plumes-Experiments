@@ -23,7 +23,6 @@ dev = [
     "ipython",
     "pre-commit",
     "pytest-cov",
-    "pytest-lazy-fixture",
     "setuptools_scm",
 ]
 
