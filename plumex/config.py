@@ -137,6 +137,7 @@ data_lookup = {
         "noscale": {"interior_scale": 1.0},
         "pixeltol": {"atol": 1},
         "no-smooth": {"mean_smoothing": False},
+        "80circ": {"num_of_circs": 80},
     },
 }
 
