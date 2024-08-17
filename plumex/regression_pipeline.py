@@ -150,19 +150,21 @@ def regress_centerline(
         regression_method). "main" metric is average validation accuracy
     """
     mean_points = data["center"]
-    train_set, val_set = _split_into_train_val(mean_points, r_split)
-    n_train = cast(Int1D, np.array([len(points) for _, points in train_set]))
-    n_val = cast(Int1D, np.array([len(points) for _, points in val_set]))
-    decenter = cast(tuple[X_pos, Y_pos], data["center"][0][1][0, 1:])
+    train_set_fc, val_set_fc = _split_into_train_val(mean_points, r_split)
+    n_train = cast(Int1D, np.array([len(points) for _, points in train_set_fc]))
+    n_val = cast(Int1D, np.array([len(points) for _, points in val_set_fc]))
+    origin_fc = cast(tuple[X_pos, Y_pos], data["center"][0][1][0, 1:])
     coef_time_series_dc = PLUME.regress_multiframe_mean(
-        mean_points=train_set,
+        mean_points=train_set_fc,
         regression_method=regression_method,
         poly_deg=poly_deg,
-        decenter=decenter,
+        decenter=origin_fc,
     )
 
-    train_acc = get_coef_acc(coef_time_series_dc, train_set, regression_method)
-    val_acc = get_coef_acc(coef_time_series_dc, val_set, regression_method)
+    train_set_dc = [(frame, points - (0, *origin_fc)) for frame, points in train_set_fc]
+    val_set_dc = [(frame, points - (0, *origin_fc)) for frame, points in val_set_fc]
+    train_acc = get_coef_acc(coef_time_series_dc, train_set_dc, regression_method)
+    val_acc = get_coef_acc(coef_time_series_dc, val_set_dc, regression_method)
     non_nan_inds = ~np.isnan(val_acc)
     non_nan_val_acc = val_acc[non_nan_inds]
 
@@ -179,7 +181,7 @@ def regress_centerline(
             [regression_method],
             r_split=r_split,
             n_plots=15,
-            origin_fc=decenter,
+            origin_fc=origin_fc,
         )
         _plot_acc_dist(
             val_acc[non_nan_inds], n_val[non_nan_inds], n_train[non_nan_inds]
@@ -273,7 +275,7 @@ def _construct_rxy_f(
             r = rxy[..., 0]
             x = f1(r)
             y = f2(r)
-            return np.stack([r, x, y])
+            return np.stack([r, x, y], axis=-1)
 
     elif regression_method == "poly_inv":
         # if x = ay^2 + by + c, then y = sqrt((x-c)/a + b^2/(4a^2)) - b/(2a)
@@ -283,7 +285,7 @@ def _construct_rxy_f(
             r = rxy[..., 0]
             x = rxy[..., 1]
             y = np.sqrt((x - c) / a + b**2 / (4 * a**2)) - b / (2 * a)
-            return np.stack([r, x, y])
+            return np.stack([r, x, y], axis=-1)
 
     elif regression_method in ("linear", "poly"):
 
@@ -292,7 +294,7 @@ def _construct_rxy_f(
             r = rxy[..., 0]
             x = rxy[..., 1]
             y = f_y_of_x(x)
-            return np.stack([r, x, y])
+            return np.stack([r, x, y], axis=-1)
 
     else:
         raise ValueError("Unrecognized regression method")
@@ -300,29 +302,29 @@ def _construct_rxy_f(
 
 
 def get_coef_acc(
-    coef_time_series: np.ndarray[Any, NpFlt],
-    train_val_set: list[tuple[Frame, PlumePoints]],
+    coef_time_series_dc: np.ndarray[Any, NpFlt],
+    eval_set_dc: list[tuple[Frame, PlumePoints]],
     regression_method: str,
 ) -> Float1D:
     """Get the L2 accuracy of learned coefficients on PlumePoints"""
-    if len(coef_time_series) != len(train_val_set):
+    if len(coef_time_series_dc) != len(eval_set_dc):
         raise TypeError("length of arrays must match")
 
-    n_frames = len(coef_time_series)
+    n_frames = len(coef_time_series_dc)
     accs = cast(Float1D, np.zeros(n_frames))
     for i in range(n_frames):
-        coef_i = coef_time_series[i]
+        coef_i = coef_time_series_dc[i]
 
         pred_dc = _construct_rxy_f(coef_i, regression_method)
-        _, rxy_true = train_val_set[i]
+        _, rxy_true_dc = eval_set_dc[i]
 
-        rxy_pred = pred_dc(rxy_true)
-        if len(rxy_true) == 0:
+        rxy_pred_dc = pred_dc(rxy_true_dc)
+        if len(rxy_true_dc) == 0:
             accs[i] = np.nan
         else:
-            accs[i] = -np.linalg.norm(rxy_true[:, 2] - rxy_pred[:, 2]) / np.linalg.norm(
-                rxy_true[:, 2]
-            )
+            accs[i] = -np.linalg.norm(
+                rxy_true_dc[:, 2] - rxy_pred_dc[:, 2]
+            ) / np.linalg.norm(rxy_true_dc[:, 2])
 
     return accs
 
@@ -360,7 +362,7 @@ def _plot_coef_dist(
         ax = cast(Axes, ax)
         ax.hist(coef_time_series[:, coef_ind])
         ax.set_xlabel(term_symbol)
-    suptitle = "Distribution of coefficients"
+    suptitle = "Distribution of coefficients (decentered frame coordinates)"
     if expression:
         suptitle += f": {expression}"
     fig.suptitle(suptitle)
@@ -407,7 +409,7 @@ def _visualize_points(
             frame_points_dc = np.hstack(
                 (frame_points[:, :1], frame_points[:, 1:] - origin_fc)
             )
-            xy_pred_dc = predict_dc(frame_points_dc)
+            xy_pred_dc = predict_dc(frame_points_dc)[:, 1:]
             xy_pred_fc = xy_pred_dc + origin_fc
             LOGGER.debug(f"Moving origin from {xy_pred_dc[0]} to f{xy_pred_fc[0]}")
             ax.plot(
@@ -415,12 +417,11 @@ def _visualize_points(
                 y_max - xy_pred_fc[:, 1],
                 "x",
                 color=CMAP[2 + meth_ind],
-                label=f"{method} regression",
             )
             rxy_max_dc = frame_points.max(axis=0) - (0, *origin_fc)
             rxy_min_dc = frame_points.min(axis=0) - (0, *origin_fc)
             interp_points_dc = np.linspace(rxy_min_dc, rxy_max_dc, 20)
-            xy_interp_dc = predict_dc(interp_points_dc)
+            xy_interp_dc = predict_dc(interp_points_dc)[:, 1:]
             xy_interp_fc = xy_interp_dc + origin_fc
             ax.plot(
                 xy_interp_fc[:, 0],

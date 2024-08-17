@@ -1,5 +1,6 @@
 import numpy as np
 import pytest
+from ara_plumes.typing import Frame
 
 from ..regression_pipeline import _construct_rxy_f
 from ..regression_pipeline import _split_into_train_val
@@ -14,10 +15,10 @@ def test_get_coef_acc():
     r_x_y_1 = np.vstack((R, R, f1(R))).T
     r_x_y_2 = np.vstack((R, R, f2(R))).T
 
-    train_val_set = [(1, r_x_y_1), (2, r_x_y_2)]
+    train_val_set = [(Frame(1), r_x_y_1), (Frame(2), r_x_y_2)]
 
     result = get_coef_acc(
-        coef_time_series, train_val_set=train_val_set, regression_method="poly"
+        coef_time_series, eval_set_dc=train_val_set, regression_method="poly"
     )
     expected = np.array([1, 1])
 
@@ -65,7 +66,7 @@ def test_split_into_train_val():
             (1, 2, 3),
             "poly_inv",
             # note the inverse form of quadratic
-            np.array([2, 3, np.sqrt((3 - 3) / 1 + 2**2 / 4) - 2 / (2 * 1)]),
+            np.array([2, 3, np.sqrt((3 - 3) / 1 + 2**2 / (4 * 1)) - 2 / (2 * 1)]),
         ),
         (
             (1, 2, 3, 3, 2, 1),
