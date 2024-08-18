@@ -62,6 +62,7 @@ data_lookup = {
         "920pts": "step1/3d5c2d.dill",
         "nowindpts": "step1/b5e775.dill",
         "windpts": "step1/eae39c.dill",
+        "longwindpts": "step1/2543c7.dill",
         "lo1pts": "step1/3ac8b5.dill",
         "hi1pts": "step1/abb562.dill",
         "hi2pts": "step1/d32d3b.dill",
