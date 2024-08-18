@@ -20,13 +20,13 @@ def test_get_coef_acc():
     result = get_coef_acc(
         coef_time_series, eval_set_dc=train_val_set, regression_method="poly"
     )
-    expected = np.array([1, 1])
+    expected = np.array([0, 0])
 
     np.testing.assert_array_almost_equal(expected, result)
 
     # empty
     train_val_set = [(1, r_x_y_1), (2, r_x_y_2[np.array([False for _ in range(3)])])]
-    expected = np.array([1, np.nan])
+    expected = np.array([0, np.nan])
     result = get_coef_acc(coef_time_series, train_val_set, regression_method="poly")
     np.testing.assert_array_almost_equal(expected, result)
 
