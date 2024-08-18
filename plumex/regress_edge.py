@@ -43,6 +43,9 @@ def regress_edge(data:dict,
         If True training data is selected at random. If False, first sequential frames
         is used as training data. Remaining frames is test data.
     
+    replace:
+        Sampling done on with/without replacement.
+    
     seed:
         For reproducibility of experiements.
     
@@ -61,31 +64,30 @@ def regress_edge(data:dict,
 
     top_flat, bot_flat = create_flat_data(center,top,bot)
 
+    ensem_kws = {"trian_len": train_len,
+                 "n_trials": n_trials,
+                 "method": method,
+                 "seed": seed,
+                 "replace": replace,
+                 "randomize": randomize,
+                 "initial_guess": intial_guess,}
+
     for method in regression_methods:
         meth_results["top"][method] = ensem_regress_edge(
             X=top_flat[:,:2],
             Y=top_flat[:,2],
-            train_len=train_len,
-            n_trials=n_trials,
-            method=method,
-            seed=seed,
-            replace = replace,
-            randomize=randomize,
-            intial_guess=intial_guess
+            **ensem_kws,
         )
 
         meth_results["bot"][method] = ensem_regress_edge(
             X=bot_flat[:,:2],
             Y=bot_flat[:,2],
-            train_len=train_len,
-            n_trials=n_trials,
-            method=method,
-            seed=seed,
-            replace = replace,
-            randomize=randomize,
-            intial_guess=intial_guess
+            **ensem_kws
         )        
-
+    
+    return {
+        "accs": meth_results
+    }
 
 def create_sin_func(awgb):
     A, w, g, B = awgb
@@ -163,6 +165,7 @@ def bootstrap(X:Float2D,Y:Float1D,n_trials:int,method:str, seed:int,replace:bool
     n_trails: number of trials to run regression
     method: "lstsq" or "sinusoid"
     seed: Reproducability of experiments.
+    replace: Sampling with(out) replacement.
     intial_guess: tuple of intiial guess for optimization alg for "sinusoid" method.
 
     Returns:
@@ -193,7 +196,8 @@ def ensem_regress_edge(
         Y:Float1D,
         train_len:float, 
         n_trials:int,method:str, 
-        seed:int,replace:bool=True, 
+        seed:int,
+        replace:bool=True, 
         randomize:bool=True,
         intial_guess:Optional[tuple]=None
 )-> dict[str, Any]:
