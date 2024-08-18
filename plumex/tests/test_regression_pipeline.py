@@ -64,9 +64,9 @@ def test_split_into_train_val():
         ((1, 2, 3), "poly", np.array([2, 3, 18])),
         (
             (1, 2, 3),
-            "poly_inv",
-            # note the inverse form of quadratic
-            np.array([2, 3, np.sqrt((3 - 3) / 1 + 2**2 / (4 * 1)) - 2 / (2 * 1)]),
+            "poly_inv_pin",
+            # note the inverse form of quadratic, lower branch
+            np.array([2, 3, -np.sqrt((3 - 3) / 1 + 2**2 / (4 * 1)) - 2 / (2 * 1)]),
         ),
         (
             (1, 2, 3, 3, 2, 1),
@@ -74,7 +74,7 @@ def test_split_into_train_val():
             np.array([2, 2**2 + 2 * 2 + 3, 3 * 2**2 + 2 * 2 + 1]),
         ),
     ],
-    ids=["linear", "poly", "poly_inv", "poly_para"],
+    ids=["linear", "poly", "poly_inv_pin", "poly_para"],
 )
 def test_construct_f(coef, regression_method, expected):
     rxy = np.array([2, 3, 5])

@@ -39,7 +39,7 @@ LOGGER = getLogger(__name__)
 REGRESSION_METHODS = {
     "linear": ("y=ax + b", "ab"),
     "poly": ("y=ax^2 + bx + c", "abc"),
-    "poly_inv": ("x=ay^2 + by + c", "abc"),
+    "poly_inv_pin": ("x=ay^2 + by + c", "abc"),
     "poly_para": ("x=ar^2 + br + c;  y=dr^2 + er + f", "abcdef"),
 }
 
@@ -277,14 +277,14 @@ def _construct_rxy_f(
             y = f2(r)
             return np.stack([r, x, y], axis=-1)
 
-    elif regression_method == "poly_inv":
+    elif regression_method in ("poly_inv", "poly_inv_pin"):
         # if x = ay^2 + by + c, then y = sqrt((x-c)/a + b^2/(4a^2)) - b/(2a)
         a, b, c = coef
 
         def f(rxy):  # type: ignore
             r = rxy[..., 0]
             x = rxy[..., 1]
-            y = np.sqrt((x - c) / a + b**2 / (4 * a**2)) - b / (2 * a)
+            y = -np.sqrt((x - c) / a + b**2 / (4 * a**2)) - b / (2 * a)
             return np.stack([r, x, y], axis=-1)
 
     elif regression_method in ("linear", "poly"):
@@ -323,8 +323,8 @@ def get_coef_acc(
             accs[i] = np.nan
         else:
             accs[i] = -np.linalg.norm(
-                rxy_true_dc[:, 2] - rxy_pred_dc[:, 2]
-            ) / np.linalg.norm(rxy_true_dc[:, 2])
+                rxy_true_dc[:, 1:] - rxy_pred_dc[:, 1:]
+            ) / np.linalg.norm(rxy_true_dc[:, 1:])
 
     return accs
 
