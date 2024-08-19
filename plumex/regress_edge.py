@@ -56,7 +56,6 @@ def regress_edge(data:dict,
         "top" : {},
         "bot" : {},
     }
-    main_accs = []
     # set seed
     np.random.seed(seed=seed)
     center = cast(List[tuple[int,PlumePoints]],data["center"])
@@ -84,14 +83,20 @@ def regress_edge(data:dict,
             X=bot_flat[:,:2],
             Y=bot_flat[:,2],
             **ensem_kws
-        )        
-    if method == "sinusoid":
-        titles = ["A_opt", "w_opt", "g_opt", "B_opt"]
-    elif method == "linear":
-        titles = ["bias", "x1", "x2"]
-        
-    plot_hist(meth_results["top"][method]["coeffs"],titles = titles,big_title="top")
-    plot_hist(meth_results["bot"][method]["coeffs"],titles = titles,big_title="bottom")
+        )   
+
+        if method == "sinusoid":
+            titles = ["A_opt", "w_opt", "g_opt", "B_opt"]
+        elif method == "linear":
+            titles = ["bias", "x1", "x2"]
+            
+        plot_param_hist(meth_results["top"][method]["coeffs"],titles = titles,big_title="Top"+method+"Param History")
+        plot_param_hist(meth_results["bot"][method]["coeffs"],titles = titles,big_title="Bottom"+method+"Param History")
+
+
+    # hist of accuracies (testing mean params against all/some of boostrap trials)
+    # reproduce boostrap trials with seed
+    # plots of opt/selected params on unflattened space 
 
     return {
         "accs": meth_results
@@ -252,7 +257,7 @@ def ensem_regress_edge(
     }
 
 
-def plot_hist(param_hist, titles, big_title=None):
+def plot_param_hist(param_hist, titles, big_title=None):
     assert len(param_hist.T) == len(titles)
 
     num_cols = param_hist.shape[1]
@@ -275,3 +280,5 @@ def plot_hist(param_hist, titles, big_title=None):
     
     return fig
 
+def plot_acc_hist():
+    ...
