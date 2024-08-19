@@ -216,6 +216,7 @@ def ensem_regress_edge(
 )-> dict[str, Any]:
     assert len(X) == len(Y)
 
+    np.random.seed(seed=seed)
     idxs = np.arange(len(X))
     if randomize:
         np.random.shuffle(idxs)
@@ -282,3 +283,46 @@ def plot_param_hist(param_hist, titles, big_title=None):
 
 def plot_acc_hist():
     ...
+
+def _create_bs_idxs(num_idxs:int,num_trials:int,seed:int)->List:
+    idxs = []
+    np.random.seed(seed=seed)
+    for _ in range(num_trials):
+        idxs.append(np.random.choice(a=num_idxs,size=num_idxs,replace=True))
+    return idxs
+
+def _func_acc(func:Callable, X,Y,train_len,num_trials, seed:int,randomize=True)->tuple[Float2D,Float2D]:
+    """
+    return acc for boostrap trails for selected 
+    coef
+    """
+    # reproduce trials
+    assert len(X) == len(Y)
+
+    np.random.seed(seed=seed)
+    idxs = np.arange(len(X))
+    if randomize:
+        np.random.shuffle(idxs)
+    train_idx, val_idx = idxs[:int(train_len*len(X))], idxs[int(train_len*len(X)):]
+
+    X_train, X_val = X[train_idx], X[val_idx]
+    Y_train, Y_val = Y[train_idx], Y[val_idx]
+
+    idxs = _create_bs_idxs(num_idxs=len(X_train),num_trials=num_trials,seed=seed)
+
+    train_acc = []
+    val_acc = []
+    for idx in idxs:
+        Y_train_pred = func(X_train[idx][:,0],X_train[idx][:,1])
+        Y_val_pred = func(X_val[idx][:,0],X_val[idx][:,1])
+
+        Y_train_true = Y_train[idx]
+        Y_val_true = Y_val[idx]
+        
+        train_acc.append(1-np.linalg.norm(Y_train_pred-Y_train_true)/np.linalg.norm(Y_train_true))
+
+        val_acc.append(
+            1 - np.linalg.norm(Y_val_pred-Y_val_true)/np.linalg.norm(Y_val_true)
+        )
+
+    return np.array(train_acc), np.array(val_acc)
