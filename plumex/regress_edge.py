@@ -12,6 +12,7 @@ from .types import Float2D
 from .types import Float1D
 
 import numpy as np
+import matplotlib.pyplot as plt
 
 
 # run after video_digest
@@ -84,7 +85,14 @@ def regress_edge(data:dict,
             Y=bot_flat[:,2],
             **ensem_kws
         )        
-    
+    if method == "sinusoid":
+        titles = ["A_opt", "w_opt", "g_opt", "B_opt"]
+    elif method == "linear":
+        titles = ["bias", "x1", "x2"]
+        
+    plot_hist(meth_results["top"][method]["coeffs"],titles = titles,big_title="top")
+    plot_hist(meth_results["bot"][method]["coeffs"],titles = titles,big_title="bottom")
+
     return {
         "accs": meth_results
     }
@@ -243,4 +251,27 @@ def ensem_regress_edge(
         "coeffs": coef_bs
     }
 
+
+def plot_hist(param_hist, titles, big_title=None):
+    assert len(param_hist.T) == len(titles)
+
+    num_cols = param_hist.shape[1]
+    fig, axs = plt.subplots(1, num_cols, figsize=(15, 3))
+
+    param_opt = param_hist.mean(axis=0)
+
+    for i in range(num_cols):
+        axs[i].hist(param_hist[:, i], bins=50, density=True, alpha=0.8)
+        axs[i].set_title(titles[i])
+        axs[i].set_xlabel("val")
+        axs[i].set_ylabel("Frequency")
+        axs[i].axvline(param_opt[i], c="red", linestyle="--")
+
+    if big_title:
+        fig.suptitle(big_title, fontsize=16, y=1.05)
+    
+    plt.tight_layout()
+    plt.subplots_adjust(top=0.85)  
+    
+    return fig
 
