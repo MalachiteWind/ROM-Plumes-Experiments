@@ -13,6 +13,7 @@ from .types import Float1D
 import numpy as np
 import matplotlib.pyplot as plt
 
+from matplotlib.figure import Figure
 
 # run after video_digest
 def regress_edge(data:dict,
@@ -27,7 +28,7 @@ def regress_edge(data:dict,
     Arguments:
     ----------
     data: 
-        dictionary contain top, bottom, and center plumepoints
+        dictionary containing list of top, bottom, and center plumepoints
     
     train_len:
         float value raning from 0 to 1 indicating what percentage of data to 
@@ -111,7 +112,8 @@ def regress_edge(data:dict,
         )
         plot_acc_hist(top_train_acc,top_val_acc,title="Top Accuracy: "+method)
         plot_acc_hist(bot_train_acc,bot_val_acc,title="Bot Accuracy: "+method)
-
+    
+    # TO DO: plot fit on some unflattened frames.
     # hist of accuracies (testing mean params against all/some of boostrap trials)
     # reproduce boostrap trials with seed
     # plots of opt/selected params on unflattened space 
@@ -119,6 +121,27 @@ def regress_edge(data:dict,
     return {
         "accs": meth_results
     }
+
+def _visualize_fits(
+        data:dict,top_coef:Float1D, bot_coef:Float1D,n_frames:int = 9
+)->Figure:
+    center = cast(List[tuple[int,PlumePoints]],data["center"])
+    bot = cast(List[tuple[int,PlumePoints]],data["bottom"])
+    top = cast(List[tuple[int,PlumePoints]],data["top"])
+
+    plot_frameskip = len(center)/n_frames
+    frame_ids = [int(plot_frameskip*i) for i in range(n_frames)]
+
+    for idx in frame_ids:
+        frame_t = center[idx][0]
+        top_flat, bot_flat = create_flat_data([center[idx]],[top[idx]],[bot[idx]])
+        top_rad_dist = top_flat[:,1:]
+        bot_rad_dist = bot_flat[:,1:]
+        ...
+
+
+
+    ...
 
 def create_sin_func(awgb):
     A, w, g, B = awgb
@@ -277,7 +300,7 @@ def ensem_regress_edge(
     }
 
 
-def plot_param_hist(param_hist, titles, big_title=None):
+def plot_param_hist(param_hist, titles, big_title=None)->Figure:
     assert len(param_hist.T) == len(titles)
 
     num_cols = param_hist.shape[1]
@@ -300,7 +323,7 @@ def plot_param_hist(param_hist, titles, big_title=None):
     
     return fig
 
-def plot_acc_hist(train_acc, val_acc, title):
+def plot_acc_hist(train_acc, val_acc, title)->Figure:
     """
     Plots side-by-side histograms of training and validation accuracies.
 
