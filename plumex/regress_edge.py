@@ -5,7 +5,6 @@ from scipy.linalg import lstsq
 from typing import cast
 from typing import List
 from typing import Optional
-from typing import Callable
 from typing import Any
 from .types import PlumePoints
 from .types import Float2D
@@ -97,6 +96,7 @@ def regress_edge(data:dict,
         plot_param_hist(bot_coeffs,titles = titles,big_title="Bottom"+method+"Param History")
 
         ensem_kws.pop("initial_guess")
+
         top_train_acc, top_val_acc = _create_func_acc(
             top_coeffs.mean(axis=0),
             X=top_flat[:,:2],
@@ -109,10 +109,8 @@ def regress_edge(data:dict,
             Y=bot_flat[:,2],
             **ensem_kws
         )
-        
-
-
-
+        plot_acc_hist(top_train_acc,top_val_acc,title="Top "+method)
+        plot_acc_hist(bot_train_acc,bot_val_acc,title="Bot "+method)
 
     # hist of accuracies (testing mean params against all/some of boostrap trials)
     # reproduce boostrap trials with seed
@@ -302,8 +300,32 @@ def plot_param_hist(param_hist, titles, big_title=None):
     
     return fig
 
-def plot_acc_hist():
-    ...
+def plot_acc_hist(train_acc, val_acc, title):
+    """
+    Plots side-by-side histograms of training and validation accuracies.
+
+    Parameters:
+    ----------
+    train_acc: List or array of training accuracies from bootstrap trials.
+    val_acc: List or array of validation accuracies from bootstrap trials.
+    title: Title of the plot.
+    """
+    
+    fig, axes = plt.subplots(1, 2, figsize=(12, 6))
+    
+    axes[0].hist(train_acc, bins=20, color='skyblue', edgecolor='black', alpha=0.7)
+    axes[0].set_title('Training Accuracy', fontsize=14)
+    axes[0].set_xlabel('Accuracy')
+    axes[0].set_ylabel('Frequency')
+    
+    axes[1].hist(val_acc, bins=20, color='salmon', edgecolor='black', alpha=0.7)
+    axes[1].set_title('Validation Accuracy', fontsize=14)
+    axes[1].set_xlabel('Accuracy')
+    
+    fig.suptitle(title, fontsize=16)
+    plt.tight_layout(rect=[0, 0, 1, 0.95])
+    return fig
+
 
 def _create_bs_idxs(num_idxs:int,num_trials:int,seed:int)->List[Float1D]:
     idxs = []
