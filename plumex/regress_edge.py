@@ -109,8 +109,8 @@ def regress_edge(data:dict,
             Y=bot_flat[:,2],
             **ensem_kws
         )
-        plot_acc_hist(top_train_acc,top_val_acc,title="Top "+method)
-        plot_acc_hist(bot_train_acc,bot_val_acc,title="Bot "+method)
+        plot_acc_hist(top_train_acc,top_val_acc,title="Top Accuracy: "+method)
+        plot_acc_hist(bot_train_acc,bot_val_acc,title="Bot Accuracy: "+method)
 
     # hist of accuracies (testing mean params against all/some of boostrap trials)
     # reproduce boostrap trials with seed
