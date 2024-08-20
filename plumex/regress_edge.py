@@ -89,9 +89,29 @@ def regress_edge(data:dict,
             titles = ["A_opt", "w_opt", "g_opt", "B_opt"]
         elif method == "linear":
             titles = ["bias", "x1", "x2"]
-            
-        plot_param_hist(meth_results["top"][method]["coeffs"],titles = titles,big_title="Top"+method+"Param History")
-        plot_param_hist(meth_results["bot"][method]["coeffs"],titles = titles,big_title="Bottom"+method+"Param History")
+
+        top_coeffs = meth_results["top"][method]["coeffs"]
+        bot_coeffs = meth_results["bot"][method]["coeffs"]
+
+        plot_param_hist(top_coeffs,titles = titles,big_title="Top"+method+"Param History")
+        plot_param_hist(bot_coeffs,titles = titles,big_title="Bottom"+method+"Param History")
+
+        ensem_kws.pop("initial_guess")
+        top_train_acc, top_val_acc = _create_func_acc(
+            top_coeffs.mean(axis=0),
+            X=top_flat[:,:2],
+            Y=top_flat[:,2],
+            **ensem_kws
+        )
+        bot_train_acc, bot_val_acc = _create_func_acc(
+            bot_coeffs.mean(axis=0),
+            X=bot_flat[:,:2],
+            Y=bot_flat[:,2],
+            **ensem_kws
+        )
+        
+
+
 
 
     # hist of accuracies (testing mean params against all/some of boostrap trials)
@@ -208,7 +228,8 @@ def ensem_regress_edge(
         X:Float2D,
         Y:Float1D,
         train_len:float, 
-        n_trials:int,method:str, 
+        n_trials:int,
+        method:str, 
         seed:int,
         replace:bool=True, 
         randomize:bool=True,
@@ -284,20 +305,51 @@ def plot_param_hist(param_hist, titles, big_title=None):
 def plot_acc_hist():
     ...
 
-def _create_bs_idxs(num_idxs:int,num_trials:int,seed:int)->List:
+def _create_bs_idxs(num_idxs:int,num_trials:int,seed:int)->List[Float1D]:
     idxs = []
     np.random.seed(seed=seed)
     for _ in range(num_trials):
         idxs.append(np.random.choice(a=num_idxs,size=num_idxs,replace=True))
     return idxs
 
-def _func_acc(func:Callable, X,Y,train_len,num_trials, seed:int,randomize=True)->tuple[Float2D,Float2D]:
+def _create_func_acc(
+        coef: Float1D,
+        method:str,
+        X:Float2D,
+        Y:Float1D,
+        train_len:float,
+        n_trials:int,
+        seed:int,
+        randomize:bool=True,
+)->tuple[Float2D,Float2D]:
     """
-    return acc for boostrap trails for selected 
-    coef
+    Return accuracy for bootstrap trials for selected regression function.
+
+    Parameters:
+    ----------
+    coef: Coefficients of regression function to predict output of points.
+    method: regression method used:
+            `linear`, `sinusoid`
+    X: Independent data used to create train/validation sets.
+    Y: Dependent data used to create train/validation sets.
+    train_len: Percentage of data to be used for the training set.
+    n_trials: Number of datasets to create via bootstrap.
+    seed: Randomization seed for reproducibility of experiments.
+    randomize: Randomly select the training set if True. Otherwise, select the first 
+               `train_len` portion of the data for the training set if False.
+    
+    Returns:
+    --------
+    train_acc: History of training accuracies for bootstrap trials.
+    val_acc: History of validation accuracies for bootstrap trials.
     """
     # reproduce trials
     assert len(X) == len(Y)
+
+    if method=="linear":
+        regress_func = create_lin_func(coef)
+    elif method=="sinusoid":
+        regress_func = create_sin_func(coef)
 
     np.random.seed(seed=seed)
     idxs = np.arange(len(X))
@@ -308,18 +360,20 @@ def _func_acc(func:Callable, X,Y,train_len,num_trials, seed:int,randomize=True)-
     X_train, X_val = X[train_idx], X[val_idx]
     Y_train, Y_val = Y[train_idx], Y[val_idx]
 
-    idxs = _create_bs_idxs(num_idxs=len(X_train),num_trials=num_trials,seed=seed)
+    idxs = _create_bs_idxs(num_idxs=len(X_train),num_trials=n_trials,seed=seed)
 
     train_acc = []
     val_acc = []
     for idx in idxs:
-        Y_train_pred = func(X_train[idx][:,0],X_train[idx][:,1])
-        Y_val_pred = func(X_val[idx][:,0],X_val[idx][:,1])
+        Y_train_pred = regress_func(X_train[idx][:,0],X_train[idx][:,1])
+        Y_val_pred = regress_func(X_val[idx][:,0],X_val[idx][:,1])
 
         Y_train_true = Y_train[idx]
         Y_val_true = Y_val[idx]
         
-        train_acc.append(1-np.linalg.norm(Y_train_pred-Y_train_true)/np.linalg.norm(Y_train_true))
+        train_acc.append(
+            1-np.linalg.norm(Y_train_pred-Y_train_true)/np.linalg.norm(Y_train_true)
+        )
 
         val_acc.append(
             1 - np.linalg.norm(Y_val_pred-Y_val_true)/np.linalg.norm(Y_val_true)
