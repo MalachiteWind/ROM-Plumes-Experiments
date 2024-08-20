@@ -22,7 +22,8 @@ def regress_edge(data:dict,
                  intial_guess:tuple[float,float,float,float],
                  randomize: bool = True,
                  replace: bool = True,
-                 seed: int = 1234
+                 seed: int = 1234,
+                 n_frames: int = 9
 ):
     """
     Arguments:
@@ -49,6 +50,9 @@ def regress_edge(data:dict,
     
     seed:
         For reproducibility of experiements.
+    
+    n_frames:
+        Number of frames to plot on.
     
     """
     regression_methods = ("linear", "sinusoid")
@@ -113,35 +117,104 @@ def regress_edge(data:dict,
         plot_acc_hist(top_train_acc,top_val_acc,title="Top Accuracy: "+method)
         plot_acc_hist(bot_train_acc,bot_val_acc,title="Bot Accuracy: "+method)
     
-    # TO DO: plot fit on some unflattened frames.
-    # hist of accuracies (testing mean params against all/some of boostrap trials)
-    # reproduce boostrap trials with seed
-    # plots of opt/selected params on unflattened space 
+
+    top_coef_lin = meth_results["top"]["linear"]["coeffs"].mean(axis=0)
+    top_coef_sin = meth_results["top"]["sinusoid"]["coeffs"].mean(axis=0)
+    bot_coef_lin = meth_results["bot"]["linear"]["coeffs"].mean(axis=0)
+    bot_coef_sin = meth_results["bot"]["sinusoid"]["coeffs"].mean(axis=0)
+
+    _visualize_fits(data=data,
+                    top_coef_lin=top_coef_lin,
+                    top_coef_sin=top_coef_sin,
+                    bot_coef_lin=bot_coef_lin,
+                    bot_coef_sin=bot_coef_sin,
+                    n_frames = n_frames)
 
     return {
         "accs": meth_results
     }
 
 def _visualize_fits(
-        data:dict,top_coef:Float1D, bot_coef:Float1D,n_frames:int = 9
-)->Figure:
-    center = cast(List[tuple[int,PlumePoints]],data["center"])
-    bot = cast(List[tuple[int,PlumePoints]],data["bottom"])
-    top = cast(List[tuple[int,PlumePoints]],data["top"])
+    data: dict,
+    top_coef_lin: Float1D,
+    top_coef_sin: Float1D,
+    bot_coef_lin: Float1D,
+    bot_coef_sin: Float1D,
+    n_frames: int = 9
+) -> Figure:
+    """
+    Visualizes fits of top and bottom radial distributions across multiple frames in a grid of subplots.
 
-    plot_frameskip = len(center)/n_frames
-    frame_ids = [int(plot_frameskip*i) for i in range(n_frames)]
+    Parameters:
+    ----------
+    data: Dictionary containing "center", "top", and "bottom" data for each frame.
+    top_coef_lin: Coefficients for the top linear fit.
+    top_coef_sin: Coefficients for the top sinusoidal fit.
+    bot_coef_lin: Coefficients for the bottom linear fit.
+    bot_coef_sin: Coefficients for the bottom sinusoidal fit.
+    n_frames: Number of frames to visualize.
 
-    for idx in frame_ids:
-        frame_t = center[idx][0]
-        top_flat, bot_flat = create_flat_data([center[idx]],[top[idx]],[bot[idx]])
-        top_rad_dist = top_flat[:,1:]
-        bot_rad_dist = bot_flat[:,1:]
-        ...
+    Returns:
+    --------
+    fig: The matplotlib figure object.
+    """
 
+    center = cast(List[tuple[int, PlumePoints]], data["center"])
+    top = cast(List[tuple[int, PlumePoints]], data["top"])
+    bot = cast(List[tuple[int, PlumePoints]], data["bottom"])
 
+    # Define the linear and sinusoidal functions using the coefficients
+    top_lin_func = create_lin_func(top_coef_lin)
+    top_sin_func = create_sin_func(top_coef_sin)
+    bot_lin_func = create_lin_func(bot_coef_lin)
+    bot_sin_func = create_sin_func(bot_coef_sin)
 
-    ...
+    plot_frameskip = len(center) / n_frames
+    frame_ids = [int(plot_frameskip * i) for i in range(n_frames)]
+
+    grid_size = int(np.ceil(np.sqrt(n_frames)))
+    
+    fig, axes = plt.subplots(grid_size, grid_size, figsize=(15, 15))
+    axes = axes.flatten()  
+
+    for i, idx in enumerate(frame_ids):
+        ax = axes[i]
+        
+        frame_t = center[idx][0] 
+        top_flat, bot_flat = create_flat_data([center[idx]], [top[idx]], [bot[idx]])
+
+        top_rad_dist = top_flat[:, 1:]
+        bot_rad_dist = bot_flat[:, 1:]
+
+        r_max = np.max([np.max(top_rad_dist[:, 0]), np.max(bot_rad_dist[:, 0])])
+        
+        r_lin = np.linspace(0, r_max, 101)
+        t_lin = np.array([frame_t for _ in range(len(r_lin))])
+
+        top_lin_vals = top_lin_func(t_lin, r_lin)
+        top_sin_vals = top_sin_func(t_lin, r_lin)
+        ax.plot(r_lin, top_lin_vals, color='blue', linestyle='--', label='Top Linear Fit')
+        ax.plot(r_lin, top_sin_vals, color='cyan', linestyle=':', label='Top Sin Fit')
+
+        bot_lin_vals = bot_lin_func(t_lin, r_lin)
+        bot_sin_vals = bot_sin_func(t_lin, r_lin)
+        ax.plot(r_lin, -bot_lin_vals, color='red', linestyle='--', label='Bottom Linear Fit')
+        ax.plot(r_lin, -bot_sin_vals, color='orange', linestyle=':', label='Bottom Sin Fit')
+
+        ax.scatter(top_rad_dist[:, 0], top_rad_dist[:, 1], color='blue', alpha=0.6)
+        ax.scatter(bot_rad_dist[:, 0], -bot_rad_dist[:, 1], color='red', alpha=0.6,)
+
+        ax.set_title(f'Time {frame_t}')
+        ax.axhline(0, color='black', linewidth=0.8) 
+        ax.grid(True)
+    
+    # Hide any unused subplots
+    for j in range(i + 1, len(axes)):
+        fig.delaxes(axes[j])
+
+    fig.tight_layout()
+
+    return fig
 
 def create_sin_func(awgb):
     A, w, g, B = awgb
