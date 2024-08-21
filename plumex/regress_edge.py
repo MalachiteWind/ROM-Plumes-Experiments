@@ -19,7 +19,7 @@ from matplotlib.figure import Figure
 def regress_edge(data:dict,
                  train_len: float,
                  n_trials: int,
-                 intial_guess:tuple[float,float,float,float],
+                 initial_guess:tuple[float,float,float,float],
                  randomize: bool = True,
                  replace: bool = True,
                  seed: int = 1234,
@@ -74,7 +74,7 @@ def regress_edge(data:dict,
                  "seed": seed,
                  "replace": replace,
                  "randomize": randomize,
-                 "initial_guess": intial_guess,}
+                 "initial_guess": initial_guess,}
 
     for method in regression_methods:
         meth_results["top"][method] = ensem_regress_edge(
@@ -235,7 +235,6 @@ def create_flat_data(
     assert len(center) == len(top)
     assert len(top) == len(bot)
 
-    ## Turn into func: create_flat_data
     bot_flattened = []
     top_flattened = []
     for (t,center_pp), (t,bot_pp), (t,top_pp) in zip(center, bot, top):
@@ -279,9 +278,7 @@ def do_lstsq_regression(X: Float2D, Y: Float1D) -> Float1D:
     return coef
 
 
-n_trials=1000
-
-def bootstrap(X:Float2D,Y:Float1D,n_trials:int,method:str, seed:int,replace:bool=True,intial_guess:Optional[tuple]=None):
+def bootstrap(X:Float2D,Y:Float1D,n_trials:int,method:str, seed:int,replace:bool=True,initial_guess:Optional[tuple]=None):
     """
     Apply ensemble bootstrap to data. 
 
@@ -293,7 +290,7 @@ def bootstrap(X:Float2D,Y:Float1D,n_trials:int,method:str, seed:int,replace:bool
     method: "lstsq" or "sinusoid"
     seed: Reproducability of experiments.
     replace: Sampling with(out) replacement.
-    intial_guess: tuple of intiial guess for optimization alg for "sinusoid" method.
+    initial_guess: tuple of intiial guess for optimization alg for "sinusoid" method.
 
     Returns:
     --------
@@ -309,7 +306,7 @@ def bootstrap(X:Float2D,Y:Float1D,n_trials:int,method:str, seed:int,replace:bool
         Y_bootstrap = Y[idxs]
 
         if method == "sinusoid":
-            coef = do_sinusoid_regression(X_bootstrap,Y_bootstrap, initial_guess=intial_guess)
+            coef = do_sinusoid_regression(X_bootstrap,Y_bootstrap, initial_guess=initial_guess)
         elif method == "lstsq":
             coef = do_lstsq_regression(X_bootstrap, Y_bootstrap)
         coef_data.append(coef)
@@ -327,8 +324,31 @@ def ensem_regress_edge(
         seed:int,
         replace:bool=True, 
         randomize:bool=True,
-        intial_guess:Optional[tuple]=None
+        initial_guess:Optional[tuple]=None
 )-> dict[str, Any]:
+    """
+    Apply bootstrap learning to a data set based on train/val split.
+
+    Parameters:
+    -----------
+    X: Features/data to learn on.
+    Y: Target features/data.
+    train_len: Percentage of data to be used for training/bootstrapping.
+    n_trials: Number of bootstrap trials to run.
+    method: Learning method.
+            `linear`: Multivariate linear regression.
+            `sinusoid`: Growing sinusoid y(x,t) = A*sin(w*x - g*t) + B*x.
+    seed: Randomization seed for experiment reproducibility.
+    replace: Sampling with/without replacement.
+    randomize: Training set is selected randomly if True. If False,
+               first consecutive points are used.
+    initial_guess: Initial guess for the optimization problem for method=`sinusoid`.
+
+    Returns:
+    -------
+    dict: Dictionary of different accuracies.
+    """
+
     assert len(X) == len(Y)
 
     np.random.seed(seed=seed)
@@ -345,7 +365,7 @@ def ensem_regress_edge(
         Y=Y_train,
         n_trials=n_trials,
         method=method,
-        intial_guess=intial_guess,
+        initial_guess=initial_guess,
         seed=seed,
         replace=replace
     )
