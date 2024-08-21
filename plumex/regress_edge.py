@@ -1,19 +1,18 @@
-from ara_plumes.models import flatten_edge_points
-from scipy.optimize import curve_fit
-from scipy.linalg import lstsq
-
 from typing import cast
 from typing import List
 from typing import Optional
 from typing import Any
-from .types import PlumePoints
-from .types import Float2D
-from .types import Float1D
 
 import numpy as np
 import matplotlib.pyplot as plt
-
+from scipy.optimize import curve_fit
+from scipy.linalg import lstsq
 from matplotlib.figure import Figure
+
+from .types import PlumePoints
+from .types import Float2D
+from .types import Float1D
+from ara_plumes.models import flatten_edge_points
 
 
 # run after video_digest
