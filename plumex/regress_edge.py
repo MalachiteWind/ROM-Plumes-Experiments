@@ -15,6 +15,7 @@ import matplotlib.pyplot as plt
 
 from matplotlib.figure import Figure
 
+
 # run after video_digest
 def regress_edge(data:dict,
                  train_len: float,
@@ -33,7 +34,7 @@ def regress_edge(data:dict,
     
     train_len:
         float value raning from 0 to 1 indicating what percentage of data to 
-        to be used for training. Remaing is used for test set. 
+        to be used for training. Remaining is used for test set. 
     
     n_trials:
         number of trials to run.
@@ -70,7 +71,6 @@ def regress_edge(data:dict,
 
     ensem_kws = {"trian_len": train_len,
                  "n_trials": n_trials,
-                 "method": method,
                  "seed": seed,
                  "replace": replace,
                  "randomize": randomize,
@@ -80,6 +80,7 @@ def regress_edge(data:dict,
         meth_results["top"][method] = ensem_regress_edge(
             X=top_flat[:,:2],
             Y=top_flat[:,2],
+            method=method,
             **ensem_kws,
         )
 
@@ -106,12 +107,14 @@ def regress_edge(data:dict,
             top_coeffs.mean(axis=0),
             X=top_flat[:,:2],
             Y=top_flat[:,2],
+            method=method,
             **ensem_kws
         )
         bot_train_acc, bot_val_acc = _create_func_acc(
             bot_coeffs.mean(axis=0),
             X=bot_flat[:,:2],
             Y=bot_flat[:,2],
+            method=method,
             **ensem_kws
         )
         plot_acc_hist(top_train_acc,top_val_acc,title="Top Accuracy: "+method)
@@ -143,7 +146,8 @@ def _visualize_fits(
     n_frames: int = 9
 ) -> Figure:
     """
-    Visualizes fits of top and bottom radial distributions across multiple frames in a grid of subplots.
+    Visualizes fits of top and bottom radial distributions across multiple
+    frames in a grid of subplots.
 
     Parameters:
     ----------
@@ -288,9 +292,9 @@ def bootstrap(X:Float2D,Y:Float1D,n_trials:int,method:str, seed:int,replace:bool
     Y: dependent data.
     n_trails: number of trials to run regression
     method: "lstsq" or "sinusoid"
-    seed: Reproducability of experiments.
+    seed: Reproducibility of experiments.
     replace: Sampling with(out) replacement.
-    initial_guess: tuple of intiial guess for optimization alg for "sinusoid" method.
+    initial_guess: tuple of initial guess for optimization alg for "sinusoid" method.
 
     Returns:
     --------
