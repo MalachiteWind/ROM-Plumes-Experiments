@@ -193,3 +193,10 @@ hankel_lookup = {
 }
 
 regress_lookup = {"r_split": {"default": 50 * 15}}
+
+regress_edge_lookup = {
+    "train_len": {"default": 0.8},
+    "n_trials": {"default": 1000},
+    "initial_guess": {"default": (1,1,1,1)}
+
+}
