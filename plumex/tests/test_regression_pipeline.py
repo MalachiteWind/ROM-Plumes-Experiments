@@ -1,12 +1,12 @@
 import numpy as np
 
+from ..regress_edge import bootstrap
+from ..regress_edge import do_lstsq_regression
+from ..regress_edge import do_sinusoid_regression
 from ..regression_pipeline import _construct_f
 from ..regression_pipeline import _get_true_pred
 from ..regression_pipeline import _split_into_train_val
 from ..regression_pipeline import get_coef_acc
-from ..regress_edge import do_sinusoid_regression
-from ..regress_edge import do_lstsq_regression
-from ..regress_edge import bootstrap
 
 
 def test_get_coef_acc():
@@ -127,6 +127,7 @@ def test_get_true_pred():
     np.testing.assert_array_almost_equal(expected, result_true)
     np.testing.assert_array_almost_equal(expected, result_pred)
 
+
 def test_do_sinusoid_regression():
     expected = (1, 2, 3, 4)
     a, w, g, b = expected
@@ -145,36 +146,34 @@ def test_do_sinusoid_regression():
 
     np.testing.assert_array_almost_equal(expected, result)
 
+
 def test_do_lstsq_regression():
-    def f(x1,x2):
-        return 1 + 2*x1+3*x2
-    
-    x = np.linspace(0,1,101)
-    xx1,xx2 = np.meshgrid(x,x)
-    Y = f(xx1,xx2).reshape(-1)
-    X = np.vstack((xx1.reshape(-1),xx2.reshape(-1))).T
+    def f(x1, x2):
+        return 1 + 2 * x1 + 3 * x2
+
+    x = np.linspace(0, 1, 101)
+    xx1, xx2 = np.meshgrid(x, x)
+    Y = f(xx1, xx2).reshape(-1)
+    X = np.vstack((xx1.reshape(-1), xx2.reshape(-1))).T
 
     step = 25
 
-    result = do_lstsq_regression(X[::step],Y[::step])
-    expected = np.array([1,2,3])
+    result = do_lstsq_regression(X[::step], Y[::step])
+    expected = np.array([1, 2, 3])
 
-    np.testing.assert_array_almost_equal(expected,result)
+    np.testing.assert_array_almost_equal(expected, result)
 
 
 def test_bootstrap_lstsq():
-    def f(x1,x2):
-        return 1 + 2*x1+3*x2
-    xx,yy = np.meshgrid(np.linspace(0,1,101),np.linspace(0,1,101))
-    X = np.vstack((xx.reshape(-1),yy.reshape(-1))).T
-    Y = f(xx,yy).reshape(-1)
+    def f(x1, x2):
+        return 1 + 2 * x1 + 3 * x2
+
+    xx, yy = np.meshgrid(np.linspace(0, 1, 101), np.linspace(0, 1, 101))
+    X = np.vstack((xx.reshape(-1), yy.reshape(-1))).T
+    Y = f(xx, yy).reshape(-1)
 
     # np.random.seed(1234)
-    ensem_result = bootstrap(X,Y,n_trials=1000,method='lstsq',seed=1234)
-    result = np.mean(ensem_result,axis=0)
-    expected = (1,2,3)
-    np.testing.assert_array_almost_equal(expected,result)
-    
-
-
-    
+    ensem_result = bootstrap(X, Y, n_trials=1000, method="lstsq", seed=1234)
+    result = np.mean(ensem_result, axis=0)
+    expected = (1, 2, 3)
+    np.testing.assert_array_almost_equal(expected, result)
