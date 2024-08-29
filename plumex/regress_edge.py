@@ -77,7 +77,8 @@ def regress_edge(
         "randomize": randomize,
         "initial_guess": initial_guess,
     }
-
+    top_accs = []
+    bot_accs = []
     for method in regression_methods:
         meth_results["top"][method] = ensem_regress_edge(
             X=top_flat[:, :2],
@@ -121,6 +122,8 @@ def regress_edge(
             method=method,
             **ensem_kws,
         )
+        top_accs.append((method,top_val_acc))
+        bot_accs.append((method,bot_val_acc))
         plot_acc_hist(top_train_acc, top_val_acc, title="Top Accuracy: " + method)
         plot_acc_hist(bot_train_acc, bot_val_acc, title="Bot Accuracy: " + method)
 
@@ -137,8 +140,11 @@ def regress_edge(
         bot_coef_sin=bot_coef_sin,
         n_frames=n_frames,
     )
-
-    return {"accs": meth_results}
+    top_accs.sort(key=lambda tup: tup[1])
+    bot_accs.sort(key=lambda tup: tup[1])
+    best_top_method = top_accs[-1][0]
+    best_bot_method = bot_accs[-1][0]
+    return {"main": (best_top_method,best_bot_method),"accs": meth_results}
 
 
 def _visualize_fits(
