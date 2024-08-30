@@ -70,7 +70,7 @@ def regress_edge(
     top_flat, bot_flat = create_flat_data(center, top, bot)
 
     ensem_kws = {
-        "trian_len": train_len,
+        "train_len": train_len,
         "n_trials": n_trials,
         "seed": seed,
         "replace": replace,
