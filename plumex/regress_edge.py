@@ -56,13 +56,13 @@ def regress_edge(
         Number of frames to plot on.
 
     """
+    rng = np.random.default_rng(seed=seed)
+
     regression_methods = ("linear", "sinusoid")
     meth_results = {
         "top": {},
         "bot": {},
     }
-    # set seed
-    np.random.seed(seed=seed)
     center = cast(List[tuple[int, PlumePoints]], data["center"])
     bot = cast(List[tuple[int, PlumePoints]], data["bottom"])
     top = cast(List[tuple[int, PlumePoints]], data["top"])
@@ -108,22 +108,24 @@ def regress_edge(
 
         ensem_kws.pop("initial_guess")
 
-        top_train_acc, top_val_acc = _create_func_acc(
+        top_bags_data = meth_results["top"][method].pop("n_bags_data")
+        bot_bags_data = meth_results["bot"][method].pop("n_bags_data")
+
+        top_train_acc = _generate_train_acc(
             top_coeffs.mean(axis=0),
-            X=top_flat[:, :2],
-            Y=top_flat[:, 2],
             method=method,
-            **ensem_kws,
+            n_bags_data=top_bags_data,
         )
-        bot_train_acc, bot_val_acc = _create_func_acc(
+
+        bot_train_acc = _generate_train_acc(
             bot_coeffs.mean(axis=0),
-            X=bot_flat[:, :2],
-            Y=bot_flat[:, 2],
             method=method,
-            **ensem_kws,
+            n_bags_data=bot_bags_data,
         )
-        top_accs.append((method, top_val_acc))
-        bot_accs.append((method, bot_val_acc))
+
+        top_accs.append((method, meth_results["top"][method]["val_acc"]))
+        bot_accs.append((method, meth_results["bot"][method]["val_acc"]))
+        # remove val acc - it should not be a histogram
         plot_acc_hist(top_train_acc, top_val_acc, title="Top Accuracy: " + method)
         plot_acc_hist(bot_train_acc, bot_val_acc, title="Bot Accuracy: " + method)
 
@@ -304,7 +306,7 @@ def do_sinusoid_regression(
 
 
 def do_lstsq_regression(X: Float2D, Y: Float1D) -> Float1D:
-    "Calculate multivariate lienar regression. Bias term is first returned term"
+    "Calculate multivariate linear regression. Bias term is first returned term"
     X = np.hstack([np.ones((X.shape[0], 1)), X])
     coef, _, _, _ = lstsq(X, Y)
     return coef
@@ -335,15 +337,18 @@ def bootstrap(
     Returns:
     --------
     coef: np.ndarray of learned regression coefficients.
+    n_bags_data: Bootstrap datasets used for regression
 
     """
     np.random.seed(seed=seed)
     coef_data = []
+    n_bags_data = []
     for _ in range(n_trials):
 
         idxs = np.random.choice(a=len(X), size=len(X), replace=replace)
         X_bootstrap = X[idxs]
         Y_bootstrap = Y[idxs]
+        n_bags_data.append((X_bootstrap,Y_bootstrap))
 
         if method == "sinusoid":
             coef = do_sinusoid_regression(
@@ -352,8 +357,8 @@ def bootstrap(
         elif method == "lstsq":
             coef = do_lstsq_regression(X_bootstrap, Y_bootstrap)
         coef_data.append(coef)
-
-    return np.array(coef_data)
+    # return n_bags_data as well 
+    return np.array(coef_data), n_bags_data
 
 
 def ensem_regress_edge(
@@ -404,7 +409,7 @@ def ensem_regress_edge(
     X_train, X_val = X[train_idx], X[val_idx]
     Y_train, Y_val = Y[train_idx], Y[val_idx]
 
-    coef_bs = bootstrap(
+    coef_bs, n_bags_data = bootstrap(
         X=X_train,
         Y=Y_train,
         n_trials=n_trials,
@@ -429,7 +434,7 @@ def ensem_regress_edge(
     Y_val_pred = coef_func(X_val[:, 0], X_val[:, 1])
     val_acc = np.linalg.norm(Y_val_pred - Y_val) / np.linalg.norm(Y_val)
 
-    return {"val_acc": val_acc, "train_acc": train_acc, "coeffs": coef_bs}
+    return {"val_acc": val_acc, "train_acc": train_acc, "coeffs": coef_bs, "n_bags_data": n_bags_data}
 
 
 def plot_param_hist(param_hist, titles, big_title=None) -> Figure:
@@ -490,76 +495,35 @@ def _create_bs_idxs(num_idxs: int, num_trials: int, seed: int) -> List[Float1D]:
         idxs.append(np.random.choice(a=num_idxs, size=num_idxs, replace=True))
     return idxs
 
-
-def _create_func_acc(
+def _generate_train_acc(
     coef: Float1D,
     method: str,
-    X: Float2D,
-    Y: Float1D,
-    train_len: float,
-    n_trials: int,
-    seed: int,
-    randomize: bool = True,
-) -> tuple[Float2D, Float2D]:
+    n_bags_data: List[tuple[Float2D,Float1D]],
+) -> Float1D:
     """
-    Return accuracy for bootstrap trials for selected regression function.
+    Return training accuracy for bootstrap trials for selected regression
+    function coef.
 
     Parameters:
     ----------
     coef: Coefficients of regression function to predict output of points.
     method: regression method used:
             `linear`, `sinusoid`
-    X: Independent data used to create train/validation sets.
-    Y: Dependent data used to create train/validation sets.
-    train_len: Percentage of data to be used for the training set.
-    n_trials: Number of datasets to create via bootstrap.
-    seed: Randomization seed for reproducibility of experiments.
-    randomize: Randomly select the training set if True. Otherwise, select the first
-               `train_len` portion of the data for the training set if False.
+    n_bags_data: bootstrap data used to train model.
 
     Returns:
-    --------
-    train_acc: History of training accuracies for bootstrap trials.
-    val_acc: History of validation accuracies for bootstrap trials.
-    """
-    # reproduce trials
-    assert len(X) == len(Y)
+    -------
+    train_acc: data  
 
+    """
     if method == "linear":
         regress_func = create_lin_func(coef)
     elif method == "sinusoid":
         regress_func = create_sin_func(coef)
-
-    np.random.seed(seed=seed)
-    idxs = np.arange(len(X))
-    if randomize:
-        np.random.shuffle(idxs)
-    train_idx, val_idx = (
-        idxs[: int(train_len * len(X))],
-        idxs[int(train_len * len(X)) :],
-    )
-
-    X_train, X_val = X[train_idx], X[val_idx]
-    Y_train, Y_val = Y[train_idx], Y[val_idx]
-
-    idxs = _create_bs_idxs(num_idxs=len(X_train), num_trials=n_trials, seed=seed)
-
+    
     train_acc = []
-    val_acc = []
-    for idx in idxs:
-        Y_train_pred = regress_func(X_train[idx][:, 0], X_train[idx][:, 1])
-        Y_val_pred = regress_func(X_val[idx][:, 0], X_val[idx][:, 1])
+    for X_train, Y_train in n_bags_data:
+        Y_pred = regress_func(X_train[:,0], X_train[:,1])
+        train_acc.append(1 - np.linalg.norm(Y_train - Y_pred)/np.linalg.norm(Y_train))
 
-        Y_train_true = Y_train[idx]
-        Y_val_true = Y_val[idx]
-
-        train_acc.append(
-            1
-            - np.linalg.norm(Y_train_pred - Y_train_true) / np.linalg.norm(Y_train_true)
-        )
-
-        val_acc.append(
-            1 - np.linalg.norm(Y_val_pred - Y_val_true) / np.linalg.norm(Y_val_true)
-        )
-
-    return np.array(train_acc), np.array(val_acc)
+    return np.array(train_acc)
