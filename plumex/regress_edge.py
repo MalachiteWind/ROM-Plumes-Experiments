@@ -56,7 +56,6 @@ def regress_edge(
         Number of frames to plot on.
 
     """
-    rng = np.random.default_rng(seed=seed)
 
     regression_methods = ("linear", "sinusoid")
     meth_results = {
@@ -125,7 +124,7 @@ def regress_edge(
 
         top_accs.append((method, meth_results["top"][method]["val_acc"]))
         bot_accs.append((method, meth_results["bot"][method]["val_acc"]))
-        # remove val acc - it should not be a histogram
+
         plot_acc_hist(top_train_acc, title="Top Accuracy: " + method)
         plot_acc_hist(bot_train_acc, title="Bot Accuracy: " + method)
 
@@ -340,15 +339,15 @@ def bootstrap(
     n_bags_data: Bootstrap datasets used for regression
 
     """
-    np.random.seed(seed=seed)
+    rng = np.random.default_rng(seed=seed)
     coef_data = []
     n_bags_data = []
     for _ in range(n_trials):
 
-        idxs = np.random.choice(a=len(X), size=len(X), replace=replace)
+        idxs = rng.random.choice(a=len(X), size=len(X), replace=replace)
         X_bootstrap = X[idxs]
         Y_bootstrap = Y[idxs]
-        n_bags_data.append((X_bootstrap,Y_bootstrap))
+        n_bags_data.append((X_bootstrap, Y_bootstrap))
 
         if method == "sinusoid":
             coef = do_sinusoid_regression(
@@ -357,7 +356,7 @@ def bootstrap(
         elif method == "lstsq":
             coef = do_lstsq_regression(X_bootstrap, Y_bootstrap)
         coef_data.append(coef)
-    # return n_bags_data as well 
+
     return np.array(coef_data), n_bags_data
 
 
@@ -397,10 +396,10 @@ def ensem_regress_edge(
 
     assert len(X) == len(Y)
 
-    np.random.seed(seed=seed)
+    rng = np.random.default_rng(seed=seed)
     idxs = np.arange(len(X))
     if randomize:
-        np.random.shuffle(idxs)
+        rng.random.shuffle(idxs)
     train_idx, val_idx = (
         idxs[: int(train_len * len(X))],
         idxs[int(train_len * len(X)) :],
@@ -434,7 +433,12 @@ def ensem_regress_edge(
     Y_val_pred = coef_func(X_val[:, 0], X_val[:, 1])
     val_acc = np.linalg.norm(Y_val_pred - Y_val) / np.linalg.norm(Y_val)
 
-    return {"val_acc": val_acc, "train_acc": train_acc, "coeffs": coef_bs, "n_bags_data": n_bags_data}
+    return {
+        "val_acc": val_acc,
+        "train_acc": train_acc,
+        "coeffs": coef_bs,
+        "n_bags_data": n_bags_data,
+    }
 
 
 def plot_param_hist(param_hist, titles, big_title=None) -> Figure:
@@ -460,6 +464,7 @@ def plot_param_hist(param_hist, titles, big_title=None) -> Figure:
 
     return fig
 
+
 def plot_acc_hist(train_acc, title) -> Figure:
     """
     Plots a histogram of training accuracies.
@@ -482,18 +487,10 @@ def plot_acc_hist(train_acc, title) -> Figure:
     return fig
 
 
-
-def _create_bs_idxs(num_idxs: int, num_trials: int, seed: int) -> List[Float1D]:
-    idxs = []
-    np.random.seed(seed=seed)
-    for _ in range(num_trials):
-        idxs.append(np.random.choice(a=num_idxs, size=num_idxs, replace=True))
-    return idxs
-
 def _generate_train_acc(
     coef: Float1D,
     method: str,
-    n_bags_data: List[tuple[Float2D,Float1D]],
+    n_bags_data: List[tuple[Float2D, Float1D]],
 ) -> Float1D:
     """
     Return training accuracy for bootstrap trials for selected regression
@@ -508,17 +505,17 @@ def _generate_train_acc(
 
     Returns:
     -------
-    train_acc: data  
+    train_acc: data
 
     """
     if method == "linear":
         regress_func = create_lin_func(coef)
     elif method == "sinusoid":
         regress_func = create_sin_func(coef)
-    
+
     train_acc = []
     for X_train, Y_train in n_bags_data:
-        Y_pred = regress_func(X_train[:,0], X_train[:,1])
-        train_acc.append(1 - np.linalg.norm(Y_train - Y_pred)/np.linalg.norm(Y_train))
+        Y_pred = regress_func(X_train[:, 0], X_train[:, 1])
+        train_acc.append(1 - np.linalg.norm(Y_train - Y_pred) / np.linalg.norm(Y_train))
 
     return np.array(train_acc)
