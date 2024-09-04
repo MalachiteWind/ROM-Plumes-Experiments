@@ -126,8 +126,8 @@ def regress_edge(
         top_accs.append((method, meth_results["top"][method]["val_acc"]))
         bot_accs.append((method, meth_results["bot"][method]["val_acc"]))
         # remove val acc - it should not be a histogram
-        plot_acc_hist(top_train_acc, top_val_acc, title="Top Accuracy: " + method)
-        plot_acc_hist(bot_train_acc, bot_val_acc, title="Bot Accuracy: " + method)
+        plot_acc_hist(top_train_acc, title="Top Accuracy: " + method)
+        plot_acc_hist(bot_train_acc, title="Bot Accuracy: " + method)
 
     top_coef_lin = meth_results["top"]["linear"]["coeffs"].mean(axis=0)
     top_coef_sin = meth_results["top"]["sinusoid"]["coeffs"].mean(axis=0)
@@ -460,32 +460,27 @@ def plot_param_hist(param_hist, titles, big_title=None) -> Figure:
 
     return fig
 
-
-def plot_acc_hist(train_acc, val_acc, title) -> Figure:
+def plot_acc_hist(train_acc, title) -> Figure:
     """
-    Plots side-by-side histograms of training and validation accuracies.
+    Plots a histogram of training accuracies.
 
     Parameters:
     ----------
     train_acc: List or array of training accuracies from bootstrap trials.
-    val_acc: List or array of validation accuracies from bootstrap trials.
     title: Title of the plot.
     """
 
-    fig, axes = plt.subplots(1, 2, figsize=(12, 6))
+    fig, ax = plt.subplots(figsize=(6, 6))
 
-    axes[0].hist(train_acc, bins=20, color="skyblue", edgecolor="black", alpha=0.7)
-    axes[0].set_title("Training Accuracy", fontsize=14)
-    axes[0].set_xlabel("Accuracy")
-    axes[0].set_ylabel("Frequency")
-
-    axes[1].hist(val_acc, bins=20, color="salmon", edgecolor="black", alpha=0.7)
-    axes[1].set_title("Validation Accuracy", fontsize=14)
-    axes[1].set_xlabel("Accuracy")
+    ax.hist(train_acc, bins=20, color="skyblue", edgecolor="black", alpha=0.7)
+    ax.set_title("Training Accuracy", fontsize=14)
+    ax.set_xlabel("Accuracy")
+    ax.set_ylabel("Frequency")
 
     fig.suptitle(title, fontsize=16)
     plt.tight_layout(rect=[0, 0, 1, 0.95])
     return fig
+
 
 
 def _create_bs_idxs(num_idxs: int, num_trials: int, seed: int) -> List[Float1D]:
