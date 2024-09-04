@@ -344,7 +344,7 @@ def bootstrap(
     n_bags_data = []
     for _ in range(n_trials):
 
-        idxs = rng.random.choice(a=len(X), size=len(X), replace=replace)
+        idxs = rng.choice(a=len(X), size=len(X), replace=replace)
         X_bootstrap = X[idxs]
         Y_bootstrap = Y[idxs]
         n_bags_data.append((X_bootstrap, Y_bootstrap))
@@ -399,7 +399,7 @@ def ensem_regress_edge(
     rng = np.random.default_rng(seed=seed)
     idxs = np.arange(len(X))
     if randomize:
-        rng.random.shuffle(idxs)
+        rng.shuffle(idxs)
     train_idx, val_idx = (
         idxs[: int(train_len * len(X))],
         idxs[int(train_len * len(X)) :],
