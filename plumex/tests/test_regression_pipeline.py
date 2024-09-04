@@ -173,7 +173,7 @@ def test_bootstrap_lstsq():
     Y = f(xx, yy).reshape(-1)
 
     # np.random.seed(1234)
-    ensem_result = bootstrap(X, Y, n_trials=1000, method="lstsq", seed=1234)
+    ensem_result,_ = bootstrap(X, Y, n_trials=1000, method="lstsq", seed=1234)
     result = np.mean(ensem_result, axis=0)
     expected = (1, 2, 3)
     np.testing.assert_array_almost_equal(expected, result)
