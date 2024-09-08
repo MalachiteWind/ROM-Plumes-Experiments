@@ -144,6 +144,9 @@ def regress_centerline(
             understood by PLUME.regress_multiframe_mean
         poly_deg: polynomial degree of curve used in regression_method
 
+    Note: Experimental data designed to have a leftwards plume, which informs
+        the poly-inverse method
+
     Returns:
         Experiment results of train and validation accuracy.  "data" key
         is of shape (number of timepoints, number of coefficients in
@@ -158,6 +161,7 @@ def regress_centerline(
         mean_points=train_set_fc,
         regression_method=regression_method,
         poly_deg=poly_deg,
+        direction="left",
         decenter=origin_fc,
     )
 
