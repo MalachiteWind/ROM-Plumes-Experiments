@@ -11,7 +11,6 @@ from matplotlib.gridspec import GridSpec
 
 from .types import Float1D
 from .types import Float2D
-from .types import PolyData
 
 CMAP = mpl.color_sequences["tab10"]
 CMEAS = CMAP[0]
@@ -121,11 +120,12 @@ def plot_simulation(
 # Plotting for Hankel Analysis
 def plot_time_series(
     t: Float1D,
-    data: PolyData,
+    data: Float2D,
     feature_names: list[str],
-    smooth_data: Optional[PolyData] = None,
+    smooth_data: Optional[Float2D] = None,
 ) -> Figure:
-    fig, ax = plt.subplots(1, 3, figsize=(15, 5), layout="constrained")
+    n_feat = len(feature_names)
+    fig, ax = plt.subplots(1, n_feat, figsize=(15, 5), layout="constrained")
     for i, feat in enumerate(feature_names):
         ax[i].plot(t, data[:, i], label="Data", color=CMEAS)
 
@@ -233,14 +233,15 @@ def plot_data_and_dmd(
     dmd_data,
     var,
     svd_rank,
-    feature_names,
+    feature_names: list[str],
     smooth_data=None,
     smooth_dmd_data=None,
     var_smooth: float = 0.0,
     svd_rank_smooth=None,
 ):
+    n_feat = len(feature_names)
     if (smooth_data is not None) and (smooth_dmd_data is not None):
-        fig, ax = plt.subplots(3, 2, figsize=(15, 10), layout="constrained")
+        fig, ax = plt.subplots(n_feat, 2, figsize=(15, 10), layout="constrained")
         for i, feat in enumerate(feature_names):
             ax[i][0].plot(t, data[:, i], label="Data", color=CMEAS)
             ax[i][0].plot(t, dmd_data[:, i], label="DMD", color="k")
