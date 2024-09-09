@@ -274,8 +274,8 @@ def create_flat_data(
         rad_dist_bot = flatten_edge_points(center_pp, bot_pp)
         rad_dist_top = flatten_edge_points(center_pp, top_pp)
 
-        t_rad_dist_bot = np.hstack((t * np.ones(len(rad_dist_bot), 1), rad_dist_bot))
-        t_rad_dist_top = np.hstack((t * np.ones(len(rad_dist_top), 1), rad_dist_top))
+        t_rad_dist_bot = np.hstack((t * np.ones(len(rad_dist_bot)).reshape(-1,1), rad_dist_bot))
+        t_rad_dist_top = np.hstack((t * np.ones(len(rad_dist_top)).reshape(-1,1), rad_dist_top))
 
         bot_flattened.append(t_rad_dist_bot)
         top_flattened.append(t_rad_dist_top)
