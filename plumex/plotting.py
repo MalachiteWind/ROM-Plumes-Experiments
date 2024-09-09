@@ -10,6 +10,7 @@ from matplotlib.figure import Figure
 from matplotlib.gridspec import GridSpec
 
 from .types import Float1D
+from .types import Float2D
 from .types import PolyData
 
 CMAP = mpl.color_sequences["tab10"]
@@ -21,23 +22,24 @@ BGROUND = mcolors.CSS4_COLORS["lightgrey"]
 
 
 def plot_smoothing_step(
-    t: Float1D, data: PolyData, smooth_data: PolyData, feature_names: list[str]
+    t: Float1D, data: Float2D, smooth_data: Float2D, feature_names: list[str]
 ) -> Figure:
+    n_feat = len(feature_names)
     bigfig = plt.figure(figsize=(12, 12), layout="constrained")
-    gs = GridSpec(3, 3, figure=bigfig)
+    gs = GridSpec(3, n_feat, figure=bigfig)
     compare_fig = bigfig.add_subfigure(gs[0, :])
     zoom_fig = bigfig.add_subfigure(gs[1, :])
     fft_fig = bigfig.add_subfigure(gs[2, :])
     for i, feat in enumerate(feature_names):
-        ax = compare_fig.add_subplot(1, 3, 1 + i)
+        ax = compare_fig.add_subplot(1, n_feat, 1 + i)
         ax.plot(t, data[:, i], label="Data", color=CMEAS)
         ax.plot(t, smooth_data[:, i], label="Smoothed", color=CSMOOTH)
         ax.set_xticks([])
         ax.set_title(f"Coeff {feat}")
-        ax_zoom = zoom_fig.add_subplot(1, 3, 1 + i)
+        ax_zoom = zoom_fig.add_subplot(1, n_feat, 1 + i)
         ax_zoom.plot(t, smooth_data[:, i], color=CSMOOTH)
         ax_zoom.set_xlabel("Time")
-        ax_fft = fft_fig.add_subplot(1, 3, 1 + i)
+        ax_fft = fft_fig.add_subplot(1, n_feat, 1 + i)
         freqs = np.fft.rfftfreq(len(t))
         data_psd = np.abs(np.fft.rfft(data[:, i])) ** 2
         smooth_psd = np.abs(np.fft.rfft(smooth_data[:, i])) ** 2
@@ -55,14 +57,15 @@ def plot_smoothing_step(
 
 
 def plot_predictions(
-    t: Float1D, x_dot_est: PolyData, x_dot_pred: PolyData, feature_names: list[str]
+    t: Float1D, x_dot_est: Float2D, x_dot_pred: Float2D, feature_names: list[str]
 ) -> Figure:
+    n_feat = len(feature_names)
     bigfig = plt.figure(figsize=(12, 8), layout="constrained")
-    gs = GridSpec(2, 3, figure=bigfig)
+    gs = GridSpec(2, n_feat, figure=bigfig)
     plot_fig = bigfig.add_subfigure(gs[0, :])
     scat_fig = bigfig.add_subfigure(gs[1, :])
     for i, feat in enumerate(feature_names):
-        ax = plot_fig.add_subplot(1, 3, 1 + i)
+        ax = plot_fig.add_subplot(1, n_feat, 1 + i)
         ax.plot(t, x_dot_est[:, i], label=r"Smoothed", color=CSMOOTH)
         ax.plot(t, x_dot_pred[:, i], label=r"SINDy predicted", color=CEST)
         ax.set_title(f"Coeff {feat} dot")
@@ -70,7 +73,7 @@ def plot_predictions(
     bigfig.axes[0].legend()
     plot_fig.suptitle("Time Series Derivative Accuracy")
     for i, feat in enumerate(feature_names):
-        ax = scat_fig.add_subplot(1, 3, 1 + i)
+        ax = scat_fig.add_subplot(1, n_feat, 1 + i)
         ax.axhline(0, color="black")
         ax.axvline(0, color="black")
         ax.scatter(x=x_dot_est[:, i], y=x_dot_pred[:, i])
@@ -94,13 +97,14 @@ def print_diagnostics(t: Float1D, model: ps.SINDy, precision: int) -> None:
 
 
 def plot_simulation(
-    t: Float1D, x_true: PolyData, x_sim: PolyData, *, feat_names: list[str], title: str
+    t: Float1D, x_true: Float2D, x_sim: Float2D, *, feat_names: list[str], title: str
 ) -> None:
     """Plot the true vs simulated data"""
+    n_feat = len(feat_names)
     m = min(x_true.shape[0], x_sim.shape[0])
     fig = plt.figure(figsize=(12, 4), layout="constrained")
-    for i in range(x_true.shape[1]):
-        ax = fig.add_subplot(1, x_true.shape[1], 1 + i)
+    for i in range(n_feat):
+        ax = fig.add_subplot(1, n_feat, 1 + i)
         ax.plot(t[:m], x_true[:m, i], "k", label="smoothed data", color=CSMOOTH)
         ax.plot(t[:m], x_sim[:m, i], "r--", label="model simulation", color=CEST)
         ax.set(xlabel="t")

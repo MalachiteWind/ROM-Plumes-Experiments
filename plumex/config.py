@@ -66,6 +66,10 @@ data_lookup = {
         "lo1pts": "step1/3ac8b5.dill",
         "hi1pts": "step1/abb562.dill",
         "hi2pts": "step1/d32d3b.dill",
+        "lin-win": "step2/linear.dill",
+        "ppara-win": "step2/poly_para.dill",
+        "pinv-win": "step2/poly_inv.dill",
+        "poly-win": "step2/poly.dill",
     },
     "fixed_range": {
         "test": 200,
