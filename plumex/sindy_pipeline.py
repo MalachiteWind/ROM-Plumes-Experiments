@@ -47,7 +47,7 @@ def run(
 ):
 
     """
-    Takes in a 3-dimensional timeseries and applies an Ensemble Sindy
+    Takes in an n-dimensional timeseries and applies an Ensemble Sindy
     pipeline for model discovery and forward simulating.
 
     Parameters:
@@ -93,6 +93,7 @@ def run(
     scalar: StandardScalar object
         StandardScalar object (potentially) used to normalized time_series data.
     """
+    n_time, n_feat = time_series.shape
     if diff_params is None:
         diff_params = {"diffcls": "finitedifference"}
     feat_params = {"featcls": "Polynomial"}
@@ -102,6 +103,7 @@ def run(
     if reg_mode[0] == "trap":
         feat_params |= {"degree": 2, "include_bias": False}
         opt_init = {} if reg_mode[1] is None else reg_mode[1]
+        opt_init["_n_tgts"] = n_feat
         opt_params |= {"opt": ps.TrappingSR3(**opt_init)}
     elif reg_mode[0] == "poly":
         if reg_mode[1] is None:
@@ -119,15 +121,14 @@ def run(
     ############################
     # Apply normalized scaling #
     ############################
-
-    t = np.array(range(len(time_series)))
+    t = np.arange(n_time)
     scaler = StandardScaler()
     if normalize:
-        time_series: PolyData = scaler.fit_transform(time_series)
+        time_series: Float2D = scaler.fit_transform(time_series)
 
     if whitening:
         eigvals, eigvecs = np.linalg.eigh(np.cov(time_series.T))
-        time_series: PolyData = (time_series @ eigvecs) / np.sqrt(eigvals)
+        time_series: Float2D = (time_series @ eigvecs) / np.sqrt(eigvals)
 
     metrics = {}
     data_collinearity = np.linalg.cond(time_series)
@@ -137,7 +138,7 @@ def run(
     ########################
     # Apply Ensemble SINDy #
     ########################
-    feature_names = ["a", "b", "c"]
+    feature_names = [chr(i) for i in range(97, 97 + n_feat)]
 
     model = gen_experiments.utils.make_model(
         feature_names, float(t[1] - t[0]), diff_params, feat_params, opt_params
