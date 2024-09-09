@@ -163,10 +163,10 @@ def _visualize_fits(
     Parameters:
     ----------
     data: Dictionary containing "center", "top", and "bottom" data for each frame.
-    top_coef_lin: Coefficients for the top linear fit.
-    top_coef_sin: Coefficients for the top sinusoidal fit.
-    bot_coef_lin: Coefficients for the bottom linear fit.
-    bot_coef_sin: Coefficients for the bottom sinusoidal fit.
+    top_coef_lin: Coefficients for the top linear fit. (const, t_coef, r_coef)
+    top_coef_sin: Coefficients for the top sinusoidal fit. (A,w,g,B)
+    bot_coef_lin: Coefficients for the bottom linear fit. (const, t_coef, r_coef)
+    bot_coef_sin: Coefficients for the bottom sinusoidal fit. (A,w,g,B)
     n_frames: Number of frames to visualize.
 
     Returns:
