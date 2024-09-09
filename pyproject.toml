@@ -10,7 +10,7 @@ dependencies = [
   "pysindy[cvxpy] @ git+https://github.com/dynamicslab/pysindy@a43e217",
   "matplotlib",
   "pysindy-experiments @ git+https://github.com/Jacob-Stevens-Haas/gen-experiments@cbaa059",
-  "ara_plumes @ git+https://github.com/Jacob-Stevens-Haas/ARA-Plumes@0.5.0",
+  "ara_plumes @ git+https://github.com/Jacob-Stevens-Haas/ARA-Plumes@0.6.0",
 ]
 
 [project.optional-dependencies]
@@ -23,7 +23,6 @@ dev = [
     "ipython",
     "pre-commit",
     "pytest-cov",
-    "pytest-lazy-fixture",
     "setuptools_scm",
 ]
 
@@ -39,4 +38,3 @@ regress_center = ["plumex.regression_pipeline:regress_centerline", "plumex.confi
 multireg_center = ["plumex.regression_pipeline:multi_regress_centerline", "plumex.config:regress_lookup"]
 sindy_fe = ["plumex.sindy_pipeline:run", "plumex.config:sindy_lookup"]
 hankel_fe = ["plumex.hankel_pipeline:run", "plumex.config:hankel_lookup"]
-regress_edge = ["plumex.regress_edge:regress_edge", "plumex.config:regress_edge_lookup"]
