@@ -19,7 +19,7 @@ from .types import PlumePoints
 def regress_edge(
     data: dict,
     train_len: float,
-    n_trials: int,
+    n_bags: int,
     initial_guess: tuple[float, float, float, float],
     randomize: bool = True,
     replace: bool = True,
@@ -36,8 +36,8 @@ def regress_edge(
         float value raning from 0 to 1 indicating what percentage of data to
         to be used for training. Remaining is used for test set.
 
-    n_trials:
-        number of trials to run.
+    n_bags:
+        number of bags to run.
 
     initial_guess:
         Initial guess for sinusoid optimizaiton alg.
@@ -70,7 +70,7 @@ def regress_edge(
 
     ensem_kws = {
         "train_len": train_len,
-        "n_trials": n_trials,
+        "n_bags": n_bags,
         "seed": seed,
         "replace": replace,
         "randomize": randomize,
@@ -314,7 +314,7 @@ def do_lstsq_regression(X: Float2D, Y: Float1D) -> Float1D:
 def bootstrap(
     X: Float2D,
     Y: Float1D,
-    n_trials: int,
+    n_bags: int,
     method: str,
     seed: int,
     replace: bool = True,
@@ -342,7 +342,7 @@ def bootstrap(
     rng = np.random.default_rng(seed=seed)
     coef_data = []
     n_bags_data = []
-    for _ in range(n_trials):
+    for _ in range(n_bags):
 
         idxs = rng.choice(a=len(X), size=len(X), replace=replace)
         X_bootstrap = X[idxs]
@@ -364,7 +364,7 @@ def ensem_regress_edge(
     X: Float2D,
     Y: Float1D,
     train_len: float,
-    n_trials: int,
+    n_bags: int,
     method: str,
     seed: int,
     replace: bool = True,
@@ -379,7 +379,7 @@ def ensem_regress_edge(
     X: Features/data to learn on.
     Y: Target features/data.
     train_len: Percentage of data to be used for training/bootstrapping.
-    n_trials: Number of bootstrap trials to run.
+    n_bags: Number of bootstrap bags to to train on.
     method: Learning method.
             `linear`: Multivariate linear regression.
             `sinusoid`: Growing sinusoid y(x,t) = A*sin(w*x - g*t) + B*x.
@@ -411,7 +411,7 @@ def ensem_regress_edge(
     coef_bs, n_bags_data = bootstrap(
         X=X_train,
         Y=Y_train,
-        n_trials=n_trials,
+        n_bags=n_bags,
         method=method,
         initial_guess=initial_guess,
         seed=seed,
