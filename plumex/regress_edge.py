@@ -353,9 +353,10 @@ def bootstrap(
             coef = do_sinusoid_regression(
                 X_bootstrap, Y_bootstrap, initial_guess=initial_guess
             )
+            coef_data.append(coef)
         elif method == "lstsq":
             coef = do_lstsq_regression(X_bootstrap, Y_bootstrap)
-        coef_data.append(coef)
+            coef_data.append(coef)
 
     return np.array(coef_data), n_bags_data
 
