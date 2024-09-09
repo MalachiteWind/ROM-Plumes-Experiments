@@ -79,7 +79,7 @@ def run(
     Returns:
     --------
     err: float
-        normalizing L2 error between time_seris (potentially normalized) and
+        normalizing L2 error between time_series (potentially normalized) and
         solved learned ODE system.
 
     model: pySINDy model
