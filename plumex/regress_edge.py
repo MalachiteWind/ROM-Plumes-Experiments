@@ -1,3 +1,4 @@
+import warnings
 from typing import Any
 from typing import cast
 from typing import List
@@ -354,15 +355,22 @@ def bootstrap(
         n_bags_data.append((X_bootstrap, Y_bootstrap))
 
         if method == "sinusoid":
-            coef = do_sinusoid_regression(
-                X_bootstrap, Y_bootstrap, initial_guess=initial_guess
-            )
-            coef_data.append(coef)
+            try:
+                coef = do_sinusoid_regression(
+                    X_bootstrap, Y_bootstrap, initial_guess=initial_guess
+                )
+            except RuntimeError as e:
+                warnings.warn(f"Curve Fitting not complete: {e}", stacklevel=2)
+                coef = [np.nan, np.nan, np.nan, np.nan]
         elif method == "lstsq" or method == "linear":
-            coef = do_lstsq_regression(X_bootstrap, Y_bootstrap)
-            coef_data.append(coef)
+            try:
+                coef = do_lstsq_regression(X_bootstrap, Y_bootstrap)
+            except RuntimeError as e:
+                warnings.warn(f"Curve Fitting not complete: {e}", stacklevel=2)
+                coef = [np.nan, np.nan, np.nan]
         else:
             raise ValueError(f"`{method}` is an invalid string.")
+        coef_data.append(coef)
 
     return np.array(coef_data), n_bags_data
 
@@ -425,7 +433,9 @@ def ensem_regress_edge(
         replace=replace,
     )
 
-    mean_coef = coef_bs.mean(axis=0)
+    non_nan_coef_bs = coef_bs[~np.isnan(coef_bs)[:, 0]]
+
+    mean_coef = non_nan_coef_bs.mean(axis=0)
 
     if method == "linear":
         coef_func = create_lin_func(mean_coef)
