@@ -87,7 +87,7 @@ def regress_edge(
         )
 
         meth_results["bot"][method] = ensem_regress_edge(
-            X=bot_flat[:, :2], Y=bot_flat[:, 2], **ensem_kws
+            X=bot_flat[:, :2], Y=bot_flat[:, 2], method=method, **ensem_kws
         )
 
         if method == "sinusoid":
@@ -274,8 +274,12 @@ def create_flat_data(
         rad_dist_bot = flatten_edge_points(center_pp, bot_pp)
         rad_dist_top = flatten_edge_points(center_pp, top_pp)
 
-        t_rad_dist_bot = np.hstack((t * np.ones(len(rad_dist_bot)).reshape(-1,1), rad_dist_bot))
-        t_rad_dist_top = np.hstack((t * np.ones(len(rad_dist_top)).reshape(-1,1), rad_dist_top))
+        t_rad_dist_bot = np.hstack(
+            (t * np.ones(len(rad_dist_bot)).reshape(-1, 1), rad_dist_bot)
+        )
+        t_rad_dist_top = np.hstack(
+            (t * np.ones(len(rad_dist_top)).reshape(-1, 1), rad_dist_top)
+        )
 
         bot_flattened.append(t_rad_dist_bot)
         top_flattened.append(t_rad_dist_top)
@@ -328,7 +332,7 @@ def bootstrap(
     X: Multivate independent data
     Y: dependent data.
     n_trails: number of trials to run regression
-    method: "lstsq" or "sinusoid"
+    method: "lstsq"/"linear" or "sinusoid"
     seed: Reproducibility of experiments.
     replace: Sampling with(out) replacement.
     initial_guess: tuple of initial guess for optimization alg for "sinusoid" method.
@@ -354,9 +358,11 @@ def bootstrap(
                 X_bootstrap, Y_bootstrap, initial_guess=initial_guess
             )
             coef_data.append(coef)
-        elif method == "lstsq":
+        elif method == "lstsq" or method == "linear":
             coef = do_lstsq_regression(X_bootstrap, Y_bootstrap)
             coef_data.append(coef)
+        else:
+            raise ValueError(f"`{method}` is an invalid string.")
 
     return np.array(coef_data), n_bags_data
 
