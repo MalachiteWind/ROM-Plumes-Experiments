@@ -99,26 +99,29 @@ def regress_edge(
         top_coeffs = meth_results["top"][method]["coeffs"]
         bot_coeffs = meth_results["bot"][method]["coeffs"]
 
+        non_nan_top_coeffs = top_coeffs[~np.isnan(top_coeffs)[:,0]]
+        non_nan_bot_coeffs = bot_coeffs[~np.isnan(bot_coeffs)[:,0]]
+
         plot_param_hist(
-            top_coeffs, titles=titles, big_title="Top" + method + "Param History"
+            non_nan_top_coeffs, titles=titles, big_title="Top" + method + "Param History"
         )
         plot_param_hist(
-            bot_coeffs, titles=titles, big_title="Bottom" + method + "Param History"
+            non_nan_bot_coeffs, titles=titles, big_title="Bottom" + method + "Param History"
         )
 
-        ensem_kws.pop("initial_guess")
+        # ensem_kws.pop("initial_guess")
 
         top_bags_data = meth_results["top"][method].pop("n_bags_data")
         bot_bags_data = meth_results["bot"][method].pop("n_bags_data")
 
         top_train_acc = _generate_train_acc(
-            top_coeffs.mean(axis=0),
+            non_nan_top_coeffs.mean(axis=0),
             method=method,
             n_bags_data=top_bags_data,
         )
 
         bot_train_acc = _generate_train_acc(
-            bot_coeffs.mean(axis=0),
+            non_nan_bot_coeffs.mean(axis=0),
             method=method,
             n_bags_data=bot_bags_data,
         )
