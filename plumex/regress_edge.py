@@ -94,22 +94,24 @@ def regress_edge(
         if method == "sinusoid":
             titles = ["A_opt", "w_opt", "g_opt", "B_opt"]
         elif method == "linear":
-            titles = ["bias", "x1", "x2"]
+            titles = ["bias", "t", "r"]
 
         top_coeffs = meth_results["top"][method]["coeffs"]
         bot_coeffs = meth_results["bot"][method]["coeffs"]
 
-        non_nan_top_coeffs = top_coeffs[~np.isnan(top_coeffs)[:,0]]
-        non_nan_bot_coeffs = bot_coeffs[~np.isnan(bot_coeffs)[:,0]]
+        non_nan_top_coeffs = top_coeffs[~np.isnan(top_coeffs)[:, 0]]
+        non_nan_bot_coeffs = bot_coeffs[~np.isnan(bot_coeffs)[:, 0]]
 
         plot_param_hist(
-            non_nan_top_coeffs, titles=titles, big_title="Top" + method + "Param History"
+            non_nan_top_coeffs,
+            titles=titles,
+            big_title="Top " + method + " Param Histogram",
         )
         plot_param_hist(
-            non_nan_bot_coeffs, titles=titles, big_title="Bottom" + method + "Param History"
+            non_nan_bot_coeffs,
+            titles=titles,
+            big_title="Bottom " + method + " Param Histogram",
         )
-
-        # ensem_kws.pop("initial_guess")
 
         top_bags_data = meth_results["top"][method].pop("n_bags_data")
         bot_bags_data = meth_results["bot"][method].pop("n_bags_data")
@@ -129,8 +131,14 @@ def regress_edge(
         top_accs.append((method, meth_results["top"][method]["val_acc"]))
         bot_accs.append((method, meth_results["bot"][method]["val_acc"]))
 
-        plot_acc_hist(top_train_acc, title="Top Accuracy: " + method)
-        plot_acc_hist(bot_train_acc, title="Bot Accuracy: " + method)
+        plot_acc_hists(
+            [top_train_acc, bot_train_acc],
+            titles=["Top Accs", "Bot Accs"],
+            method_title=method,
+        )
+
+        # plot_acc_hist(top_train_acc, title="Top Accuracy: " + method)
+        # plot_acc_hist(bot_train_acc, title="Bot Accuracy: " + method)
 
     top_coef_lin = meth_results["top"]["linear"]["coeffs"].mean(axis=0)
     top_coef_sin = meth_results["top"]["sinusoid"]["coeffs"].mean(axis=0)
@@ -212,25 +220,46 @@ def _visualize_fits(
 
         top_lin_vals = top_lin_func(t_lin, r_lin)
         top_sin_vals = top_sin_func(t_lin, r_lin)
-        ax.plot(
-            r_lin, top_lin_vals, color="blue", linestyle="--", label="Top Linear Fit"
-        )
-        ax.plot(r_lin, top_sin_vals, color="cyan", linestyle=":", label="Top Sin Fit")
-
         bot_lin_vals = bot_lin_func(t_lin, r_lin)
         bot_sin_vals = bot_sin_func(t_lin, r_lin)
-        ax.plot(
-            r_lin, -bot_lin_vals, color="red", linestyle="--", label="Bottom Linear Fit"
-        )
-        ax.plot(
-            r_lin, -bot_sin_vals, color="orange", linestyle=":", label="Bottom Sin Fit"
-        )
 
-        ax.scatter(top_rad_dist[:, 0], top_rad_dist[:, 1], color="blue", alpha=0.6)
+        if i == grid_size - 1:
+            ax.plot(
+                r_lin, top_lin_vals, color="blue", linestyle="--", label="Linear Fits"
+            )
+            ax.plot(
+                r_lin, top_sin_vals, color="red", linestyle=":", label="Sinusoid Fits"
+            )
+
+            ax.plot(r_lin, -bot_lin_vals, color="blue", linestyle="--")
+            ax.plot(
+                r_lin,
+                -bot_sin_vals,
+                color="red",
+                linestyle=":",
+            )
+        else:
+            ax.plot(r_lin, top_lin_vals, color="blue", linestyle="--")
+            ax.plot(r_lin, top_sin_vals, color="red", linestyle=":")
+
+            ax.plot(
+                r_lin,
+                -bot_lin_vals,
+                color="blue",
+                linestyle="--",
+            )
+            ax.plot(
+                r_lin,
+                -bot_sin_vals,
+                color="red",
+                linestyle=":",
+            )
+
+        ax.scatter(top_rad_dist[:, 0], top_rad_dist[:, 1], color="k", alpha=0.6)
         ax.scatter(
             bot_rad_dist[:, 0],
             -bot_rad_dist[:, 1],
-            color="red",
+            color="k",
             alpha=0.6,
         )
 
@@ -242,7 +271,13 @@ def _visualize_fits(
     for j in range(i + 1, len(axes)):
         fig.delaxes(axes[j])
 
+    fig.suptitle(
+        "Flattened Fits",
+        fontsize=16,
+    )
+
     fig.tight_layout()
+    fig.legend(loc="upper right", prop={"size": 15})
 
     return fig
 
@@ -485,25 +520,35 @@ def plot_param_hist(param_hist, titles, big_title=None) -> Figure:
     return fig
 
 
-def plot_acc_hist(train_acc, title) -> Figure:
+def plot_acc_hists(
+    train_accs: List[Float1D], titles: List[str], method_title: str
+) -> Figure:
     """
     Plots a histogram of training accuracies.
 
     Parameters:
     ----------
-    train_acc: List or array of training accuracies from bootstrap trials.
-    title: Title of the plot.
+    train_accs: List or array of training accuracies from bootstrap trials.
+    titles: set of title for plots.
+    method_title: method used to create training accuracies.
+
     """
 
-    fig, ax = plt.subplots(figsize=(6, 6))
+    num_plots = len(train_accs)
+    fig, axes = plt.subplots(1, num_plots, figsize=(6 * num_plots, 6))
 
-    ax.hist(train_acc, bins=20, color="skyblue", edgecolor="black", alpha=0.7)
-    ax.set_title("Training Accuracy", fontsize=14)
-    ax.set_xlabel("Accuracy")
-    ax.set_ylabel("Frequency")
+    if num_plots == 1:
+        axes = [axes]
 
-    fig.suptitle(title, fontsize=16)
+    for i, (train_acc, ax) in enumerate(zip(train_accs, axes)):
+        ax.hist(train_acc, bins=20, color="skyblue", edgecolor="black", alpha=0.7)
+        ax.set_title(titles[i], fontsize=14)
+        ax.set_xlabel("Accuracy")
+        ax.set_ylabel("Frequency")
+
+    fig.suptitle("Train Accuracy Histogram: " + method_title, fontsize=16)
     plt.tight_layout(rect=[0, 0, 1, 0.95])
+
     return fig
 
 

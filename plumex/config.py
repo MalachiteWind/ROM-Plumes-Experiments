@@ -47,6 +47,7 @@ data_lookup = {
         "hi-2": "July_20_2023/high_2.MP4",
         "med-0": "July_20_2023/med.MP4",
         "862pts": "step1/390cee.dill",
+        "mock": "step1/mock_edges.pkl",
     },
     "fixed_range": {
         "test": 200,
