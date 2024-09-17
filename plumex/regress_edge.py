@@ -21,7 +21,7 @@ def regress_edge(
     data: dict,
     train_len: float,
     n_bags: int,
-    initial_guess: tuple[float, float, float, float],
+    initial_guess: Optional[tuple[float, float, float, float]] = None,
     randomize: bool = True,
     replace: bool = True,
     seed: int = 1234,
@@ -68,6 +68,15 @@ def regress_edge(
     top = cast(List[tuple[int, PlumePoints]], data["top"])
 
     top_flat, bot_flat = create_flat_data(center, top, bot)
+
+    # rng = np.random.default_rng(seed=seed)
+
+
+    # if initial_guess == None:
+    #     w_init = rng.uniform(0,2*np.pi)
+    #     g_init = rng.uniform(0,2*np.pi)
+
+    #     initial_guess = do_sin
 
     ensem_kws = {
         "train_len": train_len,
@@ -440,7 +449,11 @@ def ensem_regress_edge(
     replace: Sampling with/without replacement.
     randomize: Training set is selected randomly if True. If False,
                first consecutive points are used.
-    initial_guess: Initial guess for the optimization problem for method=`sinusoid`.
+    initial_guess: Initial guess for the optimization problem when `method='sinusoid'`. 
+                   Default is `None`. When `None`, the parameters (A, w, g, B) are selected as follows:
+                   - `w` and `g` are chosen uniformly at random on the unit circle.
+                   - `B` is set to the linear fit term.
+                   - `A` is initialized as the average error from the linear fit of the data.
 
     Returns:
     -------
@@ -460,6 +473,18 @@ def ensem_regress_edge(
 
     X_train, X_val = X[train_idx], X[val_idx]
     Y_train, Y_val = Y[train_idx], Y[val_idx]
+
+    if method=="sinusoid" and initial_guess==None:
+        w_init = rng.uniform(0,2*np.pi)
+        g_init = rng.uniform(0,2*np.pi)
+        coef = do_lstsq_regression(X_train,Y_train)
+        lin_func=create_lin_func(coef)
+        B_init = coef[-1]
+        A_init = np.linalg.norm(Y_train - lin_func(X_train[:,0], X_train[:,1])) / np.linalg.norm(Y_train)
+        initial_guess = (A_init,w_init,g_init,B_init)
+
+
+
 
     coef_bs, n_bags_data = bootstrap(
         X=X_train,
