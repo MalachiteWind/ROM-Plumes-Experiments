@@ -164,7 +164,7 @@ def display_opt_params(opt_params: Float1D, titles: List[str]):
     Parameters:
     ----------
     opt_params: parameters selected from bootstrap bags
-    accs: titles to accompany string 
+    accs: titles to accompany strings 
     """
     for opt, title in zip(opt_params,titles):
         print(title + f": {opt}", end=" ")
