@@ -92,9 +92,9 @@ def regress_edge(
         )
 
         if method == "sinusoid":
-            titles = ["A_opt", "w_opt", "g_opt", "B_opt"]
+            titles = ["A_opt", "w_opt", "g_opt", "B_opt", "C_opt", "D_opt"]
         elif method == "linear":
-            titles = ["bias", "t", "r"]
+            titles = ["bias", "t_coef", "r_coef"]
 
         top_coeffs = meth_results["top"][method]["coeffs"]
         bot_coeffs = meth_results["bot"][method]["coeffs"]
@@ -292,11 +292,11 @@ def _visualize_fits(
     return fig
 
 
-def create_sin_func(awgb):
-    A, w, g, B = awgb
+def create_sin_func(awgbcd):
+    A, w, g, B, C, D = awgbcd
 
     def sin_func(t: float, r: float) -> float:
-        return A * np.sin(w * r - g * t) + B * r
+        return A * np.sin(w * r - g * t + B) + C * r + D
 
     return sin_func
 
@@ -342,16 +342,16 @@ def create_flat_data(
 def do_sinusoid_regression(
     X: Float2D,
     Y: Float1D,
-    initial_guess: tuple[float, float, float, float],
+    initial_guess: tuple[float, float, float, float, float, float],
 ) -> Float1D:
     """
-    Return regressed sinusoid coefficients (a,w,g,t) to function
-    d(t,r) = a*sin(w*r - g*t) + b*r
+    Return regressed sinusoid coefficients (a,w,g,b,c,d) to function
+    d(t,r) = a*sin(w*r - g*t+b) + c*r + d
     """
 
-    def sinusoid_func(X, A, w, gamma, B):
+    def sinusoid_func(X, A, w, gamma, B, C, D):
         t, r = X
-        return A * np.sin(w * r - gamma * t) + B * r
+        return A * np.sin(w * r - gamma * t + B) + C * r + D
 
     coef, _ = curve_fit(sinusoid_func, (X[:, 0], X[:, 1]), Y, initial_guess)
     return coef
@@ -480,13 +480,15 @@ def ensem_regress_edge(
     if method == "sinusoid" and initial_guess is None:
         w_init = rng.uniform(0, 2 * np.pi)
         g_init = rng.uniform(0, 2 * np.pi)
-        coef = do_lstsq_regression(X_train, Y_train)
+        coef = do_lstsq_regression(X_train, Y_train) # bias, t, r
         lin_func = create_lin_func(coef)
-        B_init = coef[-1]
+        C_init = coef[-1]
+        D_init = coef[0]
+        B_init = 1
         A_init = np.linalg.norm(
             Y_train - lin_func(X_train[:, 0], X_train[:, 1])
         ) / np.linalg.norm(Y_train)
-        initial_guess = (A_init, w_init, g_init, B_init)
+        initial_guess = (A_init, w_init, g_init, B_init, C_init, D_init)
 
     coef_bs, n_bags_data = bootstrap(
         X=X_train,
