@@ -112,6 +112,8 @@ def regress_edge(
             titles=titles,
             big_title="Bottom " + method + " Param Histogram",
         )
+        display_opt_params(non_nan_top_coeffs.mean(axis=0),titles)
+        display_opt_params(non_nan_bot_coeffs.mean(axis=0),titles)
 
         top_bags_data = meth_results["top"][method].pop("n_bags_data")
         bot_bags_data = meth_results["bot"][method].pop("n_bags_data")
@@ -157,6 +159,16 @@ def regress_edge(
     best_bot_method = bot_accs[-1][0]
     return {"main": (best_top_method, best_bot_method), "accs": meth_results}
 
+def display_opt_params(opt_params: Float1D, titles: List[str]):
+    """Display optimal parameter selection from bootstrap bags
+    Parameters:
+    ----------
+    opt_params: parameters selected from bootstrap bags
+    accs: titles to accompany string 
+    """
+    for opt, title in zip(opt_params,titles):
+        print(title + f": {opt}", end=" ")
+    print()
 
 def _visualize_fits(
     data: dict,
