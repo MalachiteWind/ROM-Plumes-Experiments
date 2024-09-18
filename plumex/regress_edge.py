@@ -69,15 +69,6 @@ def regress_edge(
 
     top_flat, bot_flat = create_flat_data(center, top, bot)
 
-    # rng = np.random.default_rng(seed=seed)
-
-
-    # if initial_guess == None:
-    #     w_init = rng.uniform(0,2*np.pi)
-    #     g_init = rng.uniform(0,2*np.pi)
-
-    #     initial_guess = do_sin
-
     ensem_kws = {
         "train_len": train_len,
         "n_bags": n_bags,
