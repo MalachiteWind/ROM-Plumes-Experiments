@@ -362,7 +362,7 @@ def bootstrap(
     seed: int,
     replace: bool = True,
     initial_guess: Optional[tuple] = None,
-):
+) -> tuple[Float2D, Float2D]:
     """
     Apply ensemble bootstrap to data.
 
@@ -399,7 +399,7 @@ def bootstrap(
                 )
             except RuntimeError as e:
                 warnings.warn(f"Curve Fitting not complete: {e}", stacklevel=2)
-                coef = [np.nan, np.nan, np.nan, np.nan]
+                coef = [np.nan] * len(initial_guess)
         elif method == "lstsq" or method == "linear":
             try:
                 coef = do_lstsq_regression(X_bootstrap, Y_bootstrap)
@@ -440,11 +440,13 @@ def ensem_regress_edge(
     replace: Sampling with/without replacement.
     randomize: Training set is selected randomly if True. If False,
                first consecutive points are used.
-    initial_guess: Initial guess for the optimization problem when `method='sinusoid'`. 
-                   Default is `None`. When `None`, the parameters (A, w, g, B) are selected as follows:
+    initial_guess: Initial guess for the optimization problem when `method='sinusoid'`.
+                   Default is `None`. When `None`, the parameters (A, w, g, B) are
+                   selected as follows:
                    - `w` and `g` are chosen uniformly at random on the unit circle.
                    - `B` is set to the linear fit term.
-                   - `A` is initialized as the average error from the linear fit of the data.
+                   - `A` is initialized as the average error from the linear fit of
+                     the data.
 
     Returns:
     -------
@@ -465,17 +467,16 @@ def ensem_regress_edge(
     X_train, X_val = X[train_idx], X[val_idx]
     Y_train, Y_val = Y[train_idx], Y[val_idx]
 
-    if method=="sinusoid" and initial_guess==None:
-        w_init = rng.uniform(0,2*np.pi)
-        g_init = rng.uniform(0,2*np.pi)
-        coef = do_lstsq_regression(X_train,Y_train)
-        lin_func=create_lin_func(coef)
+    if method == "sinusoid" and initial_guess is None:
+        w_init = rng.uniform(0, 2 * np.pi)
+        g_init = rng.uniform(0, 2 * np.pi)
+        coef = do_lstsq_regression(X_train, Y_train)
+        lin_func = create_lin_func(coef)
         B_init = coef[-1]
-        A_init = np.linalg.norm(Y_train - lin_func(X_train[:,0], X_train[:,1])) / np.linalg.norm(Y_train)
-        initial_guess = (A_init,w_init,g_init,B_init)
-
-
-
+        A_init = np.linalg.norm(
+            Y_train - lin_func(X_train[:, 0], X_train[:, 1])
+        ) / np.linalg.norm(Y_train)
+        initial_guess = (A_init, w_init, g_init, B_init)
 
     coef_bs, n_bags_data = bootstrap(
         X=X_train,
