@@ -135,14 +135,13 @@ def test_do_sinusoid_regression():
     def sinusoid_func(t, r):
         return a * np.sin(w * r - g * t) + b * r
 
-    axis = np.linspace(0, 1, 101)
+    axis = np.linspace(0, 1, 26)
     tt, rr = np.meshgrid(axis, axis)
 
     X = np.hstack((tt.reshape(-1, 1), rr.reshape(-1, 1)))
     Y = sinusoid_func(tt, rr).reshape(-1)
 
-    step = 4
-    result = do_sinusoid_regression(X[::step], Y[::step], (1, 1, 1, 1))
+    result = do_sinusoid_regression(X, Y, (1, 1, 1, 1))
 
     np.testing.assert_array_almost_equal(expected, result)
 
