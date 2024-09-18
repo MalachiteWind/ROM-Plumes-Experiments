@@ -137,8 +137,6 @@ def regress_edge(
             method_title=method,
         )
 
-        # plot_acc_hist(top_train_acc, title="Top Accuracy: " + method)
-        # plot_acc_hist(bot_train_acc, title="Bot Accuracy: " + method)
 
     top_coef_lin = meth_results["top"]["linear"]["coeffs"].mean(axis=0)
     top_coef_sin = meth_results["top"]["sinusoid"]["coeffs"].mean(axis=0)
