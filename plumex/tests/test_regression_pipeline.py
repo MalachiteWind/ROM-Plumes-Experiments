@@ -1,10 +1,13 @@
 import numpy as np
+import pytest
+from ara_plumes.typing import Frame
 
 from ..regress_edge import bootstrap
 from ..regress_edge import do_lstsq_regression
 from ..regress_edge import do_sinusoid_regression
 from ..regression_pipeline import _construct_f
 from ..regression_pipeline import _get_true_pred
+from ..regression_pipeline import _construct_rxy_f
 from ..regression_pipeline import _split_into_train_val
 from ..regression_pipeline import get_coef_acc
 
@@ -17,18 +20,18 @@ def test_get_coef_acc():
     r_x_y_1 = np.vstack((R, R, f1(R))).T
     r_x_y_2 = np.vstack((R, R, f2(R))).T
 
-    train_val_set = [(1, r_x_y_1), (2, r_x_y_2)]
+    train_val_set = [(Frame(1), r_x_y_1), (Frame(2), r_x_y_2)]
 
     result = get_coef_acc(
-        coef_time_series, train_val_set=train_val_set, regression_method="poly"
+        coef_time_series, eval_set_dc=train_val_set, regression_method="poly"
     )
-    expected = np.array([1, 1])
+    expected = np.array([0, 0])
 
     np.testing.assert_array_almost_equal(expected, result)
 
     # empty
     train_val_set = [(1, r_x_y_1), (2, r_x_y_2[np.array([False for _ in range(3)])])]
-    expected = np.array([1, np.nan])
+    expected = np.array([0, np.nan])
     result = get_coef_acc(coef_time_series, train_val_set, regression_method="poly")
     np.testing.assert_array_almost_equal(expected, result)
 
@@ -59,14 +62,29 @@ def test_split_into_train_val():
         np.testing.assert_array_almost_equal(frame, expected_val[i][1])
 
 
-def test_construct_f():
-    coef = (1, 2, 3)
-    f = _construct_f(coef)
-
-    expected = np.array([3, 6, 11])
-
-    result = f(np.array([0, 1, 2]))
-
+@pytest.mark.parametrize(
+    ["coef", "regression_method", "expected"],
+    [
+        ((1, 2), "linear", np.array([2, 3, 1 * 3 + 2])),
+        ((1, 2, 3), "poly", np.array([2, 3, 18])),
+        (
+            (1, 2, 3),
+            "poly_inv_pin",
+            # note the inverse form of quadratic, lower branch
+            np.array([2, 3, -np.sqrt((3 - 3) / 1 + 2**2 / (4 * 1)) - 2 / (2 * 1)]),
+        ),
+        (
+            (1, 2, 3, 3, 2, 1),
+            "poly_para",
+            np.array([2, 2**2 + 2 * 2 + 3, 3 * 2**2 + 2 * 2 + 1]),
+        ),
+    ],
+    ids=["linear", "poly", "poly_inv_pin", "poly_para"],
+)
+def test_construct_f(coef, regression_method, expected):
+    rxy = np.array([2, 3, 5])
+    predict_dc = _construct_rxy_f(coef, regression_method)
+    result = predict_dc(rxy)
     np.testing.assert_array_almost_equal(expected, result)
 
     # Test Parametric

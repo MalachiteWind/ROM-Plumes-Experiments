@@ -31,6 +31,7 @@ def run(
     #################
     # Preprocessing #
     #################
+    _, n_feat = data.shape
     metrics = {}
     scalar = StandardScaler()
     if normalize:
@@ -129,7 +130,7 @@ def run(
     ############
     # plot time_series
     t = np.arange(len(data))
-    feature_names = ["a", "b", "c"]
+    feature_names = [chr(i) for i in range(97, 97 + n_feat)]
     plot_time_series(t, data=data, feature_names=feature_names, **time_series_kws)
     plt.show()
 
@@ -255,7 +256,7 @@ def _get_variances_modes(
     """
 
     S[::-1].sort()
-    var_sums = np.array([np.sum(S[:i]) for i in range(len(S))]) / np.sum(S)
+    var_sums = np.cumsum(S) / np.sum(S)
 
     mode_indices = []
     vars_captured = []
