@@ -47,6 +47,7 @@ data_lookup = {
         "hi-2": "July_20_2023/high_2.MP4",
         "med-0": "July_20_2023/med.MP4",
         "862pts": "step1/390cee.dill",
+        "mock": "step1/mock_edges.pkl",
         "864pts": "step1/6b40ca.dill",
         "865pts": "step1/e64149.dill",
         "866pts": "step1/cb6956.dill",
@@ -218,3 +219,9 @@ hankel_lookup = {
 }
 
 regress_lookup = {"r_split": {"default": 50 * 15}}
+
+regress_edge_lookup = {
+    "train_len": {"default": 0.8},
+    "n_bags": {"default": 1000},
+    "initial_guess": {"default": (1, 1, 1, 1)},
+}
