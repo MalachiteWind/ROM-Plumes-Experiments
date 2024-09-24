@@ -6,9 +6,10 @@ from ..regress_edge import bootstrap
 from ..regress_edge import do_lstsq_regression
 from ..regress_edge import do_sinusoid_regression
 from ..regression_pipeline import _construct_rxy_f
-# from ..regression_pipeline import _get_true_pred
 from ..regression_pipeline import _split_into_train_val
 from ..regression_pipeline import get_coef_acc
+
+# from ..regression_pipeline import _get_true_pred
 
 
 def test_get_coef_acc():
