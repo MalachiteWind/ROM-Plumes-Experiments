@@ -222,6 +222,6 @@ regress_lookup = {"r_split": {"default": 50 * 15}}
 
 regress_edge_lookup = {
     "train_len": {"default": 0.8},
-    "n_bags": {"default": 1000},
+    "n_bags": {"default": 1000, "2k": 2000},
     "initial_guess": {"default": (1, 1, 1, 1)},
 }
