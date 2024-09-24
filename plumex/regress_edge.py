@@ -7,13 +7,13 @@ from typing import Optional
 import matplotlib.pyplot as plt
 import numpy as np
 from ara_plumes.models import flatten_edge_points
+from ara_plumes.typing import PlumePoints
 from matplotlib.figure import Figure
 from scipy.linalg import lstsq
 from scipy.optimize import curve_fit
 
 from .types import Float1D
 from .types import Float2D
-from .types import PlumePoints
 
 
 # run after video_digest
@@ -138,7 +138,6 @@ def regress_edge(
             titles=["Top Accs", "Bot Accs"],
             method_title=method,
         )
-
 
     top_coef_lin = np.nanmean(meth_results["top"]["linear"]["coeffs"], axis=0)
     top_coef_sin = np.nanmean(meth_results["top"]["sinusoid"]["coeffs"], axis=0)
