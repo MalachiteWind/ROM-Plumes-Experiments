@@ -52,13 +52,7 @@ def create_plumepoints(
     if contour_kws is None:
         contour_kws = {}
 
-    origin_filename = filename + "_ctr.pkl"
-    with open(PICKLE_PATH / origin_filename, "rb") as fh:
-        origin = pickle.load(fh)
-    np_filename = filename[:-3] + "pkl"  # replace mov with pkl
-    with open(PICKLE_PATH / np_filename, "rb") as fh:
-        raw_vid = pickle.load(fh)
-    orig_center = (int(origin[0]), int(origin[1]))
+    raw_vid, orig_center = _load_video(filename)
     clean_vid = PLUME.clean_video(
         raw_vid,
         fixed_range,
@@ -78,6 +72,17 @@ def create_plumepoints(
         raw_vid, clean_vid, orig_center, center, bottom, top, 15, contour_kws
     )
     return {"main": None, "data": {"center": center, "bottom": bottom, "top": top}}
+
+
+def _load_video(filename: str) -> tuple[GrayVideo, tuple[int, int]]:
+    origin_filename = filename + "_ctr.pkl"
+    with open(PICKLE_PATH / origin_filename, "rb") as fh:
+        origin = pickle.load(fh)
+    np_filename = filename[:-3] + "pkl"  # replace mov with pkl
+    with open(PICKLE_PATH / np_filename, "rb") as fh:
+        raw_vid = pickle.load(fh)
+    orig_center = (int(origin[0]), int(origin[1]))
+    return raw_vid, orig_center
 
 
 def visualize_points(
