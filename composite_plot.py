@@ -1,14 +1,14 @@
 import mitosis
 import numpy as np
-from ara_plumes.typing import GrayVideo
 from ara_plumes.typing import Float2D
+from ara_plumes.typing import GrayImage
+from ara_plumes.typing import GrayVideo
 from matplotlib import pyplot as plt
 from matplotlib.figure import Figure
 
 from plumex.config import data_lookup
-from plumex.video_digest import _load_video
-
 from plumex.regression_pipeline import _construct_rxy_f
+from plumex.video_digest import _load_video
 
 center_step = mitosis.load_trial_data("5507db", trials_folder="trials/center-regress")
 center_points = center_step[0]["data"]["center"]
@@ -37,15 +37,26 @@ def frame_to_ind(fr: int) -> int:
 # plt.plot(raw_centerpoints, marker=".")
 # plt.plot(fit_centerpoints_dc)
 
+def _in_frame(rxy_points:Float2D, frame:GrayImage)-> Float2D:
+    y_range, x_range = frame.shape
+    mask = rxy_points[:,1:] >=0
+    mask = mask[:,0] & mask[:,1]
+    less_than_x = rxy_points[:,1] <= x_range + orig_center_fc[0]
+    mask = mask & less_than_x
+    less_than_y = rxy_points[:,2] <= y_range+orig_center_fc[1]
+    mask = mask & less_than_y
 
+    return rxy_points[mask]
+    
 
 
 def _visualize_fits(
-        video: GrayVideo,
-        n_frames: int, 
-        center_coef: Float2D,
-        center_func_method: str,
-        start_frame:int=0,) -> Figure:
+    video: GrayVideo,
+    n_frames: int,
+    center_coef: Float2D,
+    center_func_method: str,
+    start_frame: int = 0,
+) -> Figure:
     """
     plot center regression and unflattened edge regression on frames.
     """
@@ -55,7 +66,7 @@ def _visualize_fits(
     frame_ids = [int(frameskip * i) for i in range(n_frames)]
     grid_size = int(np.ceil(np.sqrt(n_frames)))
 
-    fig, axes = plt.subplots(grid_size, grid_size, figsize=(15, 9))
+    fig, axes = plt.subplots(grid_size, grid_size, figsize=(15, 10))
     axes = axes.flatten()
 
     for i, idx in enumerate(frame_ids):
@@ -67,17 +78,36 @@ def _visualize_fits(
         ax.set_yticks([])
 
         center_fit_func = _construct_rxy_f(center_coef[idx], center_func_method)
+        # interpolate points?
+        raw_center_points = center_points[idx][1]
 
+        ax.scatter(raw_center_points[:,1], raw_center_points[:,2], marker=".",c='r')
 
+        raw_center_points[:,1:] -= orig_center_fc
+    
+        fit_centerpoints_dc = center_fit_func(raw_center_points)
+        fit_centerpoints_dc[:,1:] += orig_center_fc
+
+        fit_center_points_in_frame = _in_frame(fit_centerpoints_dc,frame_t)
+        ax.plot(fit_center_points_in_frame[:,1], fit_center_points_in_frame[:,2])
+        
 
     for j in range(i + 1, len(axes)):
         fig.delaxes(axes[j])
 
-    fig.suptitle("Video Frames", fontsize = 16)
+    fig.suptitle("Video Frames", fontsize=16)
 
     # Tighter layout settings
     fig.tight_layout(pad=0.5)  # Reduce padding around the plot elements
-    plt.subplots_adjust(left=0.01, right=0.99, top=0.95, bottom=0.01, hspace=0.1, wspace=0.1)
+    plt.subplots_adjust(
+        left=0.01, right=0.99, top=0.95, bottom=0.01, hspace=0.1, wspace=0.1
+    )
 
 
-_visualize_fits(video[start_frame: end_frame+1], n_frames=9, start_frame=start_frame)
+_visualize_fits(
+    video[start_frame : end_frame + 1],
+    n_frames=9,
+    center_coef=center_coeff_dc,
+    center_func_method=center_fit_method,
+    start_frame=start_frame,
+)
