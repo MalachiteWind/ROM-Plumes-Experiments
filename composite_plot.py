@@ -46,18 +46,16 @@ def _visualize_fits(video: GrayVideo, n_frames: int, start_frame:int=0) -> Figur
     frame_ids = [int(frameskip * i) for i in range(n_frames)]
     grid_size = int(np.ceil(np.sqrt(n_frames)))
 
-    fig, axes = plt.subplots(grid_size, grid_size, figsize=(15, 15))
+    fig, axes = plt.subplots(grid_size, grid_size, figsize=(15, 9))
     axes = axes.flatten()
 
     for i, idx in enumerate(frame_ids):
         ax = axes[i]
         frame_t = video[idx]
         ax.imshow(frame_t, cmap="gray")
-        # ax.set_title(f"frame {idx+start_frame}")
+        ax.set_title(f"frame {idx+start_frame}")
         ax.set_xticks([])
         ax.set_yticks([])
-    
-    
 
     for j in range(i + 1, len(axes)):
         fig.delaxes(axes[j])
