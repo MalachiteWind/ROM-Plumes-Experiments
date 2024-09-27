@@ -1,17 +1,19 @@
 import mitosis
 import numpy as np
 from ara_plumes.typing import GrayVideo
+from ara_plumes.typing import Float2D
 from matplotlib import pyplot as plt
 from matplotlib.figure import Figure
 
 from plumex.config import data_lookup
 from plumex.video_digest import _load_video
 
-# from plumex.regression_pipeline import _construct_rxy_f
+from plumex.regression_pipeline import _construct_rxy_f
 
 center_step = mitosis.load_trial_data("5507db", trials_folder="trials/center-regress")
 center_points = center_step[0]["data"]["center"]
-center_coeff_dc = center_step[1]["regressions"]["poly_inv_pin"]["data"]
+center_fit_method = center_step[1]["main"]
+center_coeff_dc = center_step[1]["regressions"][center_fit_method]["data"]
 video, orig_center_fc = _load_video(data_lookup["filename"]["low-866"])
 
 start_frame = center_points[0][0]
@@ -36,7 +38,14 @@ def frame_to_ind(fr: int) -> int:
 # plt.plot(fit_centerpoints_dc)
 
 
-def _visualize_fits(video: GrayVideo, n_frames: int, start_frame:int=0) -> Figure:
+
+
+def _visualize_fits(
+        video: GrayVideo,
+        n_frames: int, 
+        center_coef: Float2D,
+        center_func_method: str,
+        start_frame:int=0,) -> Figure:
     """
     plot center regression and unflattened edge regression on frames.
     """
@@ -56,6 +65,10 @@ def _visualize_fits(video: GrayVideo, n_frames: int, start_frame:int=0) -> Figur
         ax.set_title(f"frame {idx+start_frame}")
         ax.set_xticks([])
         ax.set_yticks([])
+
+        center_fit_func = _construct_rxy_f(center_coef[idx], center_func_method)
+
+
 
     for j in range(i + 1, len(axes)):
         fig.delaxes(axes[j])
