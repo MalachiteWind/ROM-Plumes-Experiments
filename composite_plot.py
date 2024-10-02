@@ -13,6 +13,8 @@ from matplotlib.figure import Figure
 from plumex.config import data_lookup
 from plumex.regression_pipeline import _construct_rxy_f
 from plumex.video_digest import _load_video
+from post_utils import apply_theta_shift
+from post_utils import create_edge_func
 
 
 # ignore 862 and 864
@@ -29,16 +31,21 @@ center_coeff_dc = center_step[1]["regressions"][center_fit_method]["data"]
 
 video, orig_center_fc = _load_video(data_lookup["filename"][video_lookup_word])
 
-edge_step = mitosis.load_trial_data("a52e31", trials_folder="trials/edge-regress")
+edge_step = mitosis.load_trial_data(
+    edge_regress_hash, trials_folder="trials/edge-regress"
+)
 edge_plume_points = edge_step[0]["data"]
+center = cast(List[tuple[int, PlumePoints]], edge_plume_points["center"])
 bot = cast(List[tuple[int, PlumePoints]], edge_plume_points["bottom"])
 top = cast(List[tuple[int, PlumePoints]], edge_plume_points["top"])
 
 top_method, bot_method = edge_step[1]["main"]
 
-edge_coefs_top = np.nanmean(edge_step[1]["accs"]["top"][top_method]["coeffs"],axis=0)
-edge_coefs_bot = np.nanmean(edge_step[1]["accs"]["bot"][bot_method]["coeffs"],axis=0)
+edge_coefs_top = np.nanmean(edge_step[1]["accs"]["top"][top_method]["coeffs"], axis=0)
+edge_coefs_bot = np.nanmean(edge_step[1]["accs"]["bot"][bot_method]["coeffs"], axis=0)
 
+top_func = create_edge_func(edge_coefs_top, top_method)
+bot_func = create_edge_func(edge_coefs_bot, bot_method)
 
 start_frame = center_points[0][0]
 end_frame = center_points[-1][0]
@@ -120,6 +127,35 @@ def _visualize_fits(
         ax.plot(
             fit_center_points_in_frame[:, 1], fit_center_points_in_frame[:, 2], c="r"
         )
+        time = start_frame + idx
+        top_points = []
+        bot_points = []
+        for rad, x_fc, y_fc in raw_center_points:
+            top_points.append(
+                apply_theta_shift(
+                    time,
+                    rad,
+                    x_fc - orig_center_fc[0],
+                    y_fc - orig_center_fc[1],
+                    top_func,
+                    positive=True
+                )
+            )
+            bot_points.append(
+                apply_theta_shift(
+                    time,
+                    rad,
+                    x_fc - orig_center_fc[0],
+                    y_fc - orig_center_fc[1],
+                    bot_func,
+                    positive=False
+                )
+            )  
+        top_points = np.array(top_points) + orig_center_fc
+        bot_points = np.array(bot_points) + orig_center_fc
+        ax.plot(top_points[:,0], top_points[:,1],c="g")
+        ax.plot(bot_points[:,0], bot_points[:,1], c='b')
+    
 
     for j in range(i + 1, len(axes)):
         fig.delaxes(axes[j])
