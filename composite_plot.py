@@ -11,33 +11,34 @@ from matplotlib import pyplot as plt
 from matplotlib.figure import Figure
 
 from plumex.config import data_lookup
-from plumex.data import load_centerpoints
 from plumex.regression_pipeline import _construct_rxy_f
 from plumex.video_digest import _load_video
 
 
-# loading center regression results, come from 862 points instead of 866
 # ignore 862 and 864
 center_regress_hash = "85c44b"
+video_lookup_word = "low-862"
+edge_regress_hash = "a52e31"
+
 center_step = mitosis.load_trial_data(
     center_regress_hash, trials_folder="trials/center-regress"
 )
 center_points = center_step[0]["data"]["center"]
 center_fit_method = center_step[1]["main"]
 center_coeff_dc = center_step[1]["regressions"][center_fit_method]["data"]
-video, orig_center_fc = _load_video(data_lookup["filename"]["low-862"])
 
-edge_points = load_centerpoints(
-    "/home/grisal/github/ARA-Plumes-Experiments/plume_videos/step1/390cee.dill"
-)["data"]
-# mitosis.load_trial_data()
-
-# center = cast(List[tuple[int, PlumePoints]], edge_points["center"])
-bot = cast(List[tuple[int, PlumePoints]], edge_points["bottom"])
-top = cast(List[tuple[int, PlumePoints]], edge_points["top"])
-
+video, orig_center_fc = _load_video(data_lookup["filename"][video_lookup_word])
 
 edge_step = mitosis.load_trial_data("a52e31", trials_folder="trials/edge-regress")
+edge_plume_points = edge_step[0]["data"]
+bot = cast(List[tuple[int, PlumePoints]], edge_plume_points["bottom"])
+top = cast(List[tuple[int, PlumePoints]], edge_plume_points["top"])
+
+top_method, bot_method = edge_step[1]["main"]
+
+edge_coefs_top = np.nanmean(edge_step[1]["accs"]["top"][top_method]["coeffs"],axis=0)
+edge_coefs_bot = np.nanmean(edge_step[1]["accs"]["bot"][bot_method]["coeffs"],axis=0)
+
 
 start_frame = center_points[0][0]
 end_frame = center_points[-1][0]
