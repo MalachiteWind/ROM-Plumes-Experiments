@@ -1,3 +1,5 @@
+from collections.abc import Sequence
+from typing import cast
 from typing import Optional
 
 import matplotlib as mpl
@@ -12,11 +14,25 @@ from matplotlib.gridspec import GridSpec
 from .types import Float1D
 from .types import Float2D
 
-CMAP = mpl.color_sequences["tab10"]
+CMAP = cast(Sequence[tuple[float, float, float]], mpl.color_sequences["tab10"])
 CMEAS = CMAP[0]
 CSMOOTH = CMAP[1]
 CEST = CMAP[2]
 
+
+class TransparentCMAP:
+    cmap: Sequence[tuple[float, float, float]]
+    alpha: float
+
+    def __init__(self, cmap: Sequence[tuple[float, float, float]], alpha: float):
+        self.cmap = cmap
+        self.alpha = alpha
+
+    def __getitem__(self, key: int):
+        return (*self.cmap[key], self.alpha)
+
+
+CTHRU_MAP = TransparentCMAP(CMAP, 0.3)
 BGROUND = mcolors.CSS4_COLORS["lightgrey"]
 
 
