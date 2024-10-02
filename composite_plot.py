@@ -5,16 +5,34 @@ from ara_plumes.typing import GrayImage
 from ara_plumes.typing import GrayVideo
 from matplotlib import pyplot as plt
 from matplotlib.figure import Figure
+from typing import cast, List
+from ara_plumes.typing import PlumePoints
 
 from plumex.config import data_lookup
 from plumex.regression_pipeline import _construct_rxy_f
 from plumex.video_digest import _load_video
+from plumex.data import load_centerpoints
 
-center_step = mitosis.load_trial_data("5507db", trials_folder="trials/center-regress")
+
+
+# loading center regression results, come from 862 points instead of 866
+# ignore 862 and 864
+center_regress_hash = "85c44b"
+center_step = mitosis.load_trial_data(center_regress_hash, trials_folder="trials/center-regress")
 center_points = center_step[0]["data"]["center"]
 center_fit_method = center_step[1]["main"]
 center_coeff_dc = center_step[1]["regressions"][center_fit_method]["data"]
-video, orig_center_fc = _load_video(data_lookup["filename"]["low-866"])
+video, orig_center_fc = _load_video(data_lookup["filename"]["low-862"])
+
+edge_points = load_centerpoints("/home/grisal/github/ARA-Plumes-Experiments/plume_videos/step1/390cee.dill")["data"]
+# mitosis.load_trial_data()
+
+# center = cast(List[tuple[int, PlumePoints]], edge_points["center"])
+bot = cast(List[tuple[int, PlumePoints]], edge_points["bottom"])
+top = cast(List[tuple[int, PlumePoints]], edge_points["top"])
+
+
+edge_step = mitosis.load_trial_data("a52e31", trials_folder="trials/edge-regress")
 
 start_frame = center_points[0][0]
 end_frame = center_points[-1][0]
@@ -80,8 +98,12 @@ def _visualize_fits(
         center_fit_func = _construct_rxy_f(center_coef[idx], center_func_method)
         # interpolate points?
         raw_center_points = center_points[idx][1]
+        raw_bot_points = bot[idx][1]
+        raw_top_points = top[idx][1]
 
         ax.scatter(raw_center_points[:,1], raw_center_points[:,2], marker=".",c='r')
+        ax.scatter(raw_bot_points[:,1], raw_bot_points[:,2], marker=".",c='g')
+        ax.scatter(raw_top_points[:,1], raw_top_points[:,2], marker=".",c='b')
 
         raw_center_points[:,1:] -= orig_center_fc
     
@@ -89,7 +111,7 @@ def _visualize_fits(
         fit_centerpoints_dc[:,1:] += orig_center_fc
 
         fit_center_points_in_frame = _in_frame(fit_centerpoints_dc,frame_t)
-        ax.plot(fit_center_points_in_frame[:,1], fit_center_points_in_frame[:,2])
+        ax.plot(fit_center_points_in_frame[:,1], fit_center_points_in_frame[:,2], c='r')
         
 
     for j in range(i + 1, len(axes)):
