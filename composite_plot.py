@@ -1,30 +1,35 @@
+from typing import cast
+from typing import List
+
 import mitosis
 import numpy as np
 from ara_plumes.typing import Float2D
 from ara_plumes.typing import GrayImage
 from ara_plumes.typing import GrayVideo
+from ara_plumes.typing import PlumePoints
 from matplotlib import pyplot as plt
 from matplotlib.figure import Figure
-from typing import cast, List
-from ara_plumes.typing import PlumePoints
 
 from plumex.config import data_lookup
+from plumex.data import load_centerpoints
 from plumex.regression_pipeline import _construct_rxy_f
 from plumex.video_digest import _load_video
-from plumex.data import load_centerpoints
-
 
 
 # loading center regression results, come from 862 points instead of 866
 # ignore 862 and 864
 center_regress_hash = "85c44b"
-center_step = mitosis.load_trial_data(center_regress_hash, trials_folder="trials/center-regress")
+center_step = mitosis.load_trial_data(
+    center_regress_hash, trials_folder="trials/center-regress"
+)
 center_points = center_step[0]["data"]["center"]
 center_fit_method = center_step[1]["main"]
 center_coeff_dc = center_step[1]["regressions"][center_fit_method]["data"]
 video, orig_center_fc = _load_video(data_lookup["filename"]["low-862"])
 
-edge_points = load_centerpoints("/home/grisal/github/ARA-Plumes-Experiments/plume_videos/step1/390cee.dill")["data"]
+edge_points = load_centerpoints(
+    "/home/grisal/github/ARA-Plumes-Experiments/plume_videos/step1/390cee.dill"
+)["data"]
 # mitosis.load_trial_data()
 
 # center = cast(List[tuple[int, PlumePoints]], edge_points["center"])
@@ -55,17 +60,17 @@ def frame_to_ind(fr: int) -> int:
 # plt.plot(raw_centerpoints, marker=".")
 # plt.plot(fit_centerpoints_dc)
 
-def _in_frame(rxy_points:Float2D, frame:GrayImage)-> Float2D:
+
+def _in_frame(rxy_points: Float2D, frame: GrayImage) -> Float2D:
     y_range, x_range = frame.shape
-    mask = rxy_points[:,1:] >=0
-    mask = mask[:,0] & mask[:,1]
-    less_than_x = rxy_points[:,1] <= x_range + orig_center_fc[0]
+    mask = rxy_points[:, 1:] >= 0
+    mask = mask[:, 0] & mask[:, 1]
+    less_than_x = rxy_points[:, 1] <= x_range + orig_center_fc[0]
     mask = mask & less_than_x
-    less_than_y = rxy_points[:,2] <= y_range+orig_center_fc[1]
+    less_than_y = rxy_points[:, 2] <= y_range + orig_center_fc[1]
     mask = mask & less_than_y
 
     return rxy_points[mask]
-    
 
 
 def _visualize_fits(
@@ -101,18 +106,19 @@ def _visualize_fits(
         raw_bot_points = bot[idx][1]
         raw_top_points = top[idx][1]
 
-        ax.scatter(raw_center_points[:,1], raw_center_points[:,2], marker=".",c='r')
-        ax.scatter(raw_bot_points[:,1], raw_bot_points[:,2], marker=".",c='g')
-        ax.scatter(raw_top_points[:,1], raw_top_points[:,2], marker=".",c='b')
+        ax.scatter(raw_center_points[:, 1], raw_center_points[:, 2], marker=".", c="r")
+        ax.scatter(raw_bot_points[:, 1], raw_bot_points[:, 2], marker=".", c="g")
+        ax.scatter(raw_top_points[:, 1], raw_top_points[:, 2], marker=".", c="b")
 
-        raw_center_points[:,1:] -= orig_center_fc
-    
+        raw_center_points[:, 1:] -= orig_center_fc
+
         fit_centerpoints_dc = center_fit_func(raw_center_points)
-        fit_centerpoints_dc[:,1:] += orig_center_fc
+        fit_centerpoints_dc[:, 1:] += orig_center_fc
 
-        fit_center_points_in_frame = _in_frame(fit_centerpoints_dc,frame_t)
-        ax.plot(fit_center_points_in_frame[:,1], fit_center_points_in_frame[:,2], c='r')
-        
+        fit_center_points_in_frame = _in_frame(fit_centerpoints_dc, frame_t)
+        ax.plot(
+            fit_center_points_in_frame[:, 1], fit_center_points_in_frame[:, 2], c="r"
+        )
 
     for j in range(i + 1, len(axes)):
         fig.delaxes(axes[j])
