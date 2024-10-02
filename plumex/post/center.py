@@ -1,8 +1,12 @@
+from collections import defaultdict
+from functools import partial
+from itertools import product
 from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
 from mitosis import load_trial_data
+from scipy.stats import ttest_ind
 
 from plumex.regression_pipeline import MultiRegressionResults
 from plumex.regression_pipeline import RegressionResults
@@ -84,7 +88,7 @@ all_max = max(max(accs) for accs in test_scores.values())
 
 
 # %%
-def compare_histogram(concat_scores):
+def compare_histogram(concat_scores: dict[str, Float1D]):
     plt.title("Plume-Center Regressions Performance on Test Set")
     bins = np.linspace(0, 1.5, 10)
     plt.hist(
@@ -106,6 +110,17 @@ print(
 )
 
 # %% Optional investigation figures - combined test/train
-compare_histogram(low_scores)
-compare_histogram(med_scores)
-compare_histogram(hi_scores)
+# compare_histogram(low_scores)
+# compare_histogram(med_scores)
+# compare_histogram(hi_scores)
+
+
+# %%
+# Produce p_vals for t-test
+pairwise_test = partial(ttest_ind, alternative="greater", equal_var=False)
+test_res = defaultdict(dict)
+for ((meth1, dat1), (meth2, dat2)) in product(test_scores.items(), test_scores.items()):
+    test_res[meth1][meth2] = pairwise_test(dat1, dat2)
+
+p_vals = np.array([[res.pvalue for res in d.values()] for d in test_res.values()])
+# %%
