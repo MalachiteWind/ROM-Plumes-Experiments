@@ -12,9 +12,17 @@ from post_utils import create_edge_func
 
 
 # ignore 862 and 864
+# (center_regress_hash, video_lookup_word, edge_regress_hash)
+trail_lookup_key = {
+    "862": {
+        "default": ("85c44b", "low-862", "a52e31")
+    }
+}
 center_regress_hash = "85c44b"
 video_lookup_word = "low-862"
 edge_regress_hash = "a52e31"
+
+
 
 center_mitosis_step = mitosis.load_trial_data(
     center_regress_hash, trials_folder="trials/center-regress"
