@@ -64,4 +64,20 @@ _visualize_fits(
     bot_edge_func=bot_func,
     start_frame=start_frame,
     orig_center_fc=orig_center_fc,
+    plot_on_raw_points=True
+)
+# print("test change")
+_visualize_fits(
+    video[start_frame : end_frame + 1],
+    n_frames=9,
+    center_coef=center_coeff_dc,
+    center_func_method=center_fit_method,
+    center_plume_points=center,
+    bottom_plume_points=bot,
+    top_plume_points=top,
+    top_edge_func=top_func,
+    bot_edge_func=bot_func,
+    start_frame=start_frame,
+    orig_center_fc=orig_center_fc,
+    plot_on_raw_points=False
 )
