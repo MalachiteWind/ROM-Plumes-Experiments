@@ -11,6 +11,7 @@ from plumex.config import data_lookup
 from plumex.video_digest import _load_video
 from .post_utils import _visualize_fits
 from .post_utils import create_edge_func
+from .post_utils import plot_raw_frames
 
 
 
@@ -18,9 +19,12 @@ trials_folder = Path(__file__).absolute().parents[2] / "trials"
 
 # ignore 862 and 864
 # (center_regress_hash, video_lookup_word, edge_regress_hash)
-trail_lookup_key = {
+trial_lookup_key = {
     "862": {
         "default": ("85c44b", "low-862", "a52e31")
+    },
+    "865": {
+        "default": ("aedee1", "low-865","264935" )
     }
 }
 
@@ -82,7 +86,12 @@ def _unpack_data(
 
 
 # plot on true points
-_visualize_fits(n_frames=9, **_unpack_data(*trail_lookup_key["862"]["default"]))
+# _visualize_fits(n_frames=9, **_unpack_data(*trial_lookup_key["865"]["default"]))
 
-# plot on regression
-_visualize_fits(n_frames=9, **_unpack_data(*trail_lookup_key["862"]["default"]),plot_on_raw_points=False)
+# # plot on regression
+# _visualize_fits(n_frames=9, **_unpack_data(*trial_lookup_key["865"]["default"]),plot_on_raw_points=False)
+
+
+video, orig_center_fc = _load_video(data_lookup["filename"]["low-869"])
+print(len(video))
+plot_raw_frames(video=video[599:],n_frames=4,n_rows=1,n_cols=4)
