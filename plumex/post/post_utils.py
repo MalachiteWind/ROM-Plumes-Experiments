@@ -127,8 +127,8 @@ def _visualize_fits(
                 apply_theta_shift(
                     time,
                     rad,
-                    x_fc - orig_center_fc[0]*flag,
-                    y_fc - orig_center_fc[1]*flag,
+                    x_fc - orig_center_fc[0] * flag,
+                    y_fc - orig_center_fc[1] * flag,
                     top_edge_func,
                     positive=True,
                 )
@@ -137,8 +137,8 @@ def _visualize_fits(
                 apply_theta_shift(
                     time,
                     rad,
-                    x_fc - orig_center_fc[0]*flag,
-                    y_fc - orig_center_fc[1]*flag,
+                    x_fc - orig_center_fc[0] * flag,
+                    y_fc - orig_center_fc[1] * flag,
                     bot_edge_func,
                     positive=False,
                 )
@@ -163,28 +163,27 @@ def _visualize_fits(
 def plot_raw_frames(video, n_frames, n_rows, n_cols):
     # Calculate the number of frames to skip
     frameskip = len(video) / n_frames
-    
+
     # Generate frame indices
     frame_ids = [int(frameskip * i) for i in range(n_frames)]
-    
+
     # Create subplots
     fig, axs = plt.subplots(n_rows, n_cols, figsize=(n_cols * 4, n_rows * 4))
     axs = axs.flatten()  # Flatten to easily index the axes
-    
+
     for i, idx in enumerate(frame_ids):
         frame_t = video[idx]
         axs[i].imshow(frame_t)  # Display the frame
-        axs[i].axis('off')      # Turn off axis
-        axs[i].set_title(f't = {idx}', fontsize=20)  # Set title with time point
-    
+        axs[i].axis("off")  # Turn off axis
+        axs[i].set_title(f"t = {idx}", fontsize=20)  # Set title with time point
+
     # Hide any remaining empty subplots if n_frames < n_rows * n_cols
     for j in range(i + 1, n_rows * n_cols):
-        axs[j].axis('off')
-    
+        axs[j].axis("off")
+
     plt.tight_layout()
     plt.show()
     return
-
 
 
 # def _visualize_fits_regress(
@@ -280,4 +279,3 @@ def plot_raw_frames(video, n_frames, n_rows, n_cols):
 #     plt.subplots_adjust(
 #         left=0.01, right=0.99, top=0.95, bottom=0.01, hspace=0.1, wspace=0.1
 #     )
-
