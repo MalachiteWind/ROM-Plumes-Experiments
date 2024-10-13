@@ -7,4 +7,3 @@ figures/post analysis.  Run this module to generate all figures/post
 analysis.
 """
 from . import composite_plot
-

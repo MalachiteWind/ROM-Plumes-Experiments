@@ -20,6 +20,13 @@ trials_folder = Path(__file__).absolute().parents[2] / "trials"
 trial_lookup_key = {
     "862": {"default": ("85c44b", "low-862", "a52e31")},
     "865": {"default": ("aedee1", "low-865", "264935")},
+    "866": {
+        "deg_1": ("49e226", "low-866", "741931"),
+        "deg_3": ("0ba832", "low-866", "741931"),
+        "deg_4": ("910388", "low-866", "741931"),
+        "deg_5": ("5507db", "low-866", "741931"),
+    },
+    "867": {"default": ("")},
 }
 
 
@@ -77,9 +84,18 @@ def _unpack_data(
 
 
 # plot on true points
-_visualize_fits(n_frames=9, **_unpack_data(*trial_lookup_key["865"]["default"]))
+# _visualize_fits(n_frames=9, **_unpack_data(*trial_lookup_key["865"]["default"]))
 
 # plot on regression
-_visualize_fits(n_frames=9, **_unpack_data(*trial_lookup_key["865"]["default"]),plot_on_raw_points=False)
+_visualize_fits(
+    n_frames=9,
+    **_unpack_data(*trial_lookup_key["865"]["default"]),
+    plot_on_raw_points=False
+)
 
 
+# _visualize_fits(
+#     n_frames=9,
+#     **_unpack_data(*trial_lookup_key["866"]["deg_3"]),
+#     plot_on_raw_points=False
+# )
