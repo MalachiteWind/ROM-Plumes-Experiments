@@ -123,4 +123,12 @@ for ((meth1, dat1), (meth2, dat2)) in product(test_scores.items(), test_scores.i
     test_res[meth1][meth2] = pairwise_test(dat1, dat2)
 
 p_vals = np.array([[res.pvalue for res in d.values()] for d in test_res.values()])
+
 # %%
+p_fig = plt.figure()
+ax = p_fig.add_subplot()
+ax.imshow(p_vals)
+ax.set_yticks(ticks=(0.0, 1.0, 2.0, 3.0), labels=test_res.keys())
+ax.set_xticks(ticks=(0.0, 1.0, 2.0, 3.0), labels=test_res.keys())
+ax.set_title("y axis is less than x axis:")
+p_fig.suptitle("Just a helpful graphic for typing in table")
