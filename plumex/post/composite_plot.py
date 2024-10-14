@@ -1,15 +1,21 @@
 from pathlib import Path
+from typing import Callable
 from typing import cast
 from typing import List
+from typing import TypedDict
 
 import mitosis
 import numpy as np
+from ara_plumes.typing import GrayVideo
 from ara_plumes.typing import PlumePoints
 
-from .post_utils import _visualize_fits
-from .post_utils import create_edge_func
-from .post_utils import plot_raw_frames
 from plumex.config import data_lookup
+from plumex.post.post_utils import _visualize_fits
+from plumex.post.post_utils import _visualize_multi_edge_fits
+from plumex.post.post_utils import create_edge_func
+from plumex.post.post_utils import plot_raw_frames
+from plumex.post.post_utils import RegressionData
+from plumex.types import Float2D
 from plumex.video_digest import _load_video
 
 
@@ -23,7 +29,9 @@ trial_lookup_key = {
     "866": {
         "default": ("5507db", "low-866", "741931"),
     },
-    "867": {"default": ("")},
+    "867": {"default": ("98c0dc", "low-867", "baa666")},
+    "868": {"default": ("ea68e7","low-868","e90c88")},
+    "869": {"default": ("7314c2","low-869","db4a6c")},
 }
 
 
@@ -31,7 +39,7 @@ def _unpack_data(
     center_regress_hash: str,
     video_lookup_keyword: str,
     edge_regress_hash: str,
-) -> dict:
+) -> RegressionData:
 
     video, orig_center_fc = _load_video(data_lookup["filename"][video_lookup_keyword])
     center_mitosis_step = mitosis.load_trial_data(
@@ -65,34 +73,54 @@ def _unpack_data(
     start_frame = center[0][0]
     end_frame = center[-1][0]
 
-    results = {
-        "video": video[start_frame : end_frame + 1],
-        "center_coef": center_coeff_dc,
-        "center_func_method": center_fit_method,
-        "center_plume_points": center,
-        "top_plume_points": top,
-        "bottom_plume_points": bot,
-        "top_edge_func": top_func,
-        "bot_edge_func": bot_func,
-        "start_frame": start_frame,
-        "orig_center_fc": orig_center_fc,
-    }
-    return results
+    return RegressionData(
+        video=video[start_frame : end_frame + 1],
+        center_coeff=center_coeff_dc,
+        center_func_method=center_fit_method,
+        center_plume_points=center,
+        top_plume_points=top,
+        bottom_plume_points=bot,
+        top_edge_func=top_func,
+        bot_edge_func=bot_func,
+        start_frame=start_frame,
+        orig_center_fc=orig_center_fc,
+    )
 
 
 # plot on true points
 # _visualize_fits(n_frames=9, **_unpack_data(*trial_lookup_key["865"]["default"]))
 
 # plot on regression
-_visualize_fits(
-    n_frames=9,
-    **_unpack_data(*trial_lookup_key["865"]["default"]),
-    plot_on_raw_points=False
-)
+# _visualize_fits(
+#     n_frames=9,
+#     **_unpack_data(*trial_lookup_key["865"]["default"]),
+#     plot_on_raw_points=False
+# )
 
 
-_visualize_fits(
-    n_frames=9,
-    **_unpack_data(*trial_lookup_key["866"]["default"]),
-    plot_on_raw_points=True
+# _visualize_fits(
+#     n_frames=9,
+#     **_unpack_data(*trial_lookup_key["866"]["default"]),
+#     plot_on_raw_points=False,
+#     plot_center_points=False
+# )
+
+video_data = [
+    _unpack_data(*trial_lookup_key["866"]["default"]),
+    _unpack_data(*trial_lookup_key["867"]["default"]),
+    _unpack_data(*trial_lookup_key["868"]["default"]),
+    _unpack_data(*trial_lookup_key["869"]["default"]),
+]
+frame_ids = [0, 100, 350, 450]
+
+lenghts = [len(vid["video"]) for vid in video_data]
+
+_visualize_multi_edge_fits(
+    video_data=video_data,
+    frame_ids=frame_ids,
+    title="test",
+    subtitles=[],
+    figsize=(6, 7),
 )
+
+print()

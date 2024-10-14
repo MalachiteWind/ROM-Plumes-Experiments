@@ -1,4 +1,7 @@
 from typing import Callable
+from typing import List
+from typing import Tuple
+from typing import TypedDict
 
 import numpy as np
 from ara_plumes.typing import Float1D
@@ -12,6 +15,19 @@ from matplotlib.figure import Figure
 from plumex.regress_edge import create_lin_func
 from plumex.regress_edge import create_sin_func
 from plumex.regression_pipeline import _construct_rxy_f
+
+
+class RegressionData(TypedDict):
+    video: GrayVideo
+    center_coef: Float2D
+    center_func_method: str
+    center_plume_points: PlumePoints
+    top_plume_points: PlumePoints
+    bottom_plume_points: PlumePoints
+    top_edge_func: Callable[[float], float]
+    bot_edge_func: Callable[[float], float]
+    start_frame: int
+    orig_center_fc: tuple[float, float]
 
 
 def apply_theta_shift(
@@ -58,6 +74,7 @@ def _visualize_fits(
     orig_center_fc: tuple[float, float],
     start_frame: int = 0,
     plot_on_raw_points: bool = True,
+    plot_center_points: bool = True,
 ) -> Figure:
     """
     plot center regression and unflattened edge regression on frames.
@@ -86,7 +103,10 @@ def _visualize_fits(
         raw_bot_points = bottom_plume_points[idx][1]
         raw_top_points = top_plume_points[idx][1]
 
-        ax.scatter(raw_center_points[:, 1], raw_center_points[:, 2], marker=".", c="r")
+        if plot_center_points:
+            ax.scatter(
+                raw_center_points[:, 1], raw_center_points[:, 2], marker=".", c="r"
+            )
         ax.scatter(raw_bot_points[:, 1], raw_bot_points[:, 2], marker=".", c="g")
         ax.scatter(raw_top_points[:, 1], raw_top_points[:, 2], marker=".", c="b")
 
@@ -96,9 +116,8 @@ def _visualize_fits(
         fit_centerpoints_dc[:, 1:] += orig_center_fc
 
         raw_center_points[:, 1:] += orig_center_fc
-        ax.plot(
-            fit_centerpoints_dc[:, 1], fit_centerpoints_dc[:, 2], c="r"
-        )
+        if plot_center_points:
+            ax.plot(fit_centerpoints_dc[:, 1], fit_centerpoints_dc[:, 2], c="r")
         time = start_frame + idx
         top_points = []
         bot_points = []
@@ -134,8 +153,8 @@ def _visualize_fits(
 
         ax.plot(top_points[:, 0], top_points[:, 1], c="g")
         ax.plot(bot_points[:, 0], bot_points[:, 1], c="b")
-        ax.set_xlim([0,x_lim])
-        ax.set_ylim([y_lim,0])
+        ax.set_xlim([0, x_lim])
+        ax.set_ylim([y_lim, 0])
 
     for j in range(i + 1, len(axes)):
         fig.delaxes(axes[j])
@@ -173,3 +192,38 @@ def plot_raw_frames(video, n_frames, n_rows, n_cols):
     plt.tight_layout()
     plt.show()
     return
+
+
+def _visualize_multi_edge_fits(
+    video_data: List[RegressionData],
+    frame_ids: List[int],
+    title: str,
+    subtitles: List[str],
+    figsize: Tuple[int, int],
+):
+    fig, axes = plt.subplots(
+        nrows=len(video_data), ncols=len(frame_ids), figsize=figsize
+    )
+    axes = axes.flatten()
+    idx = 0
+    for vid in video_data:
+        for frame_id in frame_ids:
+            ax = axes[idx]
+            frame_t = vid["video"][frame_id]
+            y_lim, x_lim = frame_t.shape
+
+            ax.imshow(frame_t, cmap="gray")
+            if idx < len(frame_ids):
+                ax.set_title(f"frame {frame_id}")
+            start_frame = vid["start_frame"]
+            raw_bot_points = vid["bottom_plume_points"][frame_id][1]
+            raw_top_points = vid["top_plume_points"][frame_id][1]
+
+            ax.scatter(raw_bot_points[:, 1], raw_bot_points[:, 2], marker=".", c="g")
+            ax.scatter(raw_top_points[:, 1], raw_top_points[:, 2], marker=".", c="b")
+            ax.axis("off")
+
+            idx += 1
+    fig.tight_layout(pad=0.1)
+
+    ...
