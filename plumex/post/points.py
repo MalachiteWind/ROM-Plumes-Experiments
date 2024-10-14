@@ -70,8 +70,8 @@ def _mini_video_digest(
     )
     return _PlotData(
         orig_center,
-        raw_vid[frame, ...],
-        clean_vid[frame, ...],
+        raw_vid[frame],
+        clean_vid[frame],
         contour_kws or {},
         center,
         bottom,
