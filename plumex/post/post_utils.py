@@ -45,18 +45,6 @@ def create_edge_func(coeffs: tuple, method: str) -> Callable[[tuple, tuple], tup
         raise ValueError(f"{method} is not an accepted method.")
 
 
-def _in_frame_mask(xy_points: Float2D, frame: GrayImage, orig_center_fc) -> Float1D:
-    y_range, x_range = frame.shape
-    mask = xy_points >= 0
-    mask = mask[:, 0] & mask[:, 1]
-    less_than_x = xy_points[:, 0] <= x_range + orig_center_fc[0]
-    mask = mask & less_than_x
-    less_than_y = xy_points[:, 1] <= y_range + orig_center_fc[1]
-    mask = mask & less_than_y
-
-    return mask
-
-
 def _visualize_fits(
     video: GrayVideo,
     n_frames: int,
@@ -86,6 +74,7 @@ def _visualize_fits(
     for i, idx in enumerate(frame_ids):
         ax = axes[i]
         frame_t = video[idx]
+        y_lim, x_lim = frame_t.shape
         ax.imshow(frame_t, cmap="gray")
         ax.set_title(f"frame {idx+start_frame}")
         ax.set_xticks([])
@@ -107,12 +96,8 @@ def _visualize_fits(
         fit_centerpoints_dc[:, 1:] += orig_center_fc
 
         raw_center_points[:, 1:] += orig_center_fc
-
-        fit_center_points_in_frame = fit_centerpoints_dc[
-            _in_frame_mask(fit_centerpoints_dc[:, 1:], frame_t, orig_center_fc)
-        ]
         ax.plot(
-            fit_center_points_in_frame[:, 1], fit_center_points_in_frame[:, 2], c="r"
+            fit_centerpoints_dc[:, 1], fit_centerpoints_dc[:, 2], c="r"
         )
         time = start_frame + idx
         top_points = []
@@ -122,7 +107,7 @@ def _visualize_fits(
         if plot_on_raw_points:
             anchor_points = raw_center_points
         else:
-            anchor_points = fit_center_points_in_frame
+            anchor_points = fit_centerpoints_dc
         for rad, x_fc, y_fc in anchor_points:
             top_points.append(
                 apply_theta_shift(
@@ -147,16 +132,10 @@ def _visualize_fits(
         top_points = np.array(top_points) + orig_center_fc
         bot_points = np.array(bot_points) + orig_center_fc
 
-        # Check if points in frame
-        top_point_in_frame = top_points[
-            _in_frame_mask(top_points, frame_t, orig_center_fc)
-        ]
-        bot_point_in_frame = bot_points[
-            _in_frame_mask(bot_points, frame_t, orig_center_fc)
-        ]
-
-        ax.plot(top_point_in_frame[:, 0], top_point_in_frame[:, 1], c="g")
-        ax.plot(bot_point_in_frame[:, 0], bot_point_in_frame[:, 1], c="b")
+        ax.plot(top_points[:, 0], top_points[:, 1], c="g")
+        ax.plot(bot_points[:, 0], bot_points[:, 1], c="b")
+        ax.set_xlim([0,x_lim])
+        ax.set_ylim([y_lim,0])
 
     for j in range(i + 1, len(axes)):
         fig.delaxes(axes[j])
