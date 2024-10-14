@@ -54,15 +54,15 @@ meth_coeffs = _mini_multireg_center(center)
 best_c = meth_coeffs[best_meth]
 
 # %%
-fig5 = plt.figure(figsize=(5, 9))
+fig5 = plt.figure(figsize=(15, 4))
 fig5.suptitle("Best regression method for center path")
 no_points = cast(PlumePoints, np.empty(shape=(0, 3)))
-ax0 = fig5.add_subplot(3, 1, 1)
+ax0 = fig5.add_subplot(1, 3, 1)
 _plot_learn_path(ax0, raw_frame, center, no_points, no_points)
 # hack to make colors line up with second plot
 ax0.get_lines()[0].set_color(CMAP[0])
 ax0.set_xlabel("(a)")
-ax1 = fig5.add_subplot(3, 1, 2)
+ax1 = fig5.add_subplot(1, 3, 2)
 y_max, x_max = raw_frame.shape
 origin_pc = (origin_fc[0], float(y_max - origin_fc[1]))
 _plot_frame_points(ax1, center, y_max, None, origin_fc)
@@ -74,7 +74,7 @@ for meth_ind, (meth, coeffs) in enumerate(meth_coeffs.items()):
 ax1.set_xlim(ax0.get_xlim())
 ax1.set_ylim(ax0.get_ylim()[1], ax0.get_ylim()[0])
 ax1.set_xlabel("(b)")
-ax2 = fig5.add_subplot(3, 1, 3)
+ax2 = fig5.add_subplot(1, 3, 3)
 _plot_frame(ax2, raw_frame)
 _add_regression_to_plot(
     ax2, best_c.flatten(), best_meth, center, y_max, origin_fc, CMAP[4]
@@ -85,4 +85,4 @@ for line in ax2.get_lines():
     line.set_ydata(y_max - line.get_ydata())
 ax2.set_xlabel("(c)")
 fig5.tight_layout()
-fig5.subplots_adjust(top=0.95)
+fig5.subplots_adjust(top=0.90)

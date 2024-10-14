@@ -17,12 +17,11 @@ from plumex.video_digest import _plot_frame
 from plumex.video_digest import _plot_learn_path
 
 
-frame = 500
+frame = 838
 trials = {
     "good": "cb6956",
-    "no smoothing": "cee527",
-    "extra smoothing": "1c55e1",
-    "two contours": "b4dc87",
+    "extra blur": "430130",
+    "one contour": "76b9db",
 }
 trials_folder = Path(__file__).absolute().parents[2] / "trials"
 points_trials_folder = trials_folder / "center"
@@ -154,4 +153,5 @@ fig4.tight_layout()
 fig4.subplots_adjust(top=0.95)
 fig4.suptitle("How sensitive are the plume points to the extraction parameters?")
 pass
+
 # %%
