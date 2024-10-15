@@ -200,6 +200,7 @@ def _visualize_multi_edge_fits(
     title: str,
     subtitles: List[str],
     figsize: Tuple[int, int],
+    plot_on_raw_points: bool=True,
 ):
     fig, axes = plt.subplots(
         nrows=len(video_data), ncols=len(frame_ids), figsize=figsize
@@ -211,19 +212,73 @@ def _visualize_multi_edge_fits(
             ax = axes[idx]
             frame_t = vid["video"][frame_id]
             y_lim, x_lim = frame_t.shape
-
+            # plot frame
             ax.imshow(frame_t, cmap="gray")
             if idx < len(frame_ids):
                 ax.set_title(f"frame {frame_id}")
             start_frame = vid["start_frame"]
+            if idx % len(frame_ids) == 0:
+                ax.set_ylabel(subtitles[idx // len(frame_ids)], fontsize=12)
+    
+            # plot edge points
             raw_bot_points = vid["bottom_plume_points"][frame_id][1]
             raw_top_points = vid["top_plume_points"][frame_id][1]
 
             ax.scatter(raw_bot_points[:, 1], raw_bot_points[:, 2], marker=".", c="g")
             ax.scatter(raw_top_points[:, 1], raw_top_points[:, 2], marker=".", c="b")
-            ax.axis("off")
+            ax.tick_params(left=False, labelleft=False, bottom=False, labelbottom=False)
+            # ax.axis("off")
+
+            # plot center points
+            raw_center_points = vid["center_plume_points"][frame_id][1]
+            orig_center_fc = vid["orig_center_fc"]
+            if plot_on_raw_points:
+                anchor_points = raw_center_points
+            else:
+                center_fit_method = vid["center_func_method"]
+                center_fit_func = _construct_rxy_f(
+                    vid["center_coef"][frame_id],
+                    center_fit_method
+                )
+                raw_center_points[:,1:]-= orig_center_fc
+                fit_centerpoints_dc = center_fit_func(raw_center_points)
+                raw_center_points[:,1:]+= orig_center_fc
+                fit_centerpoints_dc[:, 1:] += orig_center_fc
+                anchor_points = fit_centerpoints_dc
+            top_points = []
+            bot_points = []
+            for rad, x_fc, y_fc in anchor_points:
+                top_points.append(
+                    apply_theta_shift(
+                        frame_id,
+                        rad,
+                        x_fc - orig_center_fc[0],
+                        y_fc - orig_center_fc[1],
+                        vid["top_edge_func"],
+                        positive=True,
+                    )
+                )
+                bot_points.append(
+                    apply_theta_shift(
+                        frame_id,
+                        rad,
+                        x_fc - orig_center_fc[0],
+                        y_fc - orig_center_fc[1],
+                        vid["bot_edge_func"],
+                        positive=False,
+                    )
+                )                
+
+            top_points = np.array(top_points) + orig_center_fc
+            bot_points = np.array(bot_points) + orig_center_fc   
+
+            ax.plot(top_points[:, 0], top_points[:, 1], c="g")
+            ax.plot(bot_points[:, 0], bot_points[:, 1], c="b")
+            ax.set_xlim([0, x_lim])
+            ax.set_ylim([y_lim, 0])         
 
             idx += 1
-    fig.tight_layout(pad=0.1)
-
-    ...
+    fig.suptitle(title, fontsize=16)
+    fig.tight_layout(pad=0.5)
+    return 
+    

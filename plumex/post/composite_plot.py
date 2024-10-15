@@ -75,7 +75,7 @@ def _unpack_data(
 
     return RegressionData(
         video=video[start_frame : end_frame + 1],
-        center_coeff=center_coeff_dc,
+        center_coef=center_coeff_dc,
         center_func_method=center_fit_method,
         center_plume_points=center,
         top_plume_points=top,
@@ -87,40 +87,24 @@ def _unpack_data(
     )
 
 
-# plot on true points
-# _visualize_fits(n_frames=9, **_unpack_data(*trial_lookup_key["865"]["default"]))
 
-# plot on regression
-# _visualize_fits(
-#     n_frames=9,
-#     **_unpack_data(*trial_lookup_key["865"]["default"]),
-#     plot_on_raw_points=False
-# )
+vid_names = ["866", "867", "868", "869"]
+frame_ids = [0, 100, 350, 450]
 
-
-# _visualize_fits(
-#     n_frames=9,
-#     **_unpack_data(*trial_lookup_key["866"]["default"]),
-#     plot_on_raw_points=False,
-#     plot_center_points=False
-# )
 
 video_data = [
-    _unpack_data(*trial_lookup_key["866"]["default"]),
-    _unpack_data(*trial_lookup_key["867"]["default"]),
-    _unpack_data(*trial_lookup_key["868"]["default"]),
-    _unpack_data(*trial_lookup_key["869"]["default"]),
+    _unpack_data(*trial_lookup_key[name]["default"]) for name in vid_names
 ]
-frame_ids = [0, 100, 350, 450]
 
 lenghts = [len(vid["video"]) for vid in video_data]
 
 _visualize_multi_edge_fits(
     video_data=video_data,
     frame_ids=frame_ids,
-    title="test",
-    subtitles=[],
-    figsize=(6, 7),
+    title="Edge Regression",
+    subtitles=vid_names,
+    figsize=(12, 8),
+    plot_on_raw_points=True
 )
 
 print()
