@@ -6,4 +6,6 @@ experiments are run.  Run individual scripts to generate respective
 figures/post analysis.  Run this module to generate all figures/post
 analysis.
 """
-from . import composite_plot
+from . import edge_figs
+
+__all__ = ["edge_figs"]

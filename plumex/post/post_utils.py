@@ -281,4 +281,4 @@ def _visualize_multi_edge_fits(
             idx += 1
     fig.suptitle(title, fontsize=title_fontsize)
     fig.tight_layout(pad=0.5)
-    return
+    return fig
