@@ -106,6 +106,12 @@ video_data = [_unpack_data(*trial_lookup_key[name]["default"]) for name in vid_n
 
 
 figsize = (20, 10)
+what_to_plot = {
+    "plot_edge_points": True,
+    "plot_center_points": False,
+    "plot_edge_regression": True,
+    "plot_center_regression": False
+}
 
 _visualize_multi_edge_fits(
     video_data=video_data,
@@ -114,15 +120,24 @@ _visualize_multi_edge_fits(
     subtitles=vid_names,
     figsize=figsize,
     plot_on_raw_points=True,
+    **what_to_plot
 )
+
+what_to_plot = {
+    "plot_edge_points": False,
+    "plot_center_points": False,
+    "plot_edge_regression": True,
+    "plot_center_regression": True
+}
 
 _visualize_multi_edge_fits(
     video_data=video_data,
     frame_ids=frame_ids,
-    title="Edge Regression (Regression Points)",
+    title="Edge Regression (Attached Center)",
     subtitles=vid_names,
     figsize=figsize,
     plot_on_raw_points=False,
+    **what_to_plot
 )
 
 

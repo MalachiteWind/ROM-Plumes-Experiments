@@ -200,6 +200,10 @@ def _visualize_multi_edge_fits(
     title: str,
     subtitles: List[str],
     figsize: Tuple[int, int],
+    plot_edge_points: bool = True,
+    plot_center_points: bool = True,
+    plot_edge_regression: bool = True,
+    plot_center_regression: bool = True,
     plot_on_raw_points: bool = True,
 ):
     axis_fontsize = 15
@@ -226,25 +230,36 @@ def _visualize_multi_edge_fits(
             raw_bot_points = vid["bottom_plume_points"][frame_id][1]
             raw_top_points = vid["top_plume_points"][frame_id][1]
 
-            ax.scatter(raw_bot_points[:, 1], raw_bot_points[:, 2], marker=".", c="g")
-            ax.scatter(raw_top_points[:, 1], raw_top_points[:, 2], marker=".", c="b")
+            if plot_edge_points:
+                ax.scatter(raw_bot_points[:, 1], raw_bot_points[:, 2], marker=".", c="g")
+                ax.scatter(raw_top_points[:, 1], raw_top_points[:, 2], marker=".", c="b")
+
             ax.tick_params(left=False, labelleft=False, bottom=False, labelbottom=False)
             # ax.axis("off")
 
             # plot center points
+
             raw_center_points = vid["center_plume_points"][frame_id][1]
             orig_center_fc = vid["orig_center_fc"]
+            center_fit_method = vid["center_func_method"]
+            center_fit_func = _construct_rxy_f(
+                vid["center_coef"][frame_id], center_fit_method
+            )
+            raw_center_points[:, 1:] -= orig_center_fc
+            fit_centerpoints_dc = center_fit_func(raw_center_points)
+            raw_center_points[:, 1:] += orig_center_fc
+            fit_centerpoints_dc[:, 1:] += orig_center_fc
+
+
+            if plot_center_points:
+                ax.scatter(raw_center_points[:,1], raw_center_points[:,2],marker=".",c='r')
+
+            if plot_center_regression:
+                ax.plot(fit_centerpoints_dc[:,1],fit_centerpoints_dc[:,2],c='r')
+
             if plot_on_raw_points:
                 anchor_points = raw_center_points
             else:
-                center_fit_method = vid["center_func_method"]
-                center_fit_func = _construct_rxy_f(
-                    vid["center_coef"][frame_id], center_fit_method
-                )
-                raw_center_points[:, 1:] -= orig_center_fc
-                fit_centerpoints_dc = center_fit_func(raw_center_points)
-                raw_center_points[:, 1:] += orig_center_fc
-                fit_centerpoints_dc[:, 1:] += orig_center_fc
                 anchor_points = fit_centerpoints_dc
             top_points = []
             bot_points = []
@@ -272,9 +287,9 @@ def _visualize_multi_edge_fits(
 
             top_points = np.array(top_points) + orig_center_fc
             bot_points = np.array(bot_points) + orig_center_fc
-
-            ax.plot(top_points[:, 0], top_points[:, 1], c="g")
-            ax.plot(bot_points[:, 0], bot_points[:, 1], c="b")
+            if plot_edge_regression:
+                ax.plot(top_points[:, 0], top_points[:, 1], c="g")
+                ax.plot(bot_points[:, 0], bot_points[:, 1], c="b")
             ax.set_xlim([0, x_lim])
             ax.set_ylim([y_lim, 0])
 
