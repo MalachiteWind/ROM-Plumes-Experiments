@@ -129,6 +129,7 @@ data_lookup = {
         "high": {"kernel_size": 27, "sigma": 9},
     },
     "contour_kws": {
+        "1c": {"num_of_contours": 1},
         "2c": {"num_of_contours": 2},
         "3c": {"num_of_contours": 3},
         "4c": {"num_of_contours": 4},
