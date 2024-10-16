@@ -200,8 +200,11 @@ def _visualize_multi_edge_fits(
     title: str,
     subtitles: List[str],
     figsize: Tuple[int, int],
-    plot_on_raw_points: bool=True,
+    plot_on_raw_points: bool = True,
 ):
+    axis_fontsize = 15
+    title_fontsize = 25
+
     fig, axes = plt.subplots(
         nrows=len(video_data), ncols=len(frame_ids), figsize=figsize
     )
@@ -215,11 +218,10 @@ def _visualize_multi_edge_fits(
             # plot frame
             ax.imshow(frame_t, cmap="gray")
             if idx < len(frame_ids):
-                ax.set_title(f"frame {frame_id}")
-            start_frame = vid["start_frame"]
+                ax.set_title(f"frame {frame_id}", fontsize=axis_fontsize)
             if idx % len(frame_ids) == 0:
-                ax.set_ylabel(subtitles[idx // len(frame_ids)], fontsize=12)
-    
+                ax.set_ylabel(subtitles[idx // len(frame_ids)], fontsize=axis_fontsize)
+
             # plot edge points
             raw_bot_points = vid["bottom_plume_points"][frame_id][1]
             raw_top_points = vid["top_plume_points"][frame_id][1]
@@ -237,12 +239,11 @@ def _visualize_multi_edge_fits(
             else:
                 center_fit_method = vid["center_func_method"]
                 center_fit_func = _construct_rxy_f(
-                    vid["center_coef"][frame_id],
-                    center_fit_method
+                    vid["center_coef"][frame_id], center_fit_method
                 )
-                raw_center_points[:,1:]-= orig_center_fc
+                raw_center_points[:, 1:] -= orig_center_fc
                 fit_centerpoints_dc = center_fit_func(raw_center_points)
-                raw_center_points[:,1:]+= orig_center_fc
+                raw_center_points[:, 1:] += orig_center_fc
                 fit_centerpoints_dc[:, 1:] += orig_center_fc
                 anchor_points = fit_centerpoints_dc
             top_points = []
@@ -267,18 +268,17 @@ def _visualize_multi_edge_fits(
                         vid["bot_edge_func"],
                         positive=False,
                     )
-                )                
+                )
 
             top_points = np.array(top_points) + orig_center_fc
-            bot_points = np.array(bot_points) + orig_center_fc   
+            bot_points = np.array(bot_points) + orig_center_fc
 
             ax.plot(top_points[:, 0], top_points[:, 1], c="g")
             ax.plot(bot_points[:, 0], bot_points[:, 1], c="b")
             ax.set_xlim([0, x_lim])
-            ax.set_ylim([y_lim, 0])         
+            ax.set_ylim([y_lim, 0])
 
             idx += 1
-    fig.suptitle(title, fontsize=16)
+    fig.suptitle(title, fontsize=title_fontsize)
     fig.tight_layout(pad=0.5)
-    return 
-    
+    return
