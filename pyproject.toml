@@ -11,7 +11,7 @@ dependencies = [
   "pysindy[cvxpy] @ git+https://github.com/dynamicslab/pysindy@a43e217",
   "matplotlib",
   "pysindy-experiments @ git+https://github.com/Jacob-Stevens-Haas/gen-experiments@cbaa059",
-  "ara_plumes @ git+https://github.com/Jacob-Stevens-Haas/ARA-Plumes@0.6.0",
+  "ara_plumes @ git+https://github.com/Jacob-Stevens-Haas/ARA-Plumes@0.7.0",
 ]
 
 [project.optional-dependencies]
