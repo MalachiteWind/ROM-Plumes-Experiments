@@ -1,21 +1,15 @@
 from pathlib import Path
-from typing import Callable
 from typing import cast
 from typing import List
-from typing import TypedDict
 
 import mitosis
 import numpy as np
-from ara_plumes.typing import GrayVideo
 from ara_plumes.typing import PlumePoints
 
 from plumex.config import data_lookup
-from plumex.post.post_utils import _visualize_fits
 from plumex.post.post_utils import _visualize_multi_edge_fits
 from plumex.post.post_utils import create_edge_func
-from plumex.post.post_utils import plot_raw_frames
 from plumex.post.post_utils import RegressionData
-from plumex.types import Float2D
 from plumex.video_digest import _load_video
 
 
@@ -111,7 +105,7 @@ video_data = [_unpack_data(*trial_lookup_key[name]["default"]) for name in vid_n
 # }
 
 
-figsize = (18, 10)
+figsize = (20, 10)
 
 _visualize_multi_edge_fits(
     video_data=video_data,
@@ -130,24 +124,6 @@ _visualize_multi_edge_fits(
     figsize=figsize,
     plot_on_raw_points=False,
 )
-
-
-# vid_names = ["wind", "no wind", "hi 1"]
-# frame_ids = [50,100, 150, 280]
-
-# video_data = [
-#     _unpack_data(*trial_lookup_key[name]["default"]) for name in vid_names
-# ]
-
-
-# _visualize_multi_edge_fits(
-#     video_data=video_data,
-#     frame_ids=frame_ids,
-#     title="Edge Regression",
-#     subtitles=vid_names,
-#     figsize=(15, 8),
-#     plot_on_raw_points=True
-# )
 
 
 print()
