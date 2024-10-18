@@ -1,9 +1,11 @@
 from pathlib import Path
 from typing import cast
 from typing import List
+from typing import Tuple
 
 import mitosis
 import numpy as np
+from ara_plumes.models import flatten_edge_points
 from ara_plumes.typing import PlumePoints
 
 from plumex.config import data_lookup
@@ -11,6 +13,8 @@ from plumex.post.post_utils import _visualize_multi_edge_fits
 from plumex.post.post_utils import create_edge_func
 from plumex.post.post_utils import RegressionData
 from plumex.video_digest import _load_video
+
+import matplotlib.pyplot as plt
 
 
 trials_folder = Path(__file__).absolute().parents[2] / "trials"
@@ -93,7 +97,6 @@ def _unpack_data(
     )
 
 
-
 vid_names = ["low 869", "med 914", "hi 920"]
 frame_ids = [250, 750, 1000, 1200]
 
@@ -110,7 +113,7 @@ what_to_plot = {
     "plot_edge_points": True,
     "plot_center_points": False,
     "plot_edge_regression": True,
-    "plot_center_regression": False
+    "plot_center_regression": False,
 }
 
 _visualize_multi_edge_fits(
@@ -127,7 +130,7 @@ what_to_plot = {
     "plot_edge_points": False,
     "plot_center_points": False,
     "plot_edge_regression": True,
-    "plot_center_regression": True
+    "plot_center_regression": True,
 }
 
 _visualize_multi_edge_fits(
@@ -140,16 +143,52 @@ _visualize_multi_edge_fits(
     **what_to_plot
 )
 
+what_to_plot = {
+    "plot_edge_points": True,
+    "plot_center_points": True,
+    "plot_edge_regression": True,
+    "plot_center_regression": True,
+}
 
 
 _visualize_multi_edge_fits(
     video_data=[video_data[-1]],
     frame_ids=[frame_ids[0]],
     subtitles=[vid_names[-1]],
-    figsize=(10,5),
+    figsize=(10, 5),
     plot_on_raw_points=False,
     **what_to_plot
 )
 
+
+edge_regress_hi920_hash = "485d19"
+
+# edge_data = mitosis.load_trial_data(
+#     hexstr=edge_regress_hi920_hash, trials_folder=trials_folder / "edge-regress"
+# )
+
+
+def _create_fig1c(edge_regress_hex: str, frame_id: int = 250):
+
+    edge_data = mitosis.load_trial_data(
+        hexstr=edge_regress_hex, trials_folder=trials_folder / "edge-regress"
+    )
+
+    center_plumepoints = cast(
+        List[Tuple[int, PlumePoints]], edge_data[0]["data"]["center"]
+    )
+    bot_plumepoints = cast(List[Tuple[int, PlumePoints]], edge_data[0]["data"]["bottom"])
+
+    rad_dist = flatten_edge_points(
+        mean_points=center_plumepoints[frame_id][1],
+        vari_points=bot_plumepoints[frame_id][1],
+    )
+
+    fig, ax = plt.subplots()
+    ax.scatter(rad_dist[:,0], rad_dist[:,1],c='k')
+    ax.set_title(f"Frame {frame_id}")
+    return fig
+
+_create_fig1c(edge_regress_hi920_hash)
 
 print()

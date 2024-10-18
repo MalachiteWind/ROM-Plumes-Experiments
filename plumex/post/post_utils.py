@@ -1,8 +1,8 @@
 from typing import Callable
 from typing import List
+from typing import Optional
 from typing import Tuple
 from typing import TypedDict
-from typing import Optional
 
 import numpy as np
 from ara_plumes.typing import Float1D
@@ -218,7 +218,7 @@ def _visualize_multi_edge_fits(
     except AttributeError:
         pass
     idx = 0
-    
+
     for vid in video_data:
         for frame_id in frame_ids:
             try:
@@ -240,8 +240,12 @@ def _visualize_multi_edge_fits(
             raw_top_points = vid["top_plume_points"][frame_id][1]
 
             if plot_edge_points:
-                ax.scatter(raw_bot_points[:, 1], raw_bot_points[:, 2], marker=".", c="g")
-                ax.scatter(raw_top_points[:, 1], raw_top_points[:, 2], marker=".", c="b")
+                ax.scatter(
+                    raw_bot_points[:, 1], raw_bot_points[:, 2], marker=".", c="g"
+                )
+                ax.scatter(
+                    raw_top_points[:, 1], raw_top_points[:, 2], marker=".", c="b"
+                )
 
             ax.tick_params(left=False, labelleft=False, bottom=False, labelbottom=False)
             # ax.axis("off")
@@ -259,12 +263,13 @@ def _visualize_multi_edge_fits(
             raw_center_points[:, 1:] += orig_center_fc
             fit_centerpoints_dc[:, 1:] += orig_center_fc
 
-
             if plot_center_points:
-                ax.scatter(raw_center_points[:,1], raw_center_points[:,2],marker=".",c='r')
+                ax.scatter(
+                    raw_center_points[:, 1], raw_center_points[:, 2], marker=".", c="r"
+                )
 
             if plot_center_regression:
-                ax.plot(fit_centerpoints_dc[:,1],fit_centerpoints_dc[:,2],c='r')
+                ax.plot(fit_centerpoints_dc[:, 1], fit_centerpoints_dc[:, 2], c="r")
 
             if plot_on_raw_points:
                 anchor_points = raw_center_points
