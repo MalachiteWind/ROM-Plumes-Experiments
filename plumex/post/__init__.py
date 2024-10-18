@@ -8,4 +8,5 @@ analysis.
 """
 from . import edge_figs
 
+
 __all__ = ["edge_figs"]

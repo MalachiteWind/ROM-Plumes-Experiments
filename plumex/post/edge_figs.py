@@ -3,18 +3,18 @@ from typing import cast
 from typing import List
 from typing import Tuple
 
+import matplotlib.pyplot as plt
 import mitosis
 import numpy as np
 from ara_plumes.models import flatten_edge_points
 from ara_plumes.typing import PlumePoints
 
+from .post_utils import _visualize_multi_edge_fits
+from .post_utils import create_edge_func
+from .post_utils import RegressionData
 from plumex.config import data_lookup
-from plumex.post.post_utils import _visualize_multi_edge_fits
-from plumex.post.post_utils import create_edge_func
-from plumex.post.post_utils import RegressionData
+from plumex.regress_edge import create_sin_func
 from plumex.video_digest import _load_video
-
-import matplotlib.pyplot as plt
 
 
 trials_folder = Path(__file__).absolute().parents[2] / "trials"
@@ -103,92 +103,113 @@ frame_ids = [250, 750, 1000, 1200]
 
 video_data = [_unpack_data(*trial_lookup_key[name]["default"]) for name in vid_names]
 
-# lengths = {
-#     k: len(_unpack_data(*v["default"])["video"]) for k,v in trial_lookup_key.items()
-# }
+
+def _create_fig2b_raw():
+
+    figsize = (20, 10)
+    what_to_plot = {
+        "plot_edge_points": True,
+        "plot_center_points": False,
+        "plot_edge_regression": True,
+        "plot_center_regression": False,
+    }
+
+    _visualize_multi_edge_fits(
+        video_data=video_data,
+        frame_ids=frame_ids,
+        title="Edge Regression (Raw Points)",
+        subtitles=vid_names,
+        figsize=figsize,
+        plot_on_raw_points=True,
+        **what_to_plot
+    )
 
 
-figsize = (20, 10)
-what_to_plot = {
-    "plot_edge_points": True,
-    "plot_center_points": False,
-    "plot_edge_regression": True,
-    "plot_center_regression": False,
-}
+def _create_fig2b_regression():
 
-_visualize_multi_edge_fits(
-    video_data=video_data,
-    frame_ids=frame_ids,
-    title="Edge Regression (Raw Points)",
-    subtitles=vid_names,
-    figsize=figsize,
-    plot_on_raw_points=True,
-    **what_to_plot
-)
+    figsize = (20, 10)
+    what_to_plot = {
+        "plot_edge_points": False,
+        "plot_center_points": False,
+        "plot_edge_regression": True,
+        "plot_center_regression": True,
+    }
 
-what_to_plot = {
-    "plot_edge_points": False,
-    "plot_center_points": False,
-    "plot_edge_regression": True,
-    "plot_center_regression": True,
-}
-
-_visualize_multi_edge_fits(
-    video_data=video_data,
-    frame_ids=frame_ids,
-    title="Edge Regression (Attached Center)",
-    subtitles=vid_names,
-    figsize=figsize,
-    plot_on_raw_points=False,
-    **what_to_plot
-)
-
-what_to_plot = {
-    "plot_edge_points": True,
-    "plot_center_points": True,
-    "plot_edge_regression": True,
-    "plot_center_regression": True,
-}
+    _visualize_multi_edge_fits(
+        video_data=video_data,
+        frame_ids=frame_ids,
+        title="Edge Regression (Attached Center)",
+        subtitles=vid_names,
+        figsize=figsize,
+        plot_on_raw_points=False,
+        **what_to_plot
+    )
 
 
-_visualize_multi_edge_fits(
-    video_data=[video_data[-1]],
-    frame_ids=[frame_ids[0]],
-    subtitles=[vid_names[-1]],
-    figsize=(10, 5),
-    plot_on_raw_points=False,
-    **what_to_plot
-)
+def _create_fig1d():
+    what_to_plot = {
+        "plot_edge_points": False,
+        "plot_center_points": False,
+        "plot_edge_regression": True,
+        "plot_center_regression": True,
+    }
+
+    _visualize_multi_edge_fits(
+        video_data=[video_data[-1]],
+        frame_ids=[frame_ids[0]],
+        subtitles=[vid_names[-1]],
+        figsize=(10, 5),
+        plot_on_raw_points=False,
+        **what_to_plot
+    )
 
 
-edge_regress_hi920_hash = "485d19"
-
-# edge_data = mitosis.load_trial_data(
-#     hexstr=edge_regress_hi920_hash, trials_folder=trials_folder / "edge-regress"
-# )
-
-
-def _create_fig1c(edge_regress_hex: str, frame_id: int = 250):
+def _create_fig1c():
+    edge_regress_hi920_hash = "485d19"
+    frame_id = 250
 
     edge_data = mitosis.load_trial_data(
-        hexstr=edge_regress_hex, trials_folder=trials_folder / "edge-regress"
+        hexstr=edge_regress_hi920_hash, trials_folder=trials_folder / "edge-regress"
     )
 
     center_plumepoints = cast(
         List[Tuple[int, PlumePoints]], edge_data[0]["data"]["center"]
     )
-    bot_plumepoints = cast(List[Tuple[int, PlumePoints]], edge_data[0]["data"]["bottom"])
+    bot_plumepoints = cast(
+        List[Tuple[int, PlumePoints]], edge_data[0]["data"]["bottom"]
+    )
 
     rad_dist = flatten_edge_points(
         mean_points=center_plumepoints[frame_id][1],
         vari_points=bot_plumepoints[frame_id][1],
     )
 
+    r_max = np.max(rad_dist[:, 0])
+    r_lin = np.linspace(0, r_max, 101)
+    time = center_plumepoints[frame_id][0]
+    t_lin = np.ones(len(r_lin)) * time
+
+    bot_coef_sin = np.nanmean(edge_data[1]["accs"]["bot"]["sinusoid"]["coeffs"], axis=0)
+
+    bot_sin_func = create_sin_func(bot_coef_sin)
+
+    bot_sin_vals = bot_sin_func(t_lin, r_lin)
+
     fig, ax = plt.subplots()
-    ax.scatter(rad_dist[:,0], rad_dist[:,1],c='k')
-    ax.set_title(f"Frame {frame_id}")
+    ax.plot(r_lin, bot_sin_vals, c="g")
+    ax.scatter(rad_dist[:, 0], rad_dist[:, 1], c="k")
+    ax.set_title(r"$d(r,t)=A \sin( \omega r - \gamma t + B) + C + r D$", fontsize=18)
+    ax.hlines(
+        y=0, xmin=np.min(rad_dist[:, 0]), xmax=np.max(rad_dist[:, 0]) - 10.0, colors="r"
+    )
+    ax.set_ylim(top=850)
+    ax.set_xlabel("r", fontsize=18)
+    ax.set_ylabel("d", fontsize=18)
+    ax.tick_params(left=False, labelleft=False, bottom=False, labelbottom=False)
     return fig
 
-_create_fig1c(edge_regress_hi920_hash)
 
-print()
+_create_fig1c()
+_create_fig1d()
+_create_fig2b_raw()
+_create_fig2b_regression()
