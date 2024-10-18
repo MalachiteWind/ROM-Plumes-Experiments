@@ -141,4 +141,15 @@ _visualize_multi_edge_fits(
 )
 
 
+
+_visualize_multi_edge_fits(
+    video_data=[video_data[-1]],
+    frame_ids=[frame_ids[0]],
+    subtitles=[vid_names[-1]],
+    figsize=(10,5),
+    plot_on_raw_points=False,
+    **what_to_plot
+)
+
+
 print()

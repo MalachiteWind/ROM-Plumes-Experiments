@@ -2,6 +2,7 @@ from typing import Callable
 from typing import List
 from typing import Tuple
 from typing import TypedDict
+from typing import Optional
 
 import numpy as np
 from ara_plumes.typing import Float1D
@@ -197,9 +198,9 @@ def plot_raw_frames(video, n_frames, n_rows, n_cols):
 def _visualize_multi_edge_fits(
     video_data: List[RegressionData],
     frame_ids: List[int],
-    title: str,
     subtitles: List[str],
     figsize: Tuple[int, int],
+    title: Optional[str] = None,
     plot_edge_points: bool = True,
     plot_center_points: bool = True,
     plot_edge_regression: bool = True,
@@ -212,11 +213,19 @@ def _visualize_multi_edge_fits(
     fig, axes = plt.subplots(
         nrows=len(video_data), ncols=len(frame_ids), figsize=figsize
     )
-    axes = axes.flatten()
+    try:
+        axes = axes.flatten()
+    except AttributeError:
+        pass
     idx = 0
+    
     for vid in video_data:
         for frame_id in frame_ids:
-            ax = axes[idx]
+            try:
+                ax = axes[idx]
+            except TypeError:
+                ax = axes
+
             frame_t = vid["video"][frame_id]
             y_lim, x_lim = frame_t.shape
             # plot frame
@@ -294,6 +303,7 @@ def _visualize_multi_edge_fits(
             ax.set_ylim([y_lim, 0])
 
             idx += 1
-    fig.suptitle(title, fontsize=title_fontsize)
+    if title:
+        fig.suptitle(title, fontsize=title_fontsize)
     fig.tight_layout(pad=0.5)
     return fig
