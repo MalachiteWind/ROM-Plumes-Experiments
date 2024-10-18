@@ -9,9 +9,9 @@ import numpy as np
 from ara_plumes.models import flatten_edge_points
 from ara_plumes.typing import PlumePoints
 
-from .post_utils import _visualize_multi_edge_fits
-from .post_utils import create_edge_func
-from .post_utils import RegressionData
+from plumex.post.post_utils import _visualize_multi_edge_fits
+from plumex.post.post_utils import create_edge_func
+from plumex.post.post_utils import RegressionData
 from plumex.config import data_lookup
 from plumex.regress_edge import create_sin_func
 from plumex.video_digest import _load_video
