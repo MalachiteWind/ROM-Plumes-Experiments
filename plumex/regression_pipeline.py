@@ -16,6 +16,7 @@ from typing import TypedDict
 from warnings import warn
 
 import numpy as np
+import numpy.typing as npt
 from ara_plumes.models import PLUME
 from ara_plumes.typing import Bool1D
 from ara_plumes.typing import Frame
@@ -390,49 +391,17 @@ def _visualize_points(
     y_max = max(np.max(points[1][:, 2]) for points in mean_points)
     # in frame coordinates, y is pixels below top, but in plot coordinates
     # it's above x-axis
-    origin_pc = (origin_fc[0], float(y_max - origin_fc[1]))
     fig, axes = plt.subplots(n_rows, 3, figsize=[1.5 * 9, 3 * n_rows])
     fig.suptitle("How well does regression work?")
     for frame_id, ax in zip(frame_ids, axes.flatten()):
         frame_t, frame_points = mean_points[frame_id]
-        xy_true_fc = frame_points[:, 1:]
-        ax.plot(
-            xy_true_fc[:, 0],
-            y_max - xy_true_fc[:, 1],
-            ".",
-            color=CMEAS,
-            label="centerpoints",
-        )
-        if r_split:
-            ax.add_patch(Circle(origin_pc, r_split, color="k", fill=False))
+        _plot_frame_points(ax, frame_points, y_max, r_split, origin_fc)
         for meth_ind, (coeff_meth, method) in enumerate(
             zip(coef_time_series_dc, regression_methods)
         ):
             coeffs = coeff_meth[frame_id]
-            predict_dc = _construct_rxy_f(coeffs, method)
-            frame_points_dc = np.hstack(
-                (frame_points[:, :1], frame_points[:, 1:] - origin_fc)
-            )
-            xy_pred_dc = predict_dc(frame_points_dc)[:, 1:]
-            xy_pred_fc = xy_pred_dc + origin_fc
-            LOGGER.debug(f"Moving origin from {xy_pred_dc[0]} to f{xy_pred_fc[0]}")
-            ax.plot(
-                xy_pred_fc[:, 0],
-                y_max - xy_pred_fc[:, 1],
-                "x",
-                color=CMAP[2 + meth_ind],
-            )
-            rxy_max_dc = frame_points.max(axis=0) - (0, *origin_fc)
-            rxy_min_dc = frame_points.min(axis=0) - (0, *origin_fc)
-            interp_points_dc = np.linspace(rxy_min_dc, rxy_max_dc, 20)
-            xy_interp_dc = predict_dc(interp_points_dc)[:, 1:]
-            xy_interp_fc = xy_interp_dc + origin_fc
-            ax.plot(
-                xy_interp_fc[:, 0],
-                y_max - xy_interp_fc[:, 1],
-                "--",
-                color=CMAP[2 + meth_ind],
-                label=f"{method} regression",
+            _add_regression_to_plot(
+                ax, coeffs, method, frame_points, y_max, origin_fc, CMAP[2 + meth_ind]
             )
         ax.set_title(f"Frame {frame_t}")
         ax.set_xlim([0, x_max])
@@ -493,3 +462,59 @@ def _nest_best_n_results(
         {method: meth_results[method] for method in methods_descending[:n]}
         for n in range(1, n_methods + 1)
     ]
+
+
+def _plot_frame_points(
+    ax: Axes,
+    frame_points: PlumePoints,
+    y_max: float | np.floating[npt.NBitBase],
+    r_split: Optional[float],
+    origin_fc: tuple[float, float],
+) -> None:
+    """Plot points, converting frame/imshow coords to plot coords"""
+    xy_true_fc = frame_points[:, 1:]
+    ax.plot(
+        xy_true_fc[:, 0],
+        y_max - xy_true_fc[:, 1],
+        ".",
+        color=CMEAS,
+        label="centerpoints",
+    )
+    origin_pc = (origin_fc[0], float(y_max - origin_fc[1]))
+    if r_split:
+        ax.add_patch(Circle(origin_pc, r_split, color="k", fill=False))
+
+
+def _add_regression_to_plot(
+    ax: Axes,
+    coeffs: Float1D,
+    method: str,
+    frame_points: PlumePoints,
+    y_max: float | np.floating[npt.NBitBase],
+    origin_fc: tuple[float, float],
+    color: Any,
+) -> None:
+    """Add a regression series to plot, converting frame/imshow to plot coords."""
+    predict_dc = _construct_rxy_f(coeffs, method)
+    frame_points_dc = np.hstack((frame_points[:, :1], frame_points[:, 1:] - origin_fc))
+    xy_pred_dc = predict_dc(frame_points_dc)[:, 1:]
+    xy_pred_fc = xy_pred_dc + origin_fc
+    LOGGER.debug(f"Moving origin from {xy_pred_dc[0]} to f{xy_pred_fc[0]}")
+    ax.plot(
+        xy_pred_fc[:, 0],
+        y_max - xy_pred_fc[:, 1],
+        "x",
+        color=color,
+    )
+    rxy_max_dc = frame_points.max(axis=0) - (0, *origin_fc)
+    rxy_min_dc = frame_points.min(axis=0) - (0, *origin_fc)
+    interp_points_dc = np.linspace(rxy_min_dc, rxy_max_dc, 20)
+    xy_interp_dc = predict_dc(interp_points_dc)[:, 1:]
+    xy_interp_fc = xy_interp_dc + origin_fc
+    ax.plot(
+        xy_interp_fc[:, 0],
+        y_max - xy_interp_fc[:, 1],
+        "--",
+        color=color,
+        label=f"{method} regression",
+    )
