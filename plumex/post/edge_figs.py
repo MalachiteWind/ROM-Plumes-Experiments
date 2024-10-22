@@ -4,16 +4,17 @@ from typing import List
 from typing import Tuple
 
 import matplotlib.pyplot as plt
-from matplotlib.figure import Figure
 import mitosis
 import numpy as np
 from ara_plumes.models import flatten_edge_points
 from ara_plumes.typing import PlumePoints
+from matplotlib.figure import Figure
+from tabulate import tabulate
 
+from plumex.config import data_lookup
 from plumex.post.post_utils import _visualize_multi_edge_fits
 from plumex.post.post_utils import create_edge_func
 from plumex.post.post_utils import RegressionData
-from plumex.config import data_lookup
 from plumex.regress_edge import create_sin_func
 from plumex.video_digest import _load_video
 
@@ -44,6 +45,20 @@ trial_lookup_key = {
     "hi 1": {"default": ("729d03", "hi-1", "487513")},
     "hi 2": {"default": ("56a332", "hi-2", "3115a5")},
 }
+
+
+vids = [
+    "low 862",
+    "low 865",
+    "low 867",
+    "low 869",
+    "low 913",
+    "med 871",
+    "med 914",
+    "med 916",
+    "hi 919",
+    "hi 920",
+]
 
 
 def _unpack_data(
@@ -122,7 +137,7 @@ def _create_fig2b_raw():
         subtitles=vid_names,
         figsize=figsize,
         plot_on_raw_points=True,
-        **what_to_plot
+        **what_to_plot,
     )
 
 
@@ -143,7 +158,7 @@ def _create_fig2b_regression():
         subtitles=vid_names,
         figsize=figsize,
         plot_on_raw_points=False,
-        **what_to_plot
+        **what_to_plot,
     )
 
 
@@ -161,7 +176,7 @@ def _create_fig1d():
         subtitles=[vid_names[-1]],
         figsize=(10, 5),
         plot_on_raw_points=False,
-        **what_to_plot
+        **what_to_plot,
     )
 
 
@@ -209,40 +224,41 @@ def _create_fig1c():
     ax.tick_params(left=False, labelleft=False, bottom=False, labelbottom=False)
     return fig
 
+
 def plot_param_hist_new(top_param_hist, bot_param_hist, titles, main_title) -> Figure:
     num_cols = top_param_hist.shape[1]
-    fig, axs = plt.subplots(2,num_cols,figsize = (16,6))
+    fig, axs = plt.subplots(2, num_cols, figsize=(16, 6))
     axs = axs.flatten()
 
     top_param_opt = top_param_hist.mean(axis=0)
     bot_param_opt = bot_param_hist.mean(axis=0)
 
     for idx in range(num_cols):
-        axs[idx].hist(top_param_hist[:,idx], bins=50,density=True,alpha=0.8)
-        axs[idx].set_title(titles[idx],fontsize=15)
-        if idx==0:
+        axs[idx].hist(top_param_hist[:, idx], bins=50, density=True, alpha=0.8)
+        axs[idx].set_title(titles[idx], fontsize=15)
+        if idx == 0:
             axs[idx].set_ylabel("Top params", fontsize=15)
-        axs[idx].axvline(top_param_opt[idx],c="red",linestyle="--")
-
+        axs[idx].axvline(top_param_opt[idx], c="red", linestyle="--")
 
     for idx in range(num_cols):
-        axs[idx+num_cols].hist(bot_param_hist[:,idx],bins=50,density=True, alpha=0.8)
-        axs[idx+num_cols].set_xlabel("val")    
-        if idx==0:
-            axs[idx+num_cols].set_ylabel("Bottom params", fontsize=15)
-        axs[idx+num_cols].axvline(bot_param_opt[idx],c="red", linestyle="--")
+        axs[idx + num_cols].hist(
+            bot_param_hist[:, idx], bins=50, density=True, alpha=0.8
+        )
+        axs[idx + num_cols].set_xlabel("val")
+        if idx == 0:
+            axs[idx + num_cols].set_ylabel("Bottom params", fontsize=15)
+        axs[idx + num_cols].axvline(bot_param_opt[idx], c="red", linestyle="--")
 
     fig.suptitle(main_title, fontsize=20)
     plt.tight_layout()
     return fig
 
 
-
 def _create_step2b_hist():
     edge_regress_hi920_hash = "485d19"
-    titles = [r"$A$", r"$\omega$", r"$\gamma$", r"$B$",r"$C$", r"$D$"]
+    titles = [r"$A$", r"$\omega$", r"$\gamma$", r"$B$", r"$C$", r"$D$"]
 
-    _,edge_data = mitosis.load_trial_data(
+    _, edge_data = mitosis.load_trial_data(
         hexstr=edge_regress_hi920_hash, trials_folder=trials_folder / "edge-regress"
     )
     top_coeffs = edge_data["accs"]["top"]["sinusoid"]["coeffs"]
@@ -251,11 +267,68 @@ def _create_step2b_hist():
     non_nan_top_coeffs = top_coeffs[~np.isnan(top_coeffs)[:, 0]]
     non_nan_bot_coeffs = bot_coeffs[~np.isnan(bot_coeffs)[:, 0]]
 
-    plot_param_hist_new(non_nan_top_coeffs,non_nan_bot_coeffs,titles=titles,main_title="Sinusoid Parameter Histogram")
+    plot_param_hist_new(
+        non_nan_top_coeffs,
+        non_nan_bot_coeffs,
+        titles=titles,
+        main_title="Sinusoid Parameter Histogram",
+    )
 
 
-# _create_fig1c()
-# _create_fig1d()
-# _create_fig2b_raw()
-# _create_fig2b_regression()
+def _create_vid_acc_table(look_up_keys: List[str]):
+    vid_title = []
+    train_accs = []
+    val_accs = []
+
+    for key in look_up_keys:
+        edge_hash = trial_lookup_key[key]["default"][2]
+        _, edge_data = mitosis.load_trial_data(
+            hexstr=edge_hash, trials_folder=trials_folder / "edge-regress"
+        )
+        top_method, bot_method = edge_data["main"]
+        top_acc = edge_data["accs"]["top"][top_method]
+        bot_acc = edge_data["accs"]["bot"][bot_method]
+
+        vid_title.append(key)
+        train_accs.append((top_acc["train_acc"], bot_acc["train_acc"]))
+        val_accs.append((top_acc["val_acc"], bot_acc["val_acc"]))
+
+    # Create a list of rows for the table
+    table_data = []
+    for vid, train, val in zip(vid_title, train_accs, val_accs):
+        table_data.append([vid, train[0], train[1], val[0], val[1]])
+
+    print(
+        tabulate(
+            table_data,
+            headers=[
+                "Video ID",
+                "Train Accuracy (Top)",
+                "Train Accuracy (Bot)",
+                "Val Accuracy (Top)",
+                "Val Accuracy (Bot)",
+            ],
+            tablefmt="pretty",
+        )
+    )
+
+
+vids = [
+    "low 862",
+    "low 865",
+    "low 867",
+    "low 869",
+    "low 913",
+    "med 871",
+    "med 914",
+    "med 916",
+    "hi 919",
+    "hi 920",
+]
+
+_create_fig1c()
+_create_fig1d()
+_create_fig2b_raw()
+_create_fig2b_regression()
 _create_step2b_hist()
+_create_vid_acc_table(look_up_keys=vids)

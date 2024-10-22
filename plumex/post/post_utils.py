@@ -94,18 +94,14 @@ def _construct_rxy_from_center_fit(
     """
     Allows for more interpolating points
     """
-    rxy = np.array([indep_data]*3).T
+    rxy = np.array([indep_data] * 3).T
     if regression_method == "poly_para":
         return center_fit_func(rxy)
-    else: 
+    else:
         rxy = center_fit_func(rxy)
-        r_vals = np.linalg.norm(rxy[:,1:],axis=1)
-        rxy[:,0]=r_vals
+        r_vals = np.linalg.norm(rxy[:, 1:], axis=1)
+        rxy[:, 0] = r_vals
         return rxy
-
-
-
-
 
 
 def _visualize_multi_edge_fits(
@@ -173,22 +169,18 @@ def _visualize_multi_edge_fits(
             )
             raw_center_points[:, 1:] -= orig_center_fc
             if center_fit_method == "poly_para":
-                r_min = np.min(raw_center_points[:,0])*1.5
-                r_max = np.max(raw_center_points[:,0])*1.5
-                r_vals = np.linspace(r_min,r_max,101)
+                r_min = np.min(raw_center_points[:, 0]) * 1.5
+                r_max = np.max(raw_center_points[:, 0]) * 1.5
+                r_vals = np.linspace(r_min, r_max, 101)
                 fit_centerpoints_dc = _construct_rxy_from_center_fit(
-                    r_vals,
-                    center_fit_func,
-                    center_fit_method
+                    r_vals, center_fit_func, center_fit_method
                 )
             else:
-                x_min = np.min(raw_center_points[:,1])*2
-                x_max = np.max(raw_center_points[:,1])*1.5
-                x_vals = np.linspace(x_min,x_max,101)
+                x_min = np.min(raw_center_points[:, 1]) * 2
+                x_max = np.max(raw_center_points[:, 1]) * 1.5
+                x_vals = np.linspace(x_min, x_max, 101)
                 fit_centerpoints_dc = _construct_rxy_from_center_fit(
-                    x_vals,
-                    center_fit_func,
-                    center_fit_method
+                    x_vals, center_fit_func, center_fit_method
                 )
             raw_center_points[:, 1:] += orig_center_fc
             fit_centerpoints_dc[:, 1:] += orig_center_fc
