@@ -4,6 +4,7 @@ from typing import List
 from typing import Tuple
 
 import matplotlib.pyplot as plt
+from matplotlib.figure import Figure
 import mitosis
 import numpy as np
 from ara_plumes.models import flatten_edge_points
@@ -208,8 +209,53 @@ def _create_fig1c():
     ax.tick_params(left=False, labelleft=False, bottom=False, labelbottom=False)
     return fig
 
+def plot_param_hist_new(top_param_hist, bot_param_hist, titles, main_title) -> Figure:
+    num_cols = top_param_hist.shape[1]
+    fig, axs = plt.subplots(2,num_cols,figsize = (16,6))
+    axs = axs.flatten()
 
-_create_fig1c()
-_create_fig1d()
-_create_fig2b_raw()
-_create_fig2b_regression()
+    top_param_opt = top_param_hist.mean(axis=0)
+    bot_param_opt = bot_param_hist.mean(axis=0)
+
+    for idx in range(num_cols):
+        axs[idx].hist(top_param_hist[:,idx], bins=50,density=True,alpha=0.8)
+        axs[idx].set_title(titles[idx],fontsize=15)
+        if idx==0:
+            axs[idx].set_ylabel("Top params", fontsize=15)
+        axs[idx].axvline(top_param_opt[idx],c="red",linestyle="--")
+
+
+    for idx in range(num_cols):
+        axs[idx+num_cols].hist(bot_param_hist[:,idx],bins=50,density=True, alpha=0.8)
+        axs[idx+num_cols].set_xlabel("val")    
+        if idx==0:
+            axs[idx+num_cols].set_ylabel("Bottom params", fontsize=15)
+        axs[idx+num_cols].axvline(bot_param_opt[idx],c="red", linestyle="--")
+
+    fig.suptitle(main_title, fontsize=20)
+    plt.tight_layout()
+    return fig
+
+
+
+def _create_step2b_hist():
+    edge_regress_hi920_hash = "485d19"
+    titles = [r"$A$", r"$\omega$", r"$\gamma$", r"$B$",r"$C$", r"$D$"]
+
+    _,edge_data = mitosis.load_trial_data(
+        hexstr=edge_regress_hi920_hash, trials_folder=trials_folder / "edge-regress"
+    )
+    top_coeffs = edge_data["accs"]["top"]["sinusoid"]["coeffs"]
+    bot_coeffs = edge_data["accs"]["bot"]["sinusoid"]["coeffs"]
+
+    non_nan_top_coeffs = top_coeffs[~np.isnan(top_coeffs)[:, 0]]
+    non_nan_bot_coeffs = bot_coeffs[~np.isnan(bot_coeffs)[:, 0]]
+
+    plot_param_hist_new(non_nan_top_coeffs,non_nan_bot_coeffs,titles=titles,main_title="Sinusoid Parameter Histogram")
+
+
+# _create_fig1c()
+# _create_fig1d()
+# _create_fig2b_raw()
+# _create_fig2b_regression()
+_create_step2b_hist()
