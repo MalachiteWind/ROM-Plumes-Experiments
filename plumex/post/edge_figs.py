@@ -6,9 +6,9 @@ from typing import Tuple
 import matplotlib.pyplot as plt
 import mitosis
 import numpy as np
-from ara_plumes.models import flatten_edge_points
-from ara_plumes.typing import PlumePoints
 from matplotlib.figure import Figure
+from rom_plumes.models import flatten_edge_points
+from rom_plumes.typing import PlumePoints
 from tabulate import tabulate
 
 from plumex.config import data_lookup

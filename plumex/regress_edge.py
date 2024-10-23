@@ -6,9 +6,9 @@ from typing import Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
-from ara_plumes.models import flatten_edge_points
-from ara_plumes.typing import PlumePoints
 from matplotlib.figure import Figure
+from rom_plumes.models import flatten_edge_points
+from rom_plumes.typing import PlumePoints
 from scipy.linalg import lstsq
 from scipy.optimize import curve_fit
 

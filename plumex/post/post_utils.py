@@ -5,10 +5,10 @@ from typing import Tuple
 from typing import TypedDict
 
 import numpy as np
-from ara_plumes.typing import Float2D
-from ara_plumes.typing import GrayVideo
-from ara_plumes.typing import PlumePoints
 from matplotlib import pyplot as plt
+from rom_plumes.typing import Float2D
+from rom_plumes.typing import GrayVideo
+from rom_plumes.typing import PlumePoints
 
 from plumex.regress_edge import create_lin_func
 from plumex.regress_edge import create_sin_func

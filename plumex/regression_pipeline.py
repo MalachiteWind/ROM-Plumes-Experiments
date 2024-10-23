@@ -17,16 +17,16 @@ from warnings import warn
 
 import numpy as np
 import numpy.typing as npt
-from ara_plumes.models import PLUME
-from ara_plumes.typing import Bool1D
-from ara_plumes.typing import Frame
-from ara_plumes.typing import PlumePoints
-from ara_plumes.typing import X_pos
-from ara_plumes.typing import Y_pos
 from matplotlib import pyplot as plt
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 from matplotlib.patches import Circle
+from rom_plumes.models import PLUME
+from rom_plumes.typing import Bool1D
+from rom_plumes.typing import Frame
+from rom_plumes.typing import PlumePoints
+from rom_plumes.typing import X_pos
+from rom_plumes.typing import Y_pos
 from tqdm import tqdm
 
 from .plotting import CMAP

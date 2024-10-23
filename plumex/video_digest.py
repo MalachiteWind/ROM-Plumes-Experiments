@@ -5,19 +5,19 @@ from typing import cast
 from typing import Optional
 
 import numpy as np
-from ara_plumes import PLUME
-from ara_plumes.models import get_contour
-from ara_plumes.typing import Contour_List
-from ara_plumes.typing import Frame
-from ara_plumes.typing import GrayImage
-from ara_plumes.typing import GrayVideo
-from ara_plumes.typing import PlumePoints
 from matplotlib import pyplot as plt
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 from matplotlib.patches import Circle
 from matplotlib.patches import PathPatch
 from matplotlib.path import Path
+from rom_plumes import PLUME
+from rom_plumes.models import get_contour
+from rom_plumes.typing import Contour_List
+from rom_plumes.typing import Frame
+from rom_plumes.typing import GrayImage
+from rom_plumes.typing import GrayVideo
+from rom_plumes.typing import PlumePoints
 
 from .data import PICKLE_PATH
 from .plotting import CEST
@@ -41,7 +41,7 @@ def create_plumepoints(
     Args:
         filename: path from plume_videos/ to movie file.  Must have adjacent
             centerpoint file
-        remainder of args are from ara_plumes.PLUME initialization
+        remainder of args are from rom_plumes.PLUME initialization
     """
     if gauss_space_kws is None:
         gauss_space_kws = {}

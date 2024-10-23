@@ -6,11 +6,11 @@ from typing import cast
 
 import matplotlib.pyplot as plt
 import numpy as np
-from ara_plumes.typing import Float2D
-from ara_plumes.typing import Frame
-from ara_plumes.typing import PlumePoints
 from mitosis import _load_trial_params
 from mitosis import load_trial_data
+from rom_plumes.typing import Float2D
+from rom_plumes.typing import Frame
+from rom_plumes.typing import PlumePoints
 
 from plumex.plotting import CMAP
 from plumex.regression_pipeline import _add_regression_to_plot

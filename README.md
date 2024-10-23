@@ -1,2 +1,2 @@
-# ARA-Plumes-Experiments
-For saving all experiments run from the [ara-plumes](https://github.com/Jacob-Stevens-Haas/ARA-Plumes) python package.
+# ROM-Plumes-Experiments
+For saving all experiments run from the [rom-plumes](https://github.com/Jacob-Stevens-Haas/ROM-Plumes) python package.
