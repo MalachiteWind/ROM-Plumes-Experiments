@@ -7,7 +7,8 @@ figures/post analysis.  Run this module to generate all figures/post
 analysis.
 """
 from . import center
+from . import edge_figs
 from . import fig5
 from . import points
 
-__all__ = ["center", "points", "fig5"]
+__all__ = ["center", "edge_figs", "points", "fig5"]
