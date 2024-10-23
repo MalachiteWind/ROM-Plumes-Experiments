@@ -11,8 +11,8 @@ python -m Jan_10_2024 med 0943
 import pickle
 from pathlib import Path
 
-from ara_plumes import click_coordinates
-from ara_plumes import PLUME
+from rom_plumes import click_coordinates
+from rom_plumes import PLUME
 
 from plumex.data import PICKLE_PATH as DATA_DIR
 

@@ -1,6 +1,6 @@
 import numpy as np
 import pytest
-from ara_plumes.typing import Frame
+from rom_plumes.typing import Frame
 
 from ..regress_edge import bootstrap
 from ..regress_edge import do_lstsq_regression

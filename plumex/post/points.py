@@ -5,11 +5,11 @@ from typing import Any
 from typing import Optional
 
 import matplotlib.pyplot as plt
-from ara_plumes import PLUME
-from ara_plumes.models import get_contour
 from matplotlib.figure import Figure
 from mitosis import _load_trial_params
 from mitosis import load_trial_data
+from rom_plumes import PLUME
+from rom_plumes.models import get_contour
 
 from plumex.video_digest import _load_video
 from plumex.video_digest import _plot_contours
