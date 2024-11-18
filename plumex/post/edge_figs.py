@@ -326,9 +326,16 @@ vids = [
     "hi 920",
 ]
 
-_create_fig1c()
-_create_fig1d()
-_create_fig2b_raw()
-_create_fig2b_regression()
-_create_step2b_hist()
-_create_vid_acc_table(look_up_keys=vids)
+def run():
+    _create_fig1c()
+    _create_fig1d()
+    _create_fig2b_raw()
+    _create_fig2b_regression()
+    _create_step2b_hist()
+    _create_vid_acc_table(look_up_keys=vids)
+
+
+if __name__ == "__main__":
+    run()
+
+
