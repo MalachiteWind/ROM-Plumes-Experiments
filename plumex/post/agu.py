@@ -17,6 +17,7 @@ image_folder = Path(__file__).absolute().parents[2] / "paper_images"
 
 def run():
     # med 914
+    print("Creating Rom gif.")
     video_data = _unpack_data(*trial_lookup_key["med 914"]["default"])
     _create_frames(
         video_data=video_data, 
@@ -24,7 +25,8 @@ def run():
         rom=True,
         save_path=image_folder / "agu_rom.gif"
     )
-
+    
+    print("Creating raw gif.")
     _create_frames(
         video_data=video_data, 
         frames=[i for i in range(250,300)],
