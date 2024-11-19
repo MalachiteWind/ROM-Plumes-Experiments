@@ -16,6 +16,7 @@ from plumex.video_digest import _plot_contours
 from plumex.video_digest import _plot_frame
 from plumex.video_digest import _plot_learn_path
 
+
 def run():
     frame = 838
     trials = {
@@ -34,12 +35,10 @@ def run():
         for trial_tag, hexstr in trials.items()
     }
 
-
     _PlotData = namedtuple(
         "_PlotData",
         ["orig_center", "raw_im", "clean_im", "contour_kws", "center", "bottom", "top"],
     )
-
 
     def _mini_video_digest(
         filename: str,
@@ -77,7 +76,6 @@ def run():
             top,
         )
 
-
     # %%
     def _single_img_range(kwargs: dict[str, Any], frame: int) -> dict[str, Any]:
         kwargs.pop("img_range", None)
@@ -86,7 +84,6 @@ def run():
         if ckw := kwargs.get("circle_kw", False):
             ckw.pop("mean_smoothing")
         return kwargs
-
 
     # %%
 
@@ -98,7 +95,6 @@ def run():
         trial_tag: _mini_video_digest(**kwargs)
         for trial_tag, (_, kwargs) in trial_info.items()
     }
-
 
     # %%
     def _compare_step1_plot(trial_plot_data: dict[str, _PlotData]) -> Figure:
@@ -134,9 +130,10 @@ def run():
 
         return superfig
 
-
     # %% Figure 2
-    fig2 = _compare_step1_plot({k: v for k, v in trial_plot_data.items() if k == "good"})
+    fig2 = _compare_step1_plot(
+        {k: v for k, v in trial_plot_data.items() if k == "good"}
+    )
     fig2.suptitle("Data reduction process for plume film")
     fig2.tight_layout()
     fig2.subplots_adjust(top=0.80)
@@ -155,6 +152,7 @@ def run():
     pass
 
     # %%
+
 
 if __name__ == "__main__":
     run()

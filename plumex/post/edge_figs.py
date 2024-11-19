@@ -326,6 +326,7 @@ vids = [
     "hi 920",
 ]
 
+
 def run():
     _create_fig1c()
     _create_fig1d()
@@ -337,5 +338,3 @@ def run():
 
 if __name__ == "__main__":
     run()
-
-

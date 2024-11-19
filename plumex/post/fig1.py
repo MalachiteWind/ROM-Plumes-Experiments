@@ -12,6 +12,7 @@ from rom_plumes.models import get_contour
 from plumex.video_digest import _load_video
 from plumex.video_digest import _plot_contours
 
+
 def run():
 
     # %%
@@ -20,7 +21,6 @@ def run():
     trials_folder = Path(__file__).absolute().parents[2] / "trials"
     points_trials_folder = trials_folder / "center"
     tparams = _load_trial_params(hexstr, step=0, trials_folder=points_trials_folder)
-
 
     # %%
     def _single_img_range(kwargs: dict[str, Any], frame: int) -> dict[str, Any]:
@@ -31,12 +31,10 @@ def run():
             ckw.pop("mean_smoothing")
         return kwargs
 
-
     _PlotData = namedtuple(
         "_PlotData",
         ["orig_center", "raw_im", "clean_im", "contour_kws", "center", "bottom", "top"],
     )
-
 
     def _mini_video_digest(
         filename: str,
@@ -73,7 +71,6 @@ def run():
             bottom,
             top,
         )
-
 
     # %%
     # The first cell of fig 1, to be manually manipulated

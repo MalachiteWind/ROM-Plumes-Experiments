@@ -13,7 +13,6 @@ from plumex.regression_pipeline import RegressionResults
 from plumex.types import Float1D
 
 
-
 def run():
     center_trial_keys = {
         "lo1": "677028",
@@ -44,14 +43,12 @@ def run():
         "poly_inv_pin": "Square-Root",
     }
 
-
     trials_folder = Path(__file__).absolute().parents[2] / "trials"
     center_trials_dir = trials_folder / "center-regress"
     center_trial_data: dict[str, MultiRegressionResults] = {
         vidkey: load_trial_data(trialkey, trials_folder=center_trials_dir)[1]
         for vidkey, trialkey in center_trial_keys.items()
     }
-
 
     def get_scores(res: MultiRegressionResults) -> dict[str, Float1D]:
         """Get the scores from each frame, for each regression method"""
@@ -66,29 +63,35 @@ def run():
             "poly_inv_pin": _get_non_nan_scores(res["regressions"]["poly_inv_pin"]),
         }
 
-
-    trial_scores = {vidkey: get_scores(res) for vidkey, res in center_trial_data.items()}
-
+    trial_scores = {
+        vidkey: get_scores(res) for vidkey, res in center_trial_data.items()
+    }
 
     def concat_video_scores(
         vid_scores: dict[str, dict[str, Float1D]]
     ) -> dict[str, Float1D]:
         return {
-            meth: np.concatenate([scores[meth] for scores in vid_scores.values()], axis=0)
+            meth: np.concatenate(
+                [scores[meth] for scores in vid_scores.values()], axis=0
+            )
             for meth in ("poly_inv_pin", "lin", "poly_para", "poly")
         }
-
 
     train_scores = concat_video_scores(
         {vidkey: trial_scores[vidkey] for vidkey in train_set}
     )
-    test_scores = concat_video_scores({vidkey: trial_scores[vidkey] for vidkey in test_set})
-    low_scores = concat_video_scores({vidkey: trial_scores[vidkey] for vidkey in low_set})
-    med_scores = concat_video_scores({vidkey: trial_scores[vidkey] for vidkey in med_set})
+    test_scores = concat_video_scores(
+        {vidkey: trial_scores[vidkey] for vidkey in test_set}
+    )
+    low_scores = concat_video_scores(
+        {vidkey: trial_scores[vidkey] for vidkey in low_set}
+    )
+    med_scores = concat_video_scores(
+        {vidkey: trial_scores[vidkey] for vidkey in med_set}
+    )
     hi_scores = concat_video_scores({vidkey: trial_scores[vidkey] for vidkey in hi_set})
     all_min = min(min(accs) for accs in test_scores.values())
     all_max = max(max(accs) for accs in test_scores.values())
-
 
     # %%
     def compare_histogram(concat_scores: dict[str, Float1D]):
@@ -103,7 +106,6 @@ def run():
         plt.xlabel("Relative Extrapolation Error")
         plt.legend()
 
-
     # %% Figure 6
     compare_histogram(test_scores)
     print(
@@ -117,12 +119,13 @@ def run():
     # compare_histogram(med_scores)
     # compare_histogram(hi_scores)
 
-
     # %%
     # Produce p_vals for t-test
     pairwise_test = partial(ttest_ind, alternative="greater", equal_var=False)
     test_res = defaultdict(dict)
-    for ((meth1, dat1), (meth2, dat2)) in product(test_scores.items(), test_scores.items()):
+    for ((meth1, dat1), (meth2, dat2)) in product(
+        test_scores.items(), test_scores.items()
+    ):
         test_res[meth1][meth2] = pairwise_test(dat1, dat2)
 
     p_vals = np.array([[res.pvalue for res in d.values()] for d in test_res.values()])
@@ -135,6 +138,7 @@ def run():
     ax.set_xticks(ticks=(0.0, 1.0, 2.0, 3.0), labels=test_res.keys())
     ax.set_title("y axis is less than x axis:")
     p_fig.suptitle("Just a helpful graphic for typing in table")
+
 
 if __name__ == "__main__":
     run()

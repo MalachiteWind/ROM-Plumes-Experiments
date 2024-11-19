@@ -21,6 +21,7 @@ from plumex.video_digest import _load_video
 from plumex.video_digest import _plot_frame
 from plumex.video_digest import _plot_learn_path
 
+
 def run():
     frame = Frame(800)
     trials_folder = Path(__file__).absolute().parents[2] / "trials"
@@ -32,11 +33,12 @@ def run():
     points_trials_folder = trials_folder / "center"
 
     tdata = load_trial_data(example_trial, trials_folder=points_trials_folder)
-    targs = _load_trial_params(example_trial, step=0, trials_folder=points_trials_folder)
+    targs = _load_trial_params(
+        example_trial, step=0, trials_folder=points_trials_folder
+    )
     center = list(filter(lambda row: row[0] == frame, tdata[0]["data"]["center"]))[0][1]
     raw_vid, origin_fc = _load_video(targs["filename"])
     raw_frame = raw_vid[frame]
-
 
     def _mini_multireg_center(center: PlumePoints) -> Any:
         meth_coeffs: dict[str, Float2D] = {}
@@ -49,7 +51,6 @@ def run():
                 display=False,
             )["data"]
         return meth_coeffs
-
 
     meth_coeffs = _mini_multireg_center(center)
     best_c = meth_coeffs[best_meth]
@@ -93,6 +94,7 @@ def run():
     fig5.subplots_adjust(top=0.95)
 
     # %%
+
 
 if __name__ == "__main__":
     run()
