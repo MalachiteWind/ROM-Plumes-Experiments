@@ -1,10 +1,11 @@
 # Additional figures and plots for AGU24
 from typing import List
-
 from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib.figure import Figure
+from PIL import Image
+
+
 
 from plumex.post.edge_figs import _unpack_data
 from plumex.post.edge_figs import trial_lookup_key
@@ -36,13 +37,6 @@ def run():
 
 
 
-
-
-import matplotlib.pyplot as plt
-from matplotlib.figure import Figure
-from PIL import Image
-import numpy as np
-from typing import List
 
 def _create_frames(
     video_data: RegressionData,
