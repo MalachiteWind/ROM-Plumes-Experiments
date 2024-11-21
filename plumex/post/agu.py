@@ -4,6 +4,9 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 from PIL import Image
+import mitosis
+from plumex.post.points import _PlotData
+from rom_plumes.models import get_contour
 
 
 
@@ -13,8 +16,14 @@ from plumex.post.post_utils import _construct_rxy_from_center_fit
 from plumex.post.post_utils import apply_theta_shift
 from plumex.post.post_utils import RegressionData
 from plumex.regression_pipeline import _construct_rxy_f
+from plumex.post.points import _mini_video_digest
+from plumex.post.points import _single_img_range
+from plumex.video_digest import _plot_frame
+from plumex.video_digest import _plot_contours
+from plumex.video_digest import _plot_learn_path
 
 image_folder = Path(__file__).absolute().parents[2] / "paper_images"
+trials_folder = Path(__file__).absolute().parents[2] / "trials"
 
 def run():
     # med 914
@@ -34,6 +43,26 @@ def run():
         rom=False,
         save_path=image_folder / "agu_raw.gif"
     )
+
+    
+    # Refer to config in center_regress_hash config 
+    # get center hash
+    center_hash = "da0e48" # maybe automate this
+
+    center_data_kws = mitosis._load_trial_params(
+        hexstr=center_hash,
+        trials_folder=trials_folder / "center"
+    )
+
+    start_frame = video_data["center_plume_points"][0][0]
+    center_data_kws = _single_img_range(
+        center_data_kws,frame=[i + start_frame for i in range(250,300)]
+    )
+
+    plot_data = _mini_video_digest(**center_data_kws)
+
+    print("creating steps gif.")
+    method_frames(plot_data,save_path=image_folder)
 
 
 
@@ -136,6 +165,118 @@ def _create_frames(
     # Save all collected frames as a GIF
     gif_frames[0].save(
         save_path,
+        save_all=True,
+        append_images=gif_frames[1:],
+        duration=200,  # Duration of each frame in milliseconds
+        loop=0,        # Loop infinitely
+    )
+
+
+
+def method_frames(plot_data: _PlotData, save_path:str):
+    # SAVE PATHs do it 
+
+    # exptup = plot_data
+
+    # Access raw frames
+    raw_frames = plot_data.raw_im
+    gif_frames = []
+    for frame in raw_frames:
+        fig, ax = plt.subplots()
+        _plot_frame(ax,frame)
+        fig.canvas.draw()
+        image = np.frombuffer(fig.canvas.tostring_rgb(), dtype='uint8')
+        image = image.reshape(fig.canvas.get_width_height()[::-1] + (3,))
+        gif_frames.append(Image.fromarray(image))
+        plt.close(fig)
+
+    gif_frames[0].save(
+        save_path / "raw_step.gif",
+        save_all=True,
+        append_images=gif_frames[1:],
+        duration=200,  # Duration of each frame in milliseconds
+        loop=0,        # Loop infinitely
+    )
+
+
+    # Access clean frames
+    clean_frames = plot_data.clean_im
+    gif_frames = []
+    for frame in clean_frames:
+        fig, ax = plt.subplots()
+
+        _plot_frame(ax,frame)
+        
+        fig.canvas.draw()
+        image = np.frombuffer(fig.canvas.tostring_rgb(), dtype='uint8')
+        image = image.reshape(fig.canvas.get_width_height()[::-1] + (3,))
+        gif_frames.append(Image.fromarray(image))
+        plt.close(fig)
+
+    gif_frames[0].save(
+        save_path / "clean_step.gif",
+        save_all=True,
+        append_images=gif_frames[1:],
+        duration=200,  # Duration of each frame in milliseconds
+        loop=0,        # Loop infinitely
+    )
+
+
+    # Access Contour and cocentric circle
+    orig_center = plot_data.orig_center
+    gif_frames = []
+    for frame in clean_frames:
+        fig, ax = plt.subplots()
+
+        contours = get_contour(frame,**plot_data.contour_kws)
+
+        _plot_contours(
+            ax,
+            frame,
+            orig_center,
+            contours
+        )
+
+        fig.canvas.draw()
+        image = np.frombuffer(fig.canvas.tostring_rgb(), dtype='uint8')
+        image = image.reshape(fig.canvas.get_width_height()[::-1] + (3,))
+        gif_frames.append(Image.fromarray(image))
+        plt.close(fig)
+    
+    gif_frames[0].save(
+        save_path / "contour_step.gif",
+        save_all=True,
+        append_images=gif_frames[1:],
+        duration=200,  # Duration of each frame in milliseconds
+        loop=0,        # Loop infinitely
+    )
+
+
+    # Access blur with center, top, bot
+    center = plot_data.center
+    bottom = plot_data.bottom
+    top = plot_data.top
+    gif_frames = []
+
+    for idx, frame in enumerate(clean_frames):
+        fig, ax = plt.subplots()
+
+        _plot_learn_path(
+            ax=ax,
+            image=frame,
+            frame_center=center[idx][1],
+            frame_top=top[idx][1],
+            frame_bottom=bottom[idx][1]
+        )
+
+        fig.canvas.draw()  # Render the figure
+        image = np.frombuffer(fig.canvas.tostring_rgb(), dtype='uint8')
+        image = image.reshape(fig.canvas.get_width_height()[::-1] + (3,))
+        gif_frames.append(Image.fromarray(image))
+        plt.close(fig)
+    
+    gif_frames[0].save(
+        save_path / "rom_step.gif",
         save_all=True,
         append_images=gif_frames[1:],
         duration=200,  # Duration of each frame in milliseconds
