@@ -153,8 +153,15 @@ def _plot_learn_path(
     frame_center: PlumePoints,
     frame_top: PlumePoints,
     frame_bottom: PlumePoints,
+    marker_size: Optional[int] = None
+
 ):
     _plot_frame(ax, image)
-    ax.plot(frame_center[:, 1], frame_center[:, 2], "r.")
-    ax.plot(frame_bottom[:, 1], frame_bottom[:, 2], "b.")
-    ax.plot(frame_top[:, 1], frame_top[:, 2], "g.")
+    if marker_size:
+        ax.plot(frame_center[:, 1], frame_center[:, 2], "r.", markersize=marker_size)
+        ax.plot(frame_bottom[:, 1], frame_bottom[:, 2], "b.",markersize=marker_size)
+        ax.plot(frame_top[:, 1], frame_top[:, 2], "g.", markersize=marker_size)  
+    else:
+        ax.plot(frame_center[:, 1], frame_center[:, 2], "r.")
+        ax.plot(frame_bottom[:, 1], frame_bottom[:, 2], "b.")
+        ax.plot(frame_top[:, 1], frame_top[:, 2], "g.")

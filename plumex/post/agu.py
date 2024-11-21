@@ -72,12 +72,13 @@ def _create_frames(
     frames: List[int],
     rom: bool,
     save_path: str,
+    dpi:int=300
 ) -> None:
     gif_frames = []
 
     for idx in frames:
         # Create a new figure
-        fig, ax = plt.subplots()
+        fig, ax = plt.subplots(dpi=dpi)
 
         frame_t = video_data["video"][idx]
         y_lim, x_lim = frame_t.shape
@@ -173,7 +174,7 @@ def _create_frames(
 
 
 
-def method_frames(plot_data: _PlotData, save_path:str):
+def method_frames(plot_data: _PlotData, save_path:str,dpi:int=300):
     # SAVE PATHs do it 
 
     # exptup = plot_data
@@ -182,7 +183,7 @@ def method_frames(plot_data: _PlotData, save_path:str):
     raw_frames = plot_data.raw_im
     gif_frames = []
     for frame in raw_frames:
-        fig, ax = plt.subplots()
+        fig, ax = plt.subplots(dpi=dpi)
         _plot_frame(ax,frame)
         fig.canvas.draw()
         image = np.frombuffer(fig.canvas.tostring_rgb(), dtype='uint8')
@@ -203,7 +204,7 @@ def method_frames(plot_data: _PlotData, save_path:str):
     clean_frames = plot_data.clean_im
     gif_frames = []
     for frame in clean_frames:
-        fig, ax = plt.subplots()
+        fig, ax = plt.subplots(dpi=dpi)
 
         _plot_frame(ax,frame)
         
@@ -226,7 +227,7 @@ def method_frames(plot_data: _PlotData, save_path:str):
     orig_center = plot_data.orig_center
     gif_frames = []
     for frame in clean_frames:
-        fig, ax = plt.subplots()
+        fig, ax = plt.subplots(dpi=dpi)
 
         contours = get_contour(frame,**plot_data.contour_kws)
 
@@ -259,14 +260,15 @@ def method_frames(plot_data: _PlotData, save_path:str):
     gif_frames = []
 
     for idx, frame in enumerate(clean_frames):
-        fig, ax = plt.subplots()
+        fig, ax = plt.subplots(dpi=dpi)
 
         _plot_learn_path(
             ax=ax,
             image=frame,
             frame_center=center[idx][1],
             frame_top=top[idx][1],
-            frame_bottom=bottom[idx][1]
+            frame_bottom=bottom[idx][1],
+            marker_size=10
         )
 
         fig.canvas.draw()  # Render the figure
