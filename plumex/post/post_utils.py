@@ -14,6 +14,8 @@ from plumex.regress_edge import create_lin_func
 from plumex.regress_edge import create_sin_func
 from plumex.regression_pipeline import _construct_rxy_f
 from plumex.types import Float1D
+import inspect
+
 
 
 class RegressionData(TypedDict):
@@ -234,3 +236,12 @@ def _visualize_multi_edge_fits(
         fig.suptitle(title, fontsize=title_fontsize)
     fig.tight_layout(pad=0.5)
     return fig
+
+
+def _get_default_args(func):
+    signature = inspect.signature(func)
+    return {
+        k: v.default
+        for k, v in signature.parameters.items()
+        if v.default is not inspect.Parameter.empty
+    }
