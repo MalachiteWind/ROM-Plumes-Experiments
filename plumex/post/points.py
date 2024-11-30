@@ -2,6 +2,7 @@
 from collections import namedtuple
 from pathlib import Path
 from typing import Any
+from typing import List
 from typing import Optional
 
 import matplotlib.pyplot as plt
@@ -15,16 +16,13 @@ from plumex.video_digest import _load_video
 from plumex.video_digest import _plot_contours
 from plumex.video_digest import _plot_frame
 from plumex.video_digest import _plot_learn_path
-from typing import List
-
-
-
 
 
 _PlotData = namedtuple(
     "_PlotData",
     ["orig_center", "raw_im", "clean_im", "contour_kws", "center", "bottom", "top"],
 )
+
 
 def _mini_video_digest(
     filename: str,
@@ -47,8 +45,8 @@ def _mini_video_digest(
 
     if isinstance(frame, int):
         img_range = (frame, frame + 1)
-    elif isinstance(frame,List):
-        img_range = (frame[0], frame[-1]+1)
+    elif isinstance(frame, List):
+        img_range = (frame[0], frame[-1] + 1)
 
     center, bottom, top = PLUME.video_to_ROM(
         clean_vid,
@@ -67,8 +65,9 @@ def _mini_video_digest(
         top,
     )
 
+
 def _single_img_range(kwargs: dict[str, Any], frame: int | List[int]) -> dict[str, Any]:
-    kwargs.pop("img_range",None)
+    kwargs.pop("img_range", None)
     kwargs["frame"] = frame
     # deprecated 'mean_smoothing'
     if ckw := kwargs.get("circle_kw", False):
@@ -109,7 +108,8 @@ def _compare_step1_plot(trial_plot_data: dict[str, _PlotData]) -> Figure:
 
     return superfig
 
-def run():    
+
+def run():
     frame = 838
     trials = {
         "good": "cb6956",

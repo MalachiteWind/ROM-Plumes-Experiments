@@ -1,3 +1,4 @@
+import inspect
 from typing import Callable
 from typing import List
 from typing import Optional
@@ -14,8 +15,6 @@ from plumex.regress_edge import create_lin_func
 from plumex.regress_edge import create_sin_func
 from plumex.regression_pipeline import _construct_rxy_f
 from plumex.types import Float1D
-import inspect
-
 
 
 class RegressionData(TypedDict):
