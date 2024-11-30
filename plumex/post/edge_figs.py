@@ -212,7 +212,7 @@ def _create_fig1c():
     bot_sin_vals = bot_sin_func(t_lin, r_lin)
 
     fig, ax = plt.subplots()
-    ax.plot(r_lin, bot_sin_vals, c="g")
+    ax.plot(r_lin, bot_sin_vals, c="b")
     ax.scatter(rad_dist[:, 0], rad_dist[:, 1], c="k")
     ax.set_title(r"$d(r,t)=A \sin( \omega r - \gamma t + B) + C + r D$", fontsize=18)
     ax.hlines(
