@@ -212,7 +212,7 @@ def _create_fig1c():
     bot_sin_vals = bot_sin_func(t_lin, r_lin)
 
     fig, ax = plt.subplots()
-    ax.plot(r_lin, bot_sin_vals, c="g")
+    ax.plot(r_lin, bot_sin_vals, c="b")
     ax.scatter(rad_dist[:, 0], rad_dist[:, 1], c="k")
     ax.set_title(r"$d(r,t)=A \sin( \omega r - \gamma t + B) + C + r D$", fontsize=18)
     ax.hlines(
@@ -326,9 +326,15 @@ vids = [
     "hi 920",
 ]
 
-_create_fig1c()
-_create_fig1d()
-_create_fig2b_raw()
-_create_fig2b_regression()
-_create_step2b_hist()
-_create_vid_acc_table(look_up_keys=vids)
+
+def run():
+    _create_fig1c()
+    _create_fig1d()
+    _create_fig2b_raw()
+    _create_fig2b_regression()
+    _create_step2b_hist()
+    _create_vid_acc_table(look_up_keys=vids)
+
+
+if __name__ == "__main__":
+    run()

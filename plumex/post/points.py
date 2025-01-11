@@ -2,6 +2,7 @@
 from collections import namedtuple
 from pathlib import Path
 from typing import Any
+from typing import List
 from typing import Optional
 
 import matplotlib.pyplot as plt
@@ -17,24 +18,6 @@ from plumex.video_digest import _plot_frame
 from plumex.video_digest import _plot_learn_path
 
 
-frame = 838
-trials = {
-    "good": "cb6956",
-    "extra blur": "430130",
-    "one contour": "76b9db",
-}
-trials_folder = Path(__file__).absolute().parents[2] / "trials"
-points_trials_folder = trials_folder / "center"
-
-trial_info = {
-    trial_tag: (
-        load_trial_data(hexstr, trials_folder=points_trials_folder),
-        _load_trial_params(hexstr, step=0, trials_folder=points_trials_folder),
-    )
-    for trial_tag, hexstr in trials.items()
-}
-
-
 _PlotData = namedtuple(
     "_PlotData",
     ["orig_center", "raw_im", "clean_im", "contour_kws", "center", "bottom", "top"],
@@ -43,7 +26,7 @@ _PlotData = namedtuple(
 
 def _mini_video_digest(
     filename: str,
-    frame: int,
+    frame: int | List[int],
     fixed_range: tuple[int, int] = (0, -1),
     gauss_space_kws: Optional[dict[str, Any]] = None,
     gauss_time_kws: Optional[dict[str, Any]] = None,
@@ -59,7 +42,12 @@ def _mini_video_digest(
         gauss_space_kws=gauss_space_kws,
         gauss_time_kws=gauss_time_kws,
     )
-    img_range = (frame, frame + 1)
+
+    if isinstance(frame, int):
+        img_range = (frame, frame + 1)
+    elif isinstance(frame, List):
+        img_range = (frame[0], frame[-1] + 1)
+
     center, bottom, top = PLUME.video_to_ROM(
         clean_vid,
         orig_center,
@@ -78,8 +66,7 @@ def _mini_video_digest(
     )
 
 
-# %%
-def _single_img_range(kwargs: dict[str, Any], frame: int) -> dict[str, Any]:
+def _single_img_range(kwargs: dict[str, Any], frame: int | List[int]) -> dict[str, Any]:
     kwargs.pop("img_range", None)
     kwargs["frame"] = frame
     # deprecated 'mean_smoothing'
@@ -88,19 +75,6 @@ def _single_img_range(kwargs: dict[str, Any], frame: int) -> dict[str, Any]:
     return kwargs
 
 
-# %%
-
-trial_info = {
-    trial_tag: (data, _single_img_range(kwargs, frame))
-    for trial_tag, (data, kwargs) in trial_info.items()
-}
-trial_plot_data = {
-    trial_tag: _mini_video_digest(**kwargs)
-    for trial_tag, (_, kwargs) in trial_info.items()
-}
-
-
-# %%
 def _compare_step1_plot(trial_plot_data: dict[str, _PlotData]) -> Figure:
     n_variants = len(trial_plot_data)
     superfig = plt.figure(figsize=(10, 1.3 * n_variants))
@@ -135,23 +109,54 @@ def _compare_step1_plot(trial_plot_data: dict[str, _PlotData]) -> Figure:
     return superfig
 
 
-# %% Figure 2
-fig2 = _compare_step1_plot({k: v for k, v in trial_plot_data.items() if k == "good"})
-fig2.suptitle("Data reduction process for plume film")
-fig2.tight_layout()
-fig2.subplots_adjust(top=0.80)
-fig2.axes[0].set_ylabel("")
-fig2.axes[0].set_xlabel("(a)")
-fig2.axes[1].set_xlabel("(b)")
-fig2.axes[2].set_xlabel("(c)")
-fig2.axes[3].set_xlabel("(d)")
-fig2.axes[4].set_xlabel("(e)")
-pass
-# %% Figure 4
-fig4 = _compare_step1_plot({k: v for k, v in trial_plot_data.items()})
-fig4.tight_layout()
-fig4.subplots_adjust(top=0.95)
-fig4.suptitle("How sensitive are the plume points to the extraction parameters?")
-pass
+def run():
+    frame = 838
+    trials = {
+        "good": "cb6956",
+        "extra blur": "430130",
+        "one contour": "76b9db",
+    }
+    trials_folder = Path(__file__).absolute().parents[2] / "trials"
+    points_trials_folder = trials_folder / "center"
 
-# %%
+    trial_info = {
+        trial_tag: (
+            load_trial_data(hexstr, trials_folder=points_trials_folder),
+            _load_trial_params(hexstr, step=0, trials_folder=points_trials_folder),
+        )
+        for trial_tag, hexstr in trials.items()
+    }
+
+    trial_info = {
+        trial_tag: (data, _single_img_range(kwargs, frame))
+        for trial_tag, (data, kwargs) in trial_info.items()
+    }
+    trial_plot_data = {
+        trial_tag: _mini_video_digest(**kwargs)
+        for trial_tag, (_, kwargs) in trial_info.items()
+    }
+    # Figure 2
+    fig2 = _compare_step1_plot(
+        {k: v for k, v in trial_plot_data.items() if k == "good"}
+    )
+    fig2.suptitle("Data reduction process for plume film")
+    fig2.tight_layout()
+    fig2.subplots_adjust(top=0.80)
+    fig2.axes[0].set_ylabel("")
+    fig2.axes[0].set_xlabel("(a)")
+    fig2.axes[1].set_xlabel("(b)")
+    fig2.axes[2].set_xlabel("(c)")
+    fig2.axes[3].set_xlabel("(d)")
+    fig2.axes[4].set_xlabel("(e)")
+    pass
+
+    # Figure 4
+    fig4 = _compare_step1_plot({k: v for k, v in trial_plot_data.items()})
+    fig4.tight_layout()
+    fig4.subplots_adjust(top=0.95)
+    fig4.suptitle("How sensitive are the plume points to the extraction parameters?")
+    pass
+
+
+if __name__ == "__main__":
+    run()
