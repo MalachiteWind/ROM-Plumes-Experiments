@@ -1,3 +1,4 @@
+import inspect
 from typing import Callable
 from typing import List
 from typing import Optional
@@ -150,10 +151,10 @@ def _visualize_multi_edge_fits(
 
             if plot_edge_points:
                 ax.scatter(
-                    raw_bot_points[:, 1], raw_bot_points[:, 2], marker=".", c="g"
+                    raw_bot_points[:, 1], raw_bot_points[:, 2], marker=".", c="b"
                 )
                 ax.scatter(
-                    raw_top_points[:, 1], raw_top_points[:, 2], marker=".", c="b"
+                    raw_top_points[:, 1], raw_top_points[:, 2], marker=".", c="g"
                 )
 
             ax.tick_params(left=False, labelleft=False, bottom=False, labelbottom=False)
@@ -224,8 +225,8 @@ def _visualize_multi_edge_fits(
             top_points = np.array(top_points) + orig_center_fc
             bot_points = np.array(bot_points) + orig_center_fc
             if plot_edge_regression:
-                ax.plot(top_points[:, 0], top_points[:, 1], c="g")
-                ax.plot(bot_points[:, 0], bot_points[:, 1], c="b")
+                ax.plot(top_points[:, 0], top_points[:, 1], c="b")
+                ax.plot(bot_points[:, 0], bot_points[:, 1], c="g")
             ax.set_xlim([0, x_lim])
             ax.set_ylim([y_lim, 0])
 
@@ -234,3 +235,12 @@ def _visualize_multi_edge_fits(
         fig.suptitle(title, fontsize=title_fontsize)
     fig.tight_layout(pad=0.5)
     return fig
+
+
+def _get_default_args(func):
+    signature = inspect.signature(func)
+    return {
+        k: v.default
+        for k, v in signature.parameters.items()
+        if v.default is not inspect.Parameter.empty
+    }
