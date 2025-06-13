@@ -25,6 +25,7 @@ trials_folder = Path(__file__).absolute().parents[2] / "trials"
 # (center_regress_hash, video_lookup_word, edge_regress_hash)
 trial_lookup_key = {
     "low 862": {"default": ("85c44b", "low-862", "a52e31")},
+    "low 864": {"default": ("","low-864","")},
     "low 865": {"default": ("aedee1", "low-865", "264935")},
     "low 866": {
         "default": ("5507db", "low-866", "741931"),
